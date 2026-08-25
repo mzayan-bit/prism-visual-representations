@@ -4,8 +4,10 @@ from prism.evaluation.configuration import (
     EvaluationConfiguration,
     MetricSpecification,
 )
+from prism.evaluation.reports import EvaluationReport
 
 __all__ = [
     "EvaluationConfiguration",
+    "EvaluationReport",
     "MetricSpecification",
 ]
