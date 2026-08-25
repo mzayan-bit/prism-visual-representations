@@ -10,12 +10,13 @@ prism-visual-representations/
 │   ├── src/
 │   │   └── prism/             # Core library package
 │   │       ├── api/           # Future API serving layer
-│   │       ├── core/          # Base contracts, configuration schemas, primitives
-│   │       ├── data/          # Dataset loaders, fingerprints, split manifests
-│   │       ├── experiments/   # Experiment harness, runner, provenance tracking
-│   │       ├── models/        # Vision backbones, probe heads, model registry
-│   │       ├── training/      # Deterministic training loops and optimization
-│   │       ├── evaluation/    # Metric evaluation, calibration, benchmarks
+│   │       ├── artifacts/     # Artifact contracts and references
+│   │       ├── core/          # Base enums, identifiers, errors, metadata
+│   │       ├── data/          # Dataset manifests, splits, preprocessing policies
+│   │       ├── experiments/   # Experiment definitions, runs, lifecycle, metrics, hashing
+│   │       ├── models/        # Vision model specifications and registries
+│   │       ├── training/      # Training configurations and optimizer policies
+│   │       ├── evaluation/    # Evaluation configurations and structured reports
 │   │       ├── representations/# CKA, linear probing, singular value spectra
 │   │       ├── robustness/    # Corruptions, distribution shifts, OOD tests
 │   │       ├── explainability/# Saliency, attention rollout, Grad-CAM
@@ -51,34 +52,61 @@ prism-visual-representations/
 
 ---
 
+## Research Core Domain Contracts
+
+The PRISM Research Core establishes a strongly-typed, immutable, framework-neutral domain layer that enforces reproducibility, task compatibility, and provenance tracking across all visual learning paradigms.
+
+### 1. `ExperimentDefinition` (`prism.experiments.definitions`)
+An immutable (`frozen=True`) specification representing the scientific intent of an experiment prior to execution:
+- **Identifier & Task**: Unique experiment ID (e.g. `exp-cifar10-resnet18`), task paradigm (`TaskType`), hypothesis, and tags.
+- **Dataset Contract**: Declares a `DatasetManifest` with preprocessing, augmentation, and split partitions.
+- **Model Contract**: Declares a `ModelSpecification` with architectural family, initialization, and input dimensions.
+- **Training Contract**: Declares a `TrainingConfiguration` with epochs, batch sizes, optimizer, scheduler, and precision.
+- **Evaluation Contract**: Declares an `EvaluationConfiguration` with target splits, metrics, and thresholds.
+- **Reproducibility Settings**: Declares master seeds, determinism flags, and audit requirements.
+- **Semantic Fingerprinting**: Provides `compute_fingerprint()` which computes a deterministic SHA-256 hash of all semantic inputs.
+
+### 2. `ExperimentRun` (`prism.experiments.runs`)
+Represents an individual physical execution attempt of an `ExperimentDefinition`:
+- **Run Identity**: Unique run ID (e.g. `run-a1b2c3d4e5f6`) linked back to parent `experiment_id`.
+- **Lifecycle State Machine**: Enforces strict valid state transitions:
+  - `PLANNED` → `QUEUED` / `RUNNING` / `CANCELLED`
+  - `QUEUED` → `RUNNING` / `CANCELLED`
+  - `RUNNING` → `COMPLETED` / `FAILED` / `CANCELLED`
+  - Terminal states (`COMPLETED`, `FAILED`, `CANCELLED`) cannot be re-executed.
+- **Provenance Snapshot**: Records configuration fingerprint, runtime environment, code revision, and failure telemetry.
+- **Telemetry Log**: Collects scalar `MetricRecord` entries and registers output `ArtifactReference` handles.
+
+### 3. `EvaluationReport` (`prism.evaluation.reports`)
+An immutable evaluation summary linking:
+- Run and experiment identifiers.
+- Complete evaluation configuration.
+- Detailed scalar metric records across splits.
+- Generated artifact references (e.g. confusion matrices, UMAP projections).
+- High-level summary metrics.
+
+---
+
 ## Domain Subsystems
 
-### 1. `prism.core`
-Defines base interfaces and Pydantic configuration schemas that enforce strict validation across all modules.
+### `prism.core`
+Defines system-wide primitives:
+- **`enums`**: `TaskType`, `RunStatus`, `ModelFamily`, `InitializationStrategy`, `ArtifactType`, `MetricDirection`, `PrecisionMode`, `DevicePreference`, `SplitName`.
+- **`identifiers`**: Centralized generation and validation of alphanumeric prefixed IDs.
+- **`errors`**: Domain exception hierarchy (`PrismError`, `ConfigurationError`, `ValidationError`, `InvalidTransitionError`, `SerializationError`, `FingerprintError`).
+- **`metadata`**: Provenance schemas (`CreationMetadata`, `CodeRevisionMetadata`, `EnvironmentMetadata`).
 
-### 2. `prism.data`
-Manages deterministic dataset pipelines. Enforces cryptographic dataset fingerprints to guarantee test set sanctity and identical preprocessing across comparative baselines.
+### `prism.data`
+Declarative dataset manifest models (`DatasetManifest`, `SplitSpecification`, `PreprocessingPolicy`, `AugmentationPolicy`) describing dataset dimensions and splits without instantiating tensors in memory.
 
-### 3. `prism.models`
-Provides unified model wrappers for diverse visual representation learners. Models implement a standardized interface exposing both final task outputs and intermediate activation representations.
+### `prism.models`
+Framework-neutral model descriptions (`ModelSpecification`) capturing architectures, parameter configurations, and probe attachments across CNNs, Transformers, and Self-Supervised backbones.
 
-### 4. `prism.training`
-Encapsulates reproducible training loops, strict multi-device seed management, and optimizer state lifecycle management.
+### `prism.training`
+Validated optimization configurations (`TrainingConfiguration`, `OptimizerSpecification`, `SchedulerSpecification`, `GradientClipping`, `EarlyStoppingPolicy`).
 
-### 5. `prism.representations`
-Hosts mathematical probing algorithms including:
-- Centered Kernel Alignment (CKA) for layer-to-layer representation similarity.
-- Linear and non-linear diagnostic probes.
-- Singular value spectrum analysis and intrinsic dimension estimators.
+### `prism.evaluation`
+Standardized evaluation protocols (`EvaluationConfiguration`, `MetricSpecification`, `EvaluationReport`).
 
-### 6. `prism.robustness`
-Evaluates representation stability under synthetic corruptions (noise, blur, weather), natural distribution shifts, and adversarial perturbations.
-
-### 7. `prism.explainability`
-Provides comparative visual attribution (Grad-CAM, attention rollout, integrated gradients) to analyze spatial inductive biases across convolutional and attention-based architectures.
-
-### 8. `prism.visualization`
-Generates structured figure outputs, publication-ready vector charts, and 2D/3D embedding coordinates (UMAP/t-SNE/PCA) for ingestion by the frontend research observatory.
-
-### 9. `prism.api` & `frontend`
-Reserved programmatic server layer and Next.js research observatory providing interactive exploration of representation geometries, metrics, and explainability maps.
+### `prism.artifacts`
+Artifact tracking contracts (`ArtifactReference`) storing logical keys, storage URIs, checksums, and generating run IDs.

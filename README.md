@@ -20,13 +20,32 @@ Rather than serving as another generic computer vision dashboard, model zoo, or 
 ## Project Status
 
 > [!NOTE]
-> **Active Development**: PRISM is currently in the **Foundation Phase**. The core package boundaries, configuration registry, research contracts, testing harnesses, and monorepo scaffolding are initialized. Domain models, training loops, dataset manifests, and interactive analysis dashboards will be introduced in subsequent planned phases.
+> **Active Development**: PRISM has completed the **Research Core & Domain Contracts Phase**. The typed domain layer is established, providing immutable experiment definitions, lifecycle state machine tracking, metric telemetry logs, artifact references, evaluation reports, and deterministic SHA-256 configuration fingerprinting.
+>
+> Model training pipelines, dataset loaders, and interactive analysis dashboards will be introduced in subsequent planned phases.
 
 ---
 
-## High-Level Research Roadmap
+## Milestone Progress & Roadmap
 
-The PRISM research campaign will systematically progress across learning paradigms and analytical dimensions:
+| Phase | Focus Area | Status |
+| --- | --- | --- |
+| **Phase 1** | Repository Foundation, Architecture Scaffolding & CI | :white_check_mark: Completed |
+| **Phase 2** | Research Core: Domain Contracts, Lifecycle, Fingerprinting & Serialization | :white_check_mark: Completed |
+| **Phase 3** | Reproducibility Runtime Infrastructure & Deterministic Seeding | :hourglass_flowing_sand: Planned |
+| **Phase 4** | Controlled Dataset Abstractions & Fixed Partition Manifests | :hourglass_flowing_sand: Planned |
+| **Phase 5** | Linear Classifiers & Pixel Baselines | :hourglass_flowing_sand: Planned |
+| **Phase 6** | Deep Learning Baselines (MLPs, Optimization & Regularization) | :hourglass_flowing_sand: Planned |
+| **Phase 7** | Convolutional Architectures (CNNs & ResNets) | :hourglass_flowing_sand: Planned |
+| **Phase 8** | Vision Transformers (ViT) & Attention Geometry | :hourglass_flowing_sand: Planned |
+| **Phase 9** | Self-Supervised Learning & Representation Analysis (CKA, Probes) | :hourglass_flowing_sand: Planned |
+| **Phase 10** | Robustness Under Corruptions & Distribution Shifts | :hourglass_flowing_sand: Planned |
+| **Phase 11** | Comparative Explainability (Attributions, Rollout, Grad-CAM) | :hourglass_flowing_sand: Planned |
+| **Phase 12** | Downstream Dense Transfer (Detection & Segmentation) | :hourglass_flowing_sand: Planned |
+
+---
+
+## Research Paradigm Progression
 
 ```
 Pixels and Linear Models
@@ -66,9 +85,10 @@ prism-visual-representations/
 │   ├── src/
 │   │   └── prism/             # Core library
 │   │       ├── api/           # Future API serving layer
-│   │       ├── core/          # Base domain contracts, configuration schemas
+│   │       ├── artifacts/     # Artifact contracts and references
+│   │       ├── core/          # Base domain contracts, enums, errors, identifiers
 │   │       ├── data/          # Dataset loaders, fingerprints, split manifests
-│   │       ├── experiments/   # Experiment runner, provenance tracking
+│   │       ├── experiments/   # Experiment definitions, runs, lifecycle, metrics, hashing
 │   │       ├── models/        # Vision backbones, probe heads, model registry
 │   │       ├── training/      # Deterministic training loops and optimization
 │   │       ├── evaluation/    # Metric evaluation, calibration, benchmarks
@@ -164,8 +184,9 @@ pytest -m unit
 
 ## Documentation Links
 
-- [Architecture Overview](docs/architecture/overview.md) — Detailed monorepo design and subsystem specifications.
+- [Architecture Overview](docs/architecture/overview.md) — Detailed monorepo design, domain contracts, and subsystem specifications.
 - [Research Contract](docs/methodology/research-contract.md) — Core scientific principles, reproducibility standards, and data policies.
+- [Experiments Guide](docs/experiments/README.md) — Experiment definitions, run lifecycles, and evaluation reports.
 - [Getting Started Guide](docs/development/getting-started.md) — Comprehensive installation and development instructions.
 - [Repository Conventions](docs/development/repository-conventions.md) — Coding conventions, typing rules, and Git standards.
 - [Contributing Guidelines](CONTRIBUTING.md) — How to contribute to PRISM.
