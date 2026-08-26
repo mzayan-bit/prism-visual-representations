@@ -65,9 +65,7 @@ class MaterializedDataset(Sequence[MaterializedSample]):
         target_transform: Callable[[Any], Any] | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
-        self.dataset_id = ensure_valid_identifier(
-            dataset_id, field_name="dataset_id"
-        )
+        self.dataset_id = ensure_valid_identifier(dataset_id, field_name="dataset_id")
         self.split_name = split_name.strip().lower() if split_name else None
         self._samples: list[MaterializedSample] = list(samples)
         self.transform = transform
@@ -133,9 +131,7 @@ class MaterializedDataset(Sequence[MaterializedSample]):
     def get_sample(self, sample_id: str) -> MaterializedSample:
         """Retrieve a materialized sample by its unique sample ID."""
         if sample_id not in self._sample_id_to_index:
-            raise KeyError(
-                f"Sample '{sample_id}' not found in MaterializedDataset."
-            )
+            raise KeyError(f"Sample '{sample_id}' not found in MaterializedDataset.")
         idx = self._sample_id_to_index[sample_id]
         sample = self[idx]
         assert isinstance(sample, MaterializedSample)
