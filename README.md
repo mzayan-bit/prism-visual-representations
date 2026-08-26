@@ -20,9 +20,10 @@ Rather than serving as another generic computer vision dashboard, model zoo, or 
 ## Project Status
 
 > [!NOTE]
-> **Active Development**: PRISM has completed the **Research Core & Domain Contracts Phase**. The typed domain layer is established, providing immutable experiment definitions, lifecycle state machine tracking, metric telemetry logs, artifact references, evaluation reports, and deterministic SHA-256 configuration fingerprinting.
+> **Active Development**: PRISM has completed **Phase 3: Reproducibility Runtime Infrastructure & Experiment Harness**.
+> The platform now provides an end-to-end execution preparation harness (`ExperimentExecutionHarness`), multi-backend pseudo-random number seeding (Python, NumPy, PyTorch CPU/CUDA/MPS), host environment snapshotting, hardware capability discovery, Git provenance tracking, and immutable runtime context binding (`PreparedExecution`).
 >
-> Model training pipelines, dataset loaders, and interactive analysis dashboards will be introduced in subsequent planned phases.
+> Concrete dataset abstractions, partition loaders, and training baselines will be introduced in subsequent planned phases.
 
 ---
 
@@ -32,7 +33,7 @@ Rather than serving as another generic computer vision dashboard, model zoo, or 
 | --- | --- | --- |
 | **Phase 1** | Repository Foundation, Architecture Scaffolding & CI | :white_check_mark: Completed |
 | **Phase 2** | Research Core: Domain Contracts, Lifecycle, Fingerprinting & Serialization | :white_check_mark: Completed |
-| **Phase 3** | Reproducibility Runtime Infrastructure & Deterministic Seeding | :hourglass_flowing_sand: Planned |
+| **Phase 3** | Reproducibility Runtime Infrastructure, Seeding & Execution Harness | :white_check_mark: Completed |
 | **Phase 4** | Controlled Dataset Abstractions & Fixed Partition Manifests | :hourglass_flowing_sand: Planned |
 | **Phase 5** | Linear Classifiers & Pixel Baselines | :hourglass_flowing_sand: Planned |
 | **Phase 6** | Deep Learning Baselines (MLPs, Optimization & Regularization) | :hourglass_flowing_sand: Planned |
@@ -88,7 +89,7 @@ prism-visual-representations/
 │   │       ├── artifacts/     # Artifact contracts and references
 │   │       ├── core/          # Base domain contracts, enums, errors, identifiers
 │   │       ├── data/          # Dataset loaders, fingerprints, split manifests
-│   │       ├── experiments/   # Experiment definitions, runs, lifecycle, metrics, hashing
+│   │       ├── experiments/   # Experiment definitions, runs, harness, seeding, context
 │   │       ├── models/        # Vision backbones, probe heads, model registry
 │   │       ├── training/      # Deterministic training loops and optimization
 │   │       ├── evaluation/    # Metric evaluation, calibration, benchmarks

@@ -13,7 +13,7 @@ prism-visual-representations/
 │   │       ├── artifacts/     # Artifact contracts and references
 │   │       ├── core/          # Base enums, identifiers, errors, metadata
 │   │       ├── data/          # Dataset manifests, splits, preprocessing policies
-│   │       ├── experiments/   # Experiment definitions, runs, lifecycle, metrics, hashing
+│   │       ├── experiments/   # Experiment definitions, runs, harness, seeding, context
 │   │       ├── models/        # Vision model specifications and registries
 │   │       ├── training/      # Training configurations and optimizer policies
 │   │       ├── evaluation/    # Evaluation configurations and structured reports
@@ -52,38 +52,51 @@ prism-visual-representations/
 
 ---
 
-## Research Core Domain Contracts
+## Reproducibility Runtime & Experiment Harness
 
-The PRISM Research Core establishes a strongly-typed, immutable, framework-neutral domain layer that enforces reproducibility, task compatibility, and provenance tracking across all visual learning paradigms.
+The PRISM Reproducibility Runtime bridges immutable experiment definitions and physical execution by preparing, probing, and auditing the runtime environment before any ML workload starts.
 
-### 1. `ExperimentDefinition` (`prism.experiments.definitions`)
-An immutable (`frozen=True`) specification representing the scientific intent of an experiment prior to execution:
-- **Identifier & Task**: Unique experiment ID (e.g. `exp-cifar10-resnet18`), task paradigm (`TaskType`), hypothesis, and tags.
-- **Dataset Contract**: Declares a `DatasetManifest` with preprocessing, augmentation, and split partitions.
-- **Model Contract**: Declares a `ModelSpecification` with architectural family, initialization, and input dimensions.
-- **Training Contract**: Declares a `TrainingConfiguration` with epochs, batch sizes, optimizer, scheduler, and precision.
-- **Evaluation Contract**: Declares an `EvaluationConfiguration` with target splits, metrics, and thresholds.
-- **Reproducibility Settings**: Declares master seeds, determinism flags, and audit requirements.
-- **Semantic Fingerprinting**: Provides `compute_fingerprint()` which computes a deterministic SHA-256 hash of all semantic inputs.
+```
+ExperimentDefinition (Immutable Scientific Intent)
+        │
+        ├── Validate Task & Model Compatibility
+        │
+        ▼
+ExperimentExecutionHarness.prepare(experiment)
+        │
+        ├── 1. Compute SHA-256 Configuration Fingerprint
+        ├── 2. Inspect Git Provenance (commit, branch, dirty tracking)
+        ├── 3. Probe Hardware & Compute Backends (CPU, CUDA, Apple Silicon MPS)
+        ├── 4. Capture Environment Snapshot (Python version, OS, allowlisted packages)
+        ├── 5. Initialize Multi-Backend RNG (Python, NumPy, PyTorch CPU/CUDA/MPS)
+        └── 6. Bind Provenance & Environment to ExperimentRun (PLANNED)
+        │
+        ▼
+PreparedExecution / RuntimeContext
+(Immutable audit trail ready for future training engines)
+```
 
-### 2. `ExperimentRun` (`prism.experiments.runs`)
-Represents an individual physical execution attempt of an `ExperimentDefinition`:
-- **Run Identity**: Unique run ID (e.g. `run-a1b2c3d4e5f6`) linked back to parent `experiment_id`.
-- **Lifecycle State Machine**: Enforces strict valid state transitions:
-  - `PLANNED` → `QUEUED` / `RUNNING` / `CANCELLED`
-  - `QUEUED` → `RUNNING` / `CANCELLED`
-  - `RUNNING` → `COMPLETED` / `FAILED` / `CANCELLED`
-  - Terminal states (`COMPLETED`, `FAILED`, `CANCELLED`) cannot be re-executed.
-- **Provenance Snapshot**: Records configuration fingerprint, runtime environment, code revision, and failure telemetry.
-- **Telemetry Log**: Collects scalar `MetricRecord` entries and registers output `ArtifactReference` handles.
+### 1. `ExperimentExecutionHarness` (`prism.experiments.harness`)
+Validates an `ExperimentDefinition`, inspects host capabilities, applies seeding, binds metadata to an `ExperimentRun`, and outputs an immutable `PreparedExecution` runtime context. The harness stops before workload execution (no training loops, dataloaders, or tensor allocations).
 
-### 3. `EvaluationReport` (`prism.evaluation.reports`)
-An immutable evaluation summary linking:
-- Run and experiment identifiers.
-- Complete evaluation configuration.
-- Detailed scalar metric records across splits.
-- Generated artifact references (e.g. confusion matrices, UMAP projections).
-- High-level summary metrics.
+### 2. `PreparedExecution` / `RuntimeContext` (`prism.experiments.context`)
+An immutable (`frozen=True`) execution snapshot linking:
+- Experiment ID, Run ID, and SHA-256 Configuration Fingerprint.
+- Multi-backend RNG seed initialization report (`SeedInitializationResult`).
+- Structured host environment metadata (`EnvironmentMetadata`).
+- Discovered hardware acceleration capabilities (`HardwareMetadata`).
+- Source code version control state (`CodeRevisionMetadata`).
+- Transparent reproducibility capability facts (`get_reproducibility_report()`).
+
+### 3. Multi-Backend Deterministic Seeding (`prism.experiments.seeding`)
+Centrally manages random state across:
+- **Python standard library**: `random.seed(seed)` and `os.environ["PYTHONHASHSEED"]`.
+- **NumPy**: `numpy.random.seed(seed)` when NumPy is installed.
+- **PyTorch**: `torch.manual_seed(seed)`, `torch.cuda.manual_seed_all(seed)`, cuDNN determinism flags, and `torch.use_deterministic_algorithms(True)`.
+- **Graceful Hardware Fallback**: Transparently records limitations on CPU-only, CUDA, and Apple Silicon MPS platforms without crashing.
+
+### 4. Git Provenance Inspector (`prism.experiments.provenance`)
+Discovers commit SHA, active branch, remote repository URL, and working tree cleanliness (`-uno` to inspect tracked modifications only, avoiding arbitrary file indexing).
 
 ---
 
@@ -93,8 +106,8 @@ An immutable evaluation summary linking:
 Defines system-wide primitives:
 - **`enums`**: `TaskType`, `RunStatus`, `ModelFamily`, `InitializationStrategy`, `ArtifactType`, `MetricDirection`, `PrecisionMode`, `DevicePreference`, `SplitName`.
 - **`identifiers`**: Centralized generation and validation of alphanumeric prefixed IDs.
-- **`errors`**: Domain exception hierarchy (`PrismError`, `ConfigurationError`, `ValidationError`, `InvalidTransitionError`, `SerializationError`, `FingerprintError`).
-- **`metadata`**: Provenance schemas (`CreationMetadata`, `CodeRevisionMetadata`, `EnvironmentMetadata`).
+- **`errors`**: Domain exception hierarchy rooted at `PrismError` (`ConfigurationError`, `ValidationError`, `LifecycleError`, `InvalidTransitionError`, `SerializationError`, `FingerprintError`, `ReproducibilityError`, `RuntimeInitializationError`, `ProvenanceError`).
+- **`metadata`**: Provenance schemas (`CreationMetadata`, `CodeRevisionMetadata`, `EnvironmentMetadata`, `HardwareMetadata`).
 
 ### `prism.data`
 Declarative dataset manifest models (`DatasetManifest`, `SplitSpecification`, `PreprocessingPolicy`, `AugmentationPolicy`) describing dataset dimensions and splits without instantiating tensors in memory.

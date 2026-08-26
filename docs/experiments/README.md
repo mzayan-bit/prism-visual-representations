@@ -12,7 +12,15 @@ PRISM separates the declarative research specification from physical execution a
 ```
 ExperimentDefinition (Immutable scientific intent)
         │
-        ├── Compute SHA-256 Configuration Fingerprint
+        ├── Validate Definition & Compute SHA-256 Fingerprint
+        │
+        ▼
+ExperimentExecutionHarness.prepare(experiment)
+        │
+        ├── Probe Host Hardware (CPU, CUDA, MPS)
+        ├── Capture Environment Snapshot & Git Revision
+        ├── Initialize Multi-Backend RNG (Python, NumPy, PyTorch)
+        └── Output Immutable PreparedExecution Context
         │
         ▼
 ExperimentRun (Execution instance & lifecycle state machine)
@@ -27,7 +35,7 @@ EvaluationReport (Immutable compiled evaluation summary)
 
 ---
 
-## Defining an Experiment
+## Defining and Preparing an Experiment
 
 ```python
 from prism.core.enums import TaskType, ModelFamily, MetricDirection, PrecisionMode
@@ -41,6 +49,7 @@ from prism.training.configuration import TrainingConfiguration, OptimizerSpecifi
 from prism.evaluation.configuration import EvaluationConfiguration, MetricSpecification
 from prism.experiments.definitions import ExperimentDefinition
 from prism.experiments.reproducibility import ReproducibilityConfiguration
+from prism.experiments.harness import ExperimentExecutionHarness
 
 # 1. Declare Dataset Manifest
 dataset = DatasetManifest(
@@ -93,8 +102,14 @@ experiment = ExperimentDefinition(
     reproducibility=ReproducibilityConfiguration(seed=42, deterministic=True),
 )
 
-# Compute deterministic semantic fingerprint
-fingerprint = experiment.compute_fingerprint()
+# 5. Prepare Execution Context via Harness
+harness = ExperimentExecutionHarness()
+run, prepared_context = harness.prepare(experiment)
+
+# Inspect reproducibility report
+report = prepared_context.get_reproducibility_report()
+print(f"Fingerprint: {prepared_context.configuration_fingerprint}")
+print(f"Seeded backends: {prepared_context.seeding_result.configured_backends}")
 ```
 
 ---
@@ -102,19 +117,11 @@ fingerprint = experiment.compute_fingerprint()
 ## Executing and Tracking a Run
 
 ```python
-from prism.experiments.runs import ExperimentRun
 from prism.experiments.metrics import MetricRecord
 from prism.artifacts.contracts import ArtifactReference
 from prism.core.enums import ArtifactType
 
-# Initialize Run
-run = ExperimentRun(
-    run_id="run-exp01-trial01",
-    experiment_id=experiment.experiment_id,
-    configuration_fingerprint=fingerprint,
-)
-
-# Start run
+# Start planned run
 run.start()
 
 # Record telemetry during training/evaluation
