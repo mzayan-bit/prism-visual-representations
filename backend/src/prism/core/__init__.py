@@ -29,8 +29,10 @@ from prism.core.identifiers import (
     generate_dataset_id,
     generate_experiment_id,
     generate_model_id,
+    generate_partition_id,
     generate_report_id,
     generate_run_id,
+    generate_subset_id,
     validate_identifier,
 )
 from prism.core.metadata import (
@@ -69,7 +71,9 @@ __all__ = [
     "generate_dataset_id",
     "generate_experiment_id",
     "generate_model_id",
+    "generate_partition_id",
     "generate_report_id",
     "generate_run_id",
+    "generate_subset_id",
     "validate_identifier",
 ]

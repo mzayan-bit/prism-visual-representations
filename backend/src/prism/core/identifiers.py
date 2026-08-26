@@ -34,6 +34,16 @@ def generate_dataset_id(prefix: str = "ds") -> str:
     return f"{prefix}-{_generate_short_uuid()}"
 
 
+def generate_partition_id(prefix: str = "part") -> str:
+    """Generate a structured partition identifier (e.g. 'part-a1b2c3d4e5f6')."""
+    return f"{prefix}-{_generate_short_uuid()}"
+
+
+def generate_subset_id(prefix: str = "sub") -> str:
+    """Generate a structured subset identifier (e.g. 'sub-a1b2c3d4e5f6')."""
+    return f"{prefix}-{_generate_short_uuid()}"
+
+
 def generate_model_id(prefix: str = "model") -> str:
     """Generate a structured model identifier (e.g. 'model-a1b2c3d4e5f6')."""
     return f"{prefix}-{_generate_short_uuid()}"
