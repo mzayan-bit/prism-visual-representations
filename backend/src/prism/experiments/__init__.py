@@ -1,11 +1,13 @@
 """Experiment specification, deterministic execution, and run tracking."""
 
+from prism.experiments.context import PreparedExecution, RuntimeContext
 from prism.experiments.definitions import ExperimentDefinition
 from prism.experiments.environment import (
     DEFAULT_ALLOWLIST_PACKAGES,
     capture_environment,
 )
 from prism.experiments.hardware import probe_hardware
+from prism.experiments.harness import ExperimentExecutionHarness
 from prism.experiments.hashing import (
     DEFAULT_EXCLUDED_KEYS,
     compute_configuration_fingerprint,
@@ -16,6 +18,10 @@ from prism.experiments.lifecycle import (
     validate_transition,
 )
 from prism.experiments.metrics import MetricRecord
+from prism.experiments.provenance import (
+    GitProvenance,
+    inspect_git_provenance,
+)
 from prism.experiments.reproducibility import ReproducibilityConfiguration
 from prism.experiments.runs import ExperimentRun, FailureInfo
 from prism.experiments.seeding import (
@@ -28,14 +34,19 @@ __all__ = [
     "DEFAULT_ALLOWLIST_PACKAGES",
     "DEFAULT_EXCLUDED_KEYS",
     "ExperimentDefinition",
+    "ExperimentExecutionHarness",
     "ExperimentRun",
     "FailureInfo",
+    "GitProvenance",
     "MetricRecord",
+    "PreparedExecution",
     "ReproducibilityConfiguration",
+    "RuntimeContext",
     "SeedInitializationResult",
     "capture_environment",
     "compute_configuration_fingerprint",
     "initialize_seeds",
+    "inspect_git_provenance",
     "is_valid_transition",
     "probe_hardware",
     "validate_transition",
