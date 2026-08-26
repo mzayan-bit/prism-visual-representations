@@ -16,7 +16,6 @@ from pydantic import (
 from prism.core.errors import SerializationError, ValidationError
 from prism.core.identifiers import (
     ensure_valid_identifier,
-    generate_subset_id,
 )
 from prism.data.partitions import PartitionManifest
 from prism.data.samples import CanonicalSampleManifest, SampleRecord
@@ -227,8 +226,8 @@ def generate_nested_subsets(
         dist = Counter(str(s.target) for s in selected_samples if s.target is not None)
         pct = round(b * 100.0, 2)
 
-        subset_id = generate_subset_id(
-            prefix=f"sub-{partition_manifest.dataset_id}-{target_split}-{int(pct)}pct"
+        subset_id = (
+            f"sub-{partition_manifest.dataset_id}-{target_split}-{int(pct)}pct-s{seed}"
         )
         subset_manifest = SubsetManifest(
             subset_id=subset_id,

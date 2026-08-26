@@ -16,7 +16,6 @@ from pydantic import (
 from prism.core.errors import SerializationError, ValidationError
 from prism.core.identifiers import (
     ensure_valid_identifier,
-    generate_partition_id,
 )
 from prism.data.samples import CanonicalSampleManifest, SampleRecord
 from prism.experiments.hashing import compute_configuration_fingerprint
@@ -321,7 +320,7 @@ def generate_partition_manifest(
             )
 
     total_samples = sum(s.num_samples for s in splits.values())
-    part_id = partition_id or generate_partition_id()
+    part_id = partition_id or f"part-{canonical_manifest.dataset_id}-s{seed}"
 
     return PartitionManifest(
         partition_id=part_id,

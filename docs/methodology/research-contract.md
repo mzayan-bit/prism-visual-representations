@@ -8,17 +8,20 @@ To maintain scientific integrity and prevent invalid comparisons, all contributi
 
 ---
 
-### 1. Fair Comparison
+### 1. Fair Comparison & Controlled Data Identity
 Different learning paradigms (e.g. Linear Models, CNNs, Vision Transformers, Self-Supervised Learning) must be compared under strictly controlled and explicitly documented conditions:
 - **Input Consistency**: Evaluated models must receive identical input dimensions, color space normalizations, and test split partitions.
+- **Canonical Sample Universes**: Datasets must declare deterministic sample identities (`SampleRecord`) and ordered universes (`CanonicalSampleManifest`).
+- **Fixed Benchmark Partitions**: Benchmark partitions (`PartitionManifest`) must derive validation splits deterministically while keeping official benchmark test splits strictly isolated.
+- **Nested Data-Budget Subsets**: In low-supervision / data-efficiency regimes (1%, 5%, 10%, 25%, 50%, 100%), subsets must satisfy mathematical nesting ($S_{1\%} \subseteq S_{5\%} \subseteq S_{10\%} \subseteq S_{25\%} \subseteq S_{50\%} \subseteq S_{100\%}$). Independent random sampling across budgets is strictly prohibited.
 - **Compute & Parameter Parity**: Experimental configurations must explicitly document parameter counts, FLOPs, and gradient step budgets.
 - **Controlled Augmentation**: Data augmentations used during training or evaluation must be precisely recorded and held constant when isolating architectural differences.
 
 ### 2. Strict Reproducibility & Runtime Guarantees
 Every experimental result generated in PRISM must be fully reproducible and explicitly audited prior to execution:
-- **Configuration Fingerprinting**: Semantic SHA-256 digests (`compute_fingerprint()`) calculated over model, data, and optimizer specifications.
+- **Configuration Fingerprinting**: Semantic SHA-256 digests (`compute_fingerprint()`) calculated over model, data, partition, subset, and optimizer specifications.
 - **Multi-Backend RNG Seeding**: Explicit initialization of seeds across Python standard library `random`, `PYTHONHASHSEED`, `numpy.random`, and PyTorch CPU/CUDA/MPS RNGs.
-- **Data Fingerprints**: Cryptographic SHA-256 digests of datasets, splits, and sample ordering manifests.
+- **Data Fingerprints**: Cryptographic SHA-256 digests of canonical sample manifests, partition manifests, and subset manifests.
 - **Code Revision Provenance**: Active Git commit SHA, branch, and working tree cleanliness (`-uno` tracked modifications) captured via `inspect_git_provenance()`.
 - **Hardware & Environment**: Python runtime version, host OS, primary compute backend, and installed versions of allowlisted dependencies (`pydantic`, `torch`, `torchvision`, etc.).
 - **Transparent Limitations**: PRISM explicitly documents and logs non-deterministic hardware limits (e.g. CUDA atomicAdd operations, Apple Silicon MPS platform variances) rather than claiming false perfection.
@@ -37,7 +40,7 @@ Artifact (Figure / Metric / Embedding)
   ↳ Experiment Run ID
     ↳ PreparedExecution Runtime Context
       ↳ Complete Configuration File (YAML)
-        ↳ Dataset Manifest (SHA-256) + Code Revision (Git SHA) + Random Seed
+        ↳ Canonical Universe (SHA-256) + Partition (SHA-256) + Subset (SHA-256) + Code Revision (Git SHA) + Seed
 ```
 
 ### 5. Honest Research

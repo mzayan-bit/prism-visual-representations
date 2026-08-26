@@ -12,6 +12,7 @@ PRISM separates the declarative research specification from physical execution a
 ```
 ExperimentDefinition (Immutable scientific intent)
         │
+        ├── Bound ControlledDataReference (Canonical universe + Partition + Nested subset)
         ├── Validate Definition & Compute SHA-256 Fingerprint
         │
         ▼
@@ -35,15 +36,12 @@ EvaluationReport (Immutable compiled evaluation summary)
 
 ---
 
-## Defining and Preparing an Experiment
+## Defining and Preparing a Controlled Experiment
 
 ```python
 from prism.core.enums import TaskType, ModelFamily, MetricDirection, PrecisionMode
-from prism.data.manifests import (
-    DatasetManifest,
-    SplitSpecification,
-    PreprocessingPolicy,
-)
+from prism.data.adapters import CIFAR10Adapter
+from prism.data.manifests import ControlledDataReference, DatasetManifest
 from prism.models.specifications import ModelSpecification
 from prism.training.configuration import TrainingConfiguration, OptimizerSpecification
 from prism.evaluation.configuration import EvaluationConfiguration, MetricSpecification
@@ -51,17 +49,26 @@ from prism.experiments.definitions import ExperimentDefinition
 from prism.experiments.reproducibility import ReproducibilityConfiguration
 from prism.experiments.harness import ExperimentExecutionHarness
 
-# 1. Declare Dataset Manifest
+# 1. Obtain standardized CIFAR-10 manifests & 10% nested subset
+adapter = CIFAR10Adapter()
+canonical = adapter.get_canonical_manifest()
+partition = adapter.get_default_partition(seed=42)
+subsets = adapter.get_nested_subsets(seed=42)
+
+# Bind 10% data-budget subset
+subset_10pct = subsets[0.10]
+controlled_ref = ControlledDataReference(
+    canonical_manifest_fingerprint=canonical.compute_fingerprint(),
+    partition_manifest_fingerprint=partition.compute_fingerprint(),
+    subset_manifest_fingerprint=subset_10pct.compute_fingerprint(),
+    partition_id=partition.partition_id,
+    subset_id=subset_10pct.subset_id,
+    budget_ratio=0.10,
+)
+
 dataset = DatasetManifest(
-    dataset_id="ds-cifar10",
-    name="CIFAR-10",
-    compatible_tasks=[TaskType.CLASSIFICATION],
-    splits=[
-        SplitSpecification(split_name="train", num_samples=50000),
-        SplitSpecification(split_name="test", num_samples=10000),
-    ],
-    num_classes=10,
-    preprocessing=PreprocessingPolicy(resize=(32, 32)),
+    **adapter.get_dataset_manifest().model_dump(exclude={"controlled_data"}),
+    controlled_data=controlled_ref,
 )
 
 # 2. Declare Model Architecture
@@ -92,8 +99,8 @@ evaluation = EvaluationConfiguration(
 
 # 4. Construct Immutable Experiment Definition
 experiment = ExperimentDefinition(
-    experiment_id="exp-cifar10-resnet18",
-    name="CIFAR-10 ResNet-18 Baseline",
+    experiment_id="exp-cifar10-resnet18-10pct",
+    name="CIFAR-10 ResNet-18 10% Low-Data Regime",
     task_type=TaskType.CLASSIFICATION,
     dataset=dataset,
     model=model,
@@ -125,7 +132,7 @@ from prism.core.enums import ArtifactType
 run.start()
 
 # Record telemetry during training/evaluation
-run.add_metric(MetricRecord(metric_name="top1_accuracy", value=0.925, split="test"))
+run.add_metric(MetricRecord(metric_name="top1_accuracy", value=0.885, split="test"))
 
 # Register produced artifacts
 run.add_artifact(
@@ -139,5 +146,5 @@ run.add_artifact(
 )
 
 # Complete run
-run.complete(summary_metrics={"top1_accuracy": 0.925})
+run.complete(summary_metrics={"top1_accuracy": 0.885})
 ```

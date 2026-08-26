@@ -12,7 +12,7 @@ prism-visual-representations/
 │   │       ├── api/           # Future API serving layer
 │   │       ├── artifacts/     # Artifact contracts and references
 │   │       ├── core/          # Base enums, identifiers, errors, metadata
-│   │       ├── data/          # Dataset manifests, splits, preprocessing policies
+│   │       ├── data/          # Samples, universes, partitions, subsets, adapters
 │   │       ├── experiments/   # Experiment definitions, runs, harness, seeding, context
 │   │       ├── models/        # Vision model specifications and registries
 │   │       ├── training/      # Training configurations and optimizer policies
@@ -52,6 +52,45 @@ prism-visual-representations/
 
 ---
 
+## Controlled Dataset Architecture & Data Identity
+
+PRISM separates declarative dataset descriptions from exact sample universes, fixed partitions, and low-data subsets to guarantee scientifically fair comparisons across learning paradigms.
+
+```
+1. Dataset Source (e.g. CIFAR-10 / CIFAR-100)
+        │
+        ▼
+2. CanonicalSampleManifest (Ordered universe of all SampleRecords)
+        │ ── SHA-256 Digest
+        ▼
+3. PartitionManifest (Deterministic split assignment: Train / Val / Isolated Test)
+        │ ── SHA-256 Digest
+        ▼
+4. SubsetManifest (Strictly nested data budgets: 1% ⊆ 5% ⊆ 10% ⊆ 25% ⊆ 50% ⊆ 100%)
+        │ ── SHA-256 Digest
+        ▼
+5. ControlledDataReference ──► Bound to ExperimentDefinition
+```
+
+### 1. `SampleRecord` & `CanonicalSampleManifest` (`prism.data.samples`)
+- **Stable Identity**: Sample identity is constructed from canonical coordinates (e.g. `cifar10/train/000042`) rather than runtime memory addresses.
+- **Canonical Sample Universe**: Immutable manifest capturing every available sample in a deterministic order with verified counts and category labels.
+
+### 2. `PartitionManifest` & Partition Generator (`prism.data.partitions`)
+- **Fixed Partitions**: Mutually exclusive mapping of canonical samples into named splits (`train`, `val`, `test`).
+- **Deterministic Stratification**: Stratified splitting using a local RNG (`random.Random(seed)`) without touching global random state.
+- **Official Test Split Isolation**: Official test sets are kept strictly isolated and untouched.
+
+### 3. `SubsetManifest` & Nested Subset Generator (`prism.data.subsets`)
+- **Strict Mathematical Nesting**: Guarantees $S_{1\%} \subseteq S_{5\%} \subseteq S_{10\%} \subseteq S_{25\%} \subseteq S_{50\%} \subseteq S_{100\%} = \text{TrainSplit}$.
+- **Data-Efficiency Integrity**: Avoids independent random sampling across data budgets, ensuring that low-data regimes are genuine nested subsets of higher budgets.
+
+### 4. Benchmark Dataset Adapters (`prism.data.adapters`)
+- **`CIFAR10Adapter` & `CIFAR100Adapter`**: Standardized adapters producing canonical sample universes (60k samples), benchmark partitions (45k train, 5k val, 10k isolated test), and nested subsets.
+- **Optional Dependency Isolation**: Core data manifest and fingerprint generation operates with zero external dependencies (no PyTorch/torchvision required). Raw loading provides explicit, guarded calls.
+
+---
+
 ## Reproducibility Runtime & Experiment Harness
 
 The PRISM Reproducibility Runtime bridges immutable experiment definitions and physical execution by preparing, probing, and auditing the runtime environment before any ML workload starts.
@@ -76,47 +115,21 @@ PreparedExecution / RuntimeContext
 (Immutable audit trail ready for future training engines)
 ```
 
-### 1. `ExperimentExecutionHarness` (`prism.experiments.harness`)
-Validates an `ExperimentDefinition`, inspects host capabilities, applies seeding, binds metadata to an `ExperimentRun`, and outputs an immutable `PreparedExecution` runtime context. The harness stops before workload execution (no training loops, dataloaders, or tensor allocations).
-
-### 2. `PreparedExecution` / `RuntimeContext` (`prism.experiments.context`)
-An immutable (`frozen=True`) execution snapshot linking:
-- Experiment ID, Run ID, and SHA-256 Configuration Fingerprint.
-- Multi-backend RNG seed initialization report (`SeedInitializationResult`).
-- Structured host environment metadata (`EnvironmentMetadata`).
-- Discovered hardware acceleration capabilities (`HardwareMetadata`).
-- Source code version control state (`CodeRevisionMetadata`).
-- Transparent reproducibility capability facts (`get_reproducibility_report()`).
-
-### 3. Multi-Backend Deterministic Seeding (`prism.experiments.seeding`)
-Centrally manages random state across:
-- **Python standard library**: `random.seed(seed)` and `os.environ["PYTHONHASHSEED"]`.
-- **NumPy**: `numpy.random.seed(seed)` when NumPy is installed.
-- **PyTorch**: `torch.manual_seed(seed)`, `torch.cuda.manual_seed_all(seed)`, cuDNN determinism flags, and `torch.use_deterministic_algorithms(True)`.
-- **Graceful Hardware Fallback**: Transparently records limitations on CPU-only, CUDA, and Apple Silicon MPS platforms without crashing.
-
-### 4. Git Provenance Inspector (`prism.experiments.provenance`)
-Discovers commit SHA, active branch, remote repository URL, and working tree cleanliness (`-uno` to inspect tracked modifications only, avoiding arbitrary file indexing).
-
 ---
 
 ## Domain Subsystems
 
 ### `prism.core`
-Defines system-wide primitives:
-- **`enums`**: `TaskType`, `RunStatus`, `ModelFamily`, `InitializationStrategy`, `ArtifactType`, `MetricDirection`, `PrecisionMode`, `DevicePreference`, `SplitName`.
-- **`identifiers`**: Centralized generation and validation of alphanumeric prefixed IDs.
-- **`errors`**: Domain exception hierarchy rooted at `PrismError` (`ConfigurationError`, `ValidationError`, `LifecycleError`, `InvalidTransitionError`, `SerializationError`, `FingerprintError`, `ReproducibilityError`, `RuntimeInitializationError`, `ProvenanceError`).
-- **`metadata`**: Provenance schemas (`CreationMetadata`, `CodeRevisionMetadata`, `EnvironmentMetadata`, `HardwareMetadata`).
+Defines system-wide primitives (`enums`, `identifiers`, `errors`, `metadata`).
 
 ### `prism.data`
-Declarative dataset manifest models (`DatasetManifest`, `SplitSpecification`, `PreprocessingPolicy`, `AugmentationPolicy`) describing dataset dimensions and splits without instantiating tensors in memory.
+Controlled dataset manifests, sample records, canonical universes, partition generators, nested subsets, and benchmark adapters.
 
 ### `prism.models`
-Framework-neutral model descriptions (`ModelSpecification`) capturing architectures, parameter configurations, and probe attachments across CNNs, Transformers, and Self-Supervised backbones.
+Framework-neutral model descriptions (`ModelSpecification`) across CNNs, Transformers, and Self-Supervised backbones.
 
 ### `prism.training`
-Validated optimization configurations (`TrainingConfiguration`, `OptimizerSpecification`, `SchedulerSpecification`, `GradientClipping`, `EarlyStoppingPolicy`).
+Validated optimization configurations (`TrainingConfiguration`, `OptimizerSpecification`, `SchedulerSpecification`, `GradientClipping`).
 
 ### `prism.evaluation`
 Standardized evaluation protocols (`EvaluationConfiguration`, `MetricSpecification`, `EvaluationReport`).
