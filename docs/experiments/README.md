@@ -24,6 +24,14 @@ ExperimentExecutionHarness.prepare(experiment)
         └── Output Immutable PreparedExecution Context
         │
         ▼
+DataPreparer.prepare(prepared_execution, ...)
+        │
+        ├── Resolve Exact Canonical Sample Identities
+        ├── Execute Deterministic Preprocessing
+        ├── Bind Deterministic Ordering (Sequential / Fixed Shuffle / Epoch-Aware)
+        └── Output MaterializedDataset + DeterministicBatchLoader + DataRuntimeContext
+        │
+        ▼
 ExperimentRun (Execution instance & lifecycle state machine)
         │
         ├── [PLANNED] ➔ [RUNNING] ➔ [COMPLETED / FAILED / CANCELLED]
@@ -39,9 +47,16 @@ EvaluationReport (Immutable compiled evaluation summary)
 ## Defining and Preparing a Controlled Experiment
 
 ```python
-from prism.core.enums import TaskType, ModelFamily, MetricDirection, PrecisionMode
+from prism.core.enums import (
+    TaskType,
+    ModelFamily,
+    MetricDirection,
+    PrecisionMode,
+    OrderingStrategy,
+)
 from prism.data.adapters import CIFAR10Adapter
 from prism.data.manifests import ControlledDataReference, DatasetManifest
+from prism.data.preparer import DataPreparer
 from prism.models.specifications import ModelSpecification
 from prism.training.configuration import TrainingConfiguration, OptimizerSpecification
 from prism.evaluation.configuration import EvaluationConfiguration, MetricSpecification
@@ -113,10 +128,23 @@ experiment = ExperimentDefinition(
 harness = ExperimentExecutionHarness()
 run, prepared_context = harness.prepare(experiment)
 
-# Inspect reproducibility report
-report = prepared_context.get_reproducibility_report()
-print(f"Fingerprint: {prepared_context.configuration_fingerprint}")
-print(f"Seeded backends: {prepared_context.seeding_result.configured_backends}")
+# 6. Explicitly Prepare Materialized Data and Batch Loader
+preparer = DataPreparer()
+mat_dataset, batch_loader, data_context = preparer.prepare(
+    adapter=adapter,
+    canonical_manifest=canonical,
+    partition_manifest=partition,
+    subset_manifest=subset_10pct,
+    batch_size=128,
+    ordering_strategy=OrderingStrategy.EPOCH_AWARE_SHUFFLE,
+    seed=42,
+    epoch=0,
+    prepared_execution=prepared_context,
+)
+
+print(f"Materialized samples: {len(mat_dataset)}")
+print(f"Batches per epoch: {len(batch_loader)}")
+print(f"Ordering fingerprint: {data_context.ordering_fingerprint}")
 ```
 
 ---
@@ -130,6 +158,12 @@ from prism.core.enums import ArtifactType
 
 # Start planned run
 run.start()
+
+# Iterate through traceable batches
+for batch in batch_loader:
+    # batch.sample_ids contains traceable sample identities
+    # batch.data contains preprocessed payload
+    pass
 
 # Record telemetry during training/evaluation
 run.add_metric(MetricRecord(metric_name="top1_accuracy", value=0.885, split="test"))

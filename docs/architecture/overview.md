@@ -12,7 +12,7 @@ prism-visual-representations/
 │   │       ├── api/           # Future API serving layer
 │   │       ├── artifacts/     # Artifact contracts and references
 │   │       ├── core/          # Base enums, identifiers, errors, metadata
-│   │       ├── data/          # Samples, universes, partitions, subsets, adapters
+│   │       ├── data/          # Samples, universes, materialization, ordering, batching
 │   │       ├── experiments/   # Experiment definitions, runs, harness, seeding, context
 │   │       ├── models/        # Vision model specifications and registries
 │   │       ├── training/      # Training configurations and optimizer policies
@@ -52,42 +52,57 @@ prism-visual-representations/
 
 ---
 
-## Controlled Dataset Architecture & Data Identity
+## Executable Dataset Pipeline & Deterministic Batching
 
-PRISM separates declarative dataset descriptions from exact sample universes, fixed partitions, and low-data subsets to guarantee scientifically fair comparisons across learning paradigms.
+Phase 5 introduces the executable dataset layer that turns controlled sample identities into machine-learning-ready examples, deterministic batches, and auditable runtime context.
 
 ```
-1. Dataset Source (e.g. CIFAR-10 / CIFAR-100)
+ExperimentDefinition
         │
         ▼
-2. CanonicalSampleManifest (Ordered universe of all SampleRecords)
-        │ ── SHA-256 Digest
+Controlled Dataset References (Canonical Manifest, Partition Manifest, Subset Manifest)
+        │
         ▼
-3. PartitionManifest (Deterministic split assignment: Train / Val / Isolated Test)
-        │ ── SHA-256 Digest
+Dataset Materializer (Exact Sample Resolution & Integrity Validation)
+        │
         ▼
-4. SubsetManifest (Strictly nested data budgets: 1% ⊆ 5% ⊆ 10% ⊆ 25% ⊆ 50% ⊆ 100%)
-        │ ── SHA-256 Digest
+Executable Preprocessing (Deterministic resize, crop, and normalization transforms)
+        │
         ▼
-5. ControlledDataReference ──► Bound to ExperimentDefinition
+MaterializedDataset (In-memory indexed dataset preserving sample IDs)
+        │
+        ▼
+Deterministic Ordering (Sequential / Fixed Shuffle / Epoch-Aware Shuffle)
+        │ ── SHA-256 Ordering Fingerprint
+        ▼
+Deterministic Batch Loader (Batches preserving payload, labels, and sample_id traceability)
+        │
+        ▼
+DataRuntimeContext (Auditable metadata context bound to execution)
 ```
 
-### 1. `SampleRecord` & `CanonicalSampleManifest` (`prism.data.samples`)
-- **Stable Identity**: Sample identity is constructed from canonical coordinates (e.g. `cifar10/train/000042`) rather than runtime memory addresses.
-- **Canonical Sample Universe**: Immutable manifest capturing every available sample in a deterministic order with verified counts and category labels.
+### 1. `MaterializedSample` & `MaterializedDataset` (`prism.data.materialized`)
+- **`MaterializedSample`**: Immutable runtime payload containing data (array/tensor), target label, source coordinates, and unique `sample_id`.
+- **`MaterializedDataset`**: In-memory indexed dataset providing deterministic random access, slicing, and transform pipeline binding without mutating original manifests.
 
-### 2. `PartitionManifest` & Partition Generator (`prism.data.partitions`)
-- **Fixed Partitions**: Mutually exclusive mapping of canonical samples into named splits (`train`, `val`, `test`).
-- **Deterministic Stratification**: Stratified splitting using a local RNG (`random.Random(seed)`) without touching global random state.
-- **Official Test Split Isolation**: Official test sets are kept strictly isolated and untouched.
+### 2. `DatasetMaterializer` (`prism.data.materializer`)
+- Resolves requested sample IDs against provider adapters (`SyntheticVisionAdapter`, `CIFAR10Adapter`, `CIFAR100Adapter`).
+- Enforces strict validation: source index, source split, and target labels must match manifest identities.
 
-### 3. `SubsetManifest` & Nested Subset Generator (`prism.data.subsets`)
-- **Strict Mathematical Nesting**: Guarantees $S_{1\%} \subseteq S_{5\%} \subseteq S_{10\%} \subseteq S_{25\%} \subseteq S_{50\%} \subseteq S_{100\%} = \text{TrainSplit}$.
-- **Data-Efficiency Integrity**: Avoids independent random sampling across data budgets, ensuring that low-data regimes are genuine nested subsets of higher budgets.
+### 3. Deterministic Data Ordering (`prism.data.ordering`)
+- **`OrderingStrategy`**:
+  - `SEQUENTIAL`: Canonical manifest order (ideal for validation and test evaluation).
+  - `FIXED_SHUFFLE`: Deterministic shuffle using a fixed base seed.
+  - `EPOCH_AWARE_SHUFFLE`: Deterministic shuffle using combined `(seed, epoch)` arithmetic.
+- **`compute_ordering_fingerprint(...)`**: Deterministic SHA-256 digest capturing exact sample sequence, strategy, seed, and epoch.
 
-### 4. Benchmark Dataset Adapters (`prism.data.adapters`)
-- **`CIFAR10Adapter` & `CIFAR100Adapter`**: Standardized adapters producing canonical sample universes (60k samples), benchmark partitions (45k train, 5k val, 10k isolated test), and nested subsets.
-- **Optional Dependency Isolation**: Core data manifest and fingerprint generation operates with zero external dependencies (no PyTorch/torchvision required). Raw loading provides explicit, guarded calls.
+### 4. Batch Traceability (`prism.data.batching`)
+- **`MaterializedBatch`**: Preserves batch index, batch size, inputs, targets, and the exact list of `sample_ids` contained in every batch.
+- **`DeterministicBatchLoader`**: Pure Python / CPU-safe batch iterator with explicit `drop_last` behavior.
+
+### 5. `DataPreparer` & `DataRuntimeContext` (`prism.data.preparer`, `prism.data.context`)
+- Bridges `PreparedExecution` with physical data materialization.
+- Produces immutable `DataRuntimeContext` storing canonical fingerprint, partition fingerprint, subset fingerprint, ordering fingerprint, batch size, and adapter metadata.
 
 ---
 
@@ -123,7 +138,7 @@ PreparedExecution / RuntimeContext
 Defines system-wide primitives (`enums`, `identifiers`, `errors`, `metadata`).
 
 ### `prism.data`
-Controlled dataset manifests, sample records, canonical universes, partition generators, nested subsets, and benchmark adapters.
+Manifests, sample records, canonical universes, partition generators, nested subsets, dataset materialization, deterministic ordering, and batch loading.
 
 ### `prism.models`
 Framework-neutral model descriptions (`ModelSpecification`) across CNNs, Transformers, and Self-Supervised backbones.

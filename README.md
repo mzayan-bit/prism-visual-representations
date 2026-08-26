@@ -20,10 +20,10 @@ Rather than serving as another generic computer vision dashboard, model zoo, or 
 ## Project Status
 
 > [!NOTE]
-> **Active Development**: PRISM has completed **Phase 4: Controlled Dataset Abstractions & Fixed Partition Manifests**.
-> The platform now provides canonical sample identity tracking (`SampleRecord`, `CanonicalSampleManifest`), deterministic stratified partitioning (`PartitionManifest`), strictly nested data-budget subsets for low-data studies (`SubsetManifest`), standardized benchmark adapters (`CIFAR10Adapter`, `CIFAR100Adapter`), and experimental controlled data binding (`ControlledDataReference`).
+> **Active Development**: PRISM has completed **Phase 5: Executable Dataset Pipeline & Deterministic Data Loading**.
+> The platform now provides runtime sample materialization (`MaterializedSample`, `MaterializedDataset`), deterministic data ordering strategies (`OrderingStrategy.SEQUENTIAL`, `FIXED_SHUFFLE`, `EPOCH_AWARE_SHUFFLE`), ordering fingerprints, reproducible batch loading with sample traceability (`DeterministicBatchLoader`, `MaterializedBatch`), and auditable data runtime context tracking (`DataRuntimeContext`, `DataPreparer`).
 >
-> Executable preprocessing transforms, augmentation pipelines, and linear classifier baselines will be introduced in subsequent planned phases.
+> Trainable linear classifiers, baseline training engines, and optimization lifecycles will be introduced in subsequent planned phases.
 
 ---
 
@@ -35,14 +35,15 @@ Rather than serving as another generic computer vision dashboard, model zoo, or 
 | **Phase 2** | Research Core: Domain Contracts, Lifecycle, Fingerprinting & Serialization | :white_check_mark: Completed |
 | **Phase 3** | Reproducibility Runtime Infrastructure, Seeding & Execution Harness | :white_check_mark: Completed |
 | **Phase 4** | Controlled Dataset Abstractions & Fixed Partition Manifests | :white_check_mark: Completed |
-| **Phase 5** | Linear Classifiers & Pixel Baselines | :hourglass_flowing_sand: Planned |
-| **Phase 6** | Deep Learning Baselines (MLPs, Optimization & Regularization) | :hourglass_flowing_sand: Planned |
-| **Phase 7** | Convolutional Architectures (CNNs & ResNets) | :hourglass_flowing_sand: Planned |
-| **Phase 8** | Vision Transformers (ViT) & Attention Geometry | :hourglass_flowing_sand: Planned |
-| **Phase 9** | Self-Supervised Learning & Representation Analysis (CKA, Probes) | :hourglass_flowing_sand: Planned |
-| **Phase 10** | Robustness Under Corruptions & Distribution Shifts | :hourglass_flowing_sand: Planned |
-| **Phase 11** | Comparative Explainability (Attributions, Rollout, Grad-CAM) | :hourglass_flowing_sand: Planned |
-| **Phase 12** | Downstream Dense Transfer (Detection & Segmentation) | :hourglass_flowing_sand: Planned |
+| **Phase 5** | Executable Dataset Pipeline & Deterministic Data Loading | :white_check_mark: Completed |
+| **Phase 6** | Linear Classifiers & Pixel Baselines | :hourglass_flowing_sand: Planned |
+| **Phase 7** | Deep Learning Baselines (MLPs, Optimization & Regularization) | :hourglass_flowing_sand: Planned |
+| **Phase 8** | Convolutional Architectures (CNNs & ResNets) | :hourglass_flowing_sand: Planned |
+| **Phase 9** | Vision Transformers (ViT) & Attention Geometry | :hourglass_flowing_sand: Planned |
+| **Phase 10** | Self-Supervised Learning & Representation Analysis (CKA, Probes) | :hourglass_flowing_sand: Planned |
+| **Phase 11** | Robustness Under Corruptions & Distribution Shifts | :hourglass_flowing_sand: Planned |
+| **Phase 12** | Comparative Explainability (Attributions, Rollout, Grad-CAM) | :hourglass_flowing_sand: Planned |
+| **Phase 13** | Downstream Dense Transfer (Detection & Segmentation) | :hourglass_flowing_sand: Planned |
 
 ---
 
@@ -88,7 +89,7 @@ prism-visual-representations/
 │   │       ├── api/           # Future API serving layer
 │   │       ├── artifacts/     # Artifact contracts and references
 │   │       ├── core/          # Base domain contracts, enums, errors, identifiers
-│   │       ├── data/          # Samples, universes, partitions, subsets, adapters
+│   │       ├── data/          # Samples, universes, materialization, ordering, batching
 │   │       ├── experiments/   # Experiment definitions, runs, harness, seeding, context
 │   │       ├── models/        # Vision backbones, probe heads, model registry
 │   │       ├── training/      # Deterministic training loops and optimization

@@ -23,7 +23,7 @@ class OrderingSpecification(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    strategy: OrderingStrategy = Field(
+    strategy: OrderingStrategy | str = Field(
         default=OrderingStrategy.SEQUENTIAL,
         description="Sampling or traversal ordering strategy",
     )
