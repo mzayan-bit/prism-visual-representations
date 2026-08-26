@@ -1,4 +1,4 @@
-"""Dataset manifest and preprocessing/augmentation specifications."""
+"""Dataset manifest, controlled data references, and preprocessing/augmentation."""
 
 from typing import Any
 
@@ -13,6 +13,39 @@ from pydantic import (
 from prism.core.enums import TaskType
 from prism.core.errors import ValidationError
 from prism.core.identifiers import ensure_valid_identifier
+
+
+class ControlledDataReference(BaseModel):
+    """Immutable link binding an experiment to concrete canonical data & splits."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    canonical_manifest_fingerprint: str | None = Field(
+        default=None,
+        description="SHA-256 fingerprint of CanonicalSampleManifest",
+    )
+    partition_manifest_fingerprint: str | None = Field(
+        default=None,
+        description="SHA-256 fingerprint of PartitionManifest",
+    )
+    subset_manifest_fingerprint: str | None = Field(
+        default=None,
+        description="SHA-256 fingerprint of SubsetManifest",
+    )
+    partition_id: str | None = Field(
+        default=None,
+        description="Identifier of referenced PartitionManifest",
+    )
+    subset_id: str | None = Field(
+        default=None,
+        description="Identifier of referenced SubsetManifest",
+    )
+    budget_ratio: float | None = Field(
+        default=None,
+        gt=0.0,
+        le=1.0,
+        description="Data budget fraction in (0.0, 1.0]",
+    )
 
 
 class PreprocessingPolicy(BaseModel):
@@ -140,6 +173,10 @@ class DatasetManifest(BaseModel):
         le=1.0,
         description="Fraction of dataset used for low-data experiments",
     )
+    controlled_data: ControlledDataReference | None = Field(
+        default=None,
+        description="Optional link to concrete canonical data and partitions",
+    )
     fingerprint: str | None = Field(
         default=None,
         description="Cryptographic fingerprint of the dataset manifest",
@@ -169,7 +206,7 @@ class DatasetManifest(BaseModel):
         split_names = [s.split_name for s in v]
         if len(split_names) != len(set(split_names)):
             raise ValueError(
-                f"Duplicate split names found in dataset manifest: {split_names}"
+                f"Duplicate split names in dataset manifest: {split_names}"
             )
         return v
 
