@@ -114,3 +114,11 @@ class SplitName(str, Enum):
     TEST = "test"
     OOD = "ood"
     CUSTOM = "custom"
+
+
+class OrderingStrategy(str, Enum):
+    """Deterministic sampling and batch ordering strategies."""
+
+    SEQUENTIAL = "sequential"
+    FIXED_SHUFFLE = "fixed_shuffle"
+    EPOCH_AWARE_SHUFFLE = "epoch_aware_shuffle"

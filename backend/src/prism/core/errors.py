@@ -76,3 +76,15 @@ class RuntimeInitializationError(PrismError):
 
 class ProvenanceError(PrismError):
     """Raised when capturing critical source code or dataset provenance fails."""
+
+
+class DatasetMaterializationError(PrismError):
+    """Raised when materializing dataset samples fails."""
+
+
+class SampleResolutionError(PrismError):
+    """Raised when resolving a sample ID against source data fails."""
+
+
+class DataPreparationError(PrismError):
+    """Raised when preparing executable datasets or batching fails."""

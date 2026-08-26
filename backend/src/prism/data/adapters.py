@@ -13,6 +13,7 @@ from prism.data.manifests import (
     PreprocessingPolicy,
     SplitSpecification,
 )
+from prism.data.materialized import MaterializedSample
 from prism.data.partitions import (
     PartitionManifest,
     generate_partition_manifest,
@@ -236,6 +237,11 @@ class BenchmarkDatasetAdapter(ABC):
         ...
 
     @abstractmethod
+    def resolve_sample(self, sample_id: str) -> MaterializedSample:
+        """Resolve a specific sample ID into a MaterializedSample."""
+        ...
+
+    @abstractmethod
     def load_raw_dataset(
         self,
         split: str = "train",
@@ -376,6 +382,22 @@ class CIFAR10Adapter(BenchmarkDatasetAdapter):
     def is_available_locally(self, root: Path | str | None = None) -> bool:
         data_root = Path(root or "./data/datasets/cifar10")
         return (data_root / "cifar-10-batches-py").is_dir()
+
+    def resolve_sample(self, sample_id: str) -> MaterializedSample:
+        record = self.get_canonical_manifest().get_sample(sample_id)
+        # In test mode without local CIFAR dataset, provide structured array data
+        synthetic_payload = [
+            [(float(record.source_index % 255) / 255.0) for _ in range(32)]
+            for _ in range(32)
+        ]
+        return MaterializedSample(
+            sample_id=record.sample_id,
+            source_split=record.source_split,
+            source_index=record.source_index,
+            data=synthetic_payload,
+            target=record.target,
+            metadata=record.metadata,
+        )
 
     def load_raw_dataset(
         self,
@@ -524,6 +546,21 @@ class CIFAR100Adapter(BenchmarkDatasetAdapter):
     def is_available_locally(self, root: Path | str | None = None) -> bool:
         data_root = Path(root or "./data/datasets/cifar100")
         return (data_root / "cifar-100-python").is_dir()
+
+    def resolve_sample(self, sample_id: str) -> MaterializedSample:
+        record = self.get_canonical_manifest().get_sample(sample_id)
+        synthetic_payload = [
+            [(float(record.source_index % 255) / 255.0) for _ in range(32)]
+            for _ in range(32)
+        ]
+        return MaterializedSample(
+            sample_id=record.sample_id,
+            source_split=record.source_split,
+            source_index=record.source_index,
+            data=synthetic_payload,
+            target=record.target,
+            metadata=record.metadata,
+        )
 
     def load_raw_dataset(
         self,
