@@ -64,3 +64,15 @@ class SerializationError(PrismError):
 
 class FingerprintError(PrismError):
     """Raised when configuration fingerprinting or hashing fails."""
+
+
+class ReproducibilityError(PrismError):
+    """Raised when strict reproducibility requirements cannot be satisfied."""
+
+
+class RuntimeInitializationError(PrismError):
+    """Raised when preparing or initializing the execution runtime fails."""
+
+
+class ProvenanceError(PrismError):
+    """Raised when capturing critical source code or dataset provenance fails."""

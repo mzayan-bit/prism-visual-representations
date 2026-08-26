@@ -17,6 +17,9 @@ from prism.core.errors import (
     InvalidTransitionError,
     LifecycleError,
     PrismError,
+    ProvenanceError,
+    ReproducibilityError,
+    RuntimeInitializationError,
     SerializationError,
     ValidationError,
 )
@@ -34,6 +37,7 @@ from prism.core.metadata import (
     CodeRevisionMetadata,
     CreationMetadata,
     EnvironmentMetadata,
+    HardwareMetadata,
 )
 
 __all__ = [
@@ -44,6 +48,7 @@ __all__ = [
     "DevicePreference",
     "EnvironmentMetadata",
     "FingerprintError",
+    "HardwareMetadata",
     "InitializationStrategy",
     "InvalidTransitionError",
     "LifecycleError",
@@ -51,7 +56,10 @@ __all__ = [
     "ModelFamily",
     "PrecisionMode",
     "PrismError",
+    "ProvenanceError",
+    "ReproducibilityError",
     "RunStatus",
+    "RuntimeInitializationError",
     "SerializationError",
     "SplitName",
     "TaskType",
