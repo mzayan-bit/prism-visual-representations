@@ -6,6 +6,7 @@ from collections.abc import Sequence
 
 from prism.core.enums import InitializationStrategy
 from prism.core.errors import ValidationError
+from prism.models.spatial import normalize_spatial_pair
 
 
 def initialize_linear_parameters(
@@ -125,3 +126,72 @@ def initialize_mlp_parameters(
         layer_biases.append(b_vec)
 
     return layer_weights, layer_biases
+
+
+def initialize_conv2d_parameters(
+    in_channels: int,
+    out_channels: int,
+    kernel_size: int | tuple[int, int],
+    seed: int = 42,
+    bias: bool = True,
+    activation: str = "relu",
+) -> tuple[list[list[list[list[float]]]], list[float]]:
+    """Deterministically initialize 4D weight tensor and 1D bias vector for Conv2D.
+
+    Parameters
+    ----------
+    in_channels : int
+        Number of input channels (C_in > 0).
+    out_channels : int
+        Number of output channels / filters (C_out > 0).
+    kernel_size : int | tuple[int, int]
+        Spatial size of the convolution kernel (K_h, K_w).
+    seed : int
+        Random seed for reproducible initialization.
+    bias : bool
+        Whether to allocate a bias vector.
+    activation : str
+        Activation function following convolution (e.g. "relu", "gelu").
+
+    Returns
+    -------
+    tuple[list[list[list[list[float]]]], list[float]]
+        (weights [C_out, C_in, K_h, K_w], bias [C_out]).
+    """
+    if in_channels <= 0:
+        raise ValidationError(f"in_channels must be positive, got {in_channels}.")
+    if out_channels <= 0:
+        raise ValidationError(f"out_channels must be positive, got {out_channels}.")
+
+    k_h, k_w = normalize_spatial_pair(kernel_size, "kernel_size")
+    if k_h <= 0 or k_w <= 0:
+        raise ValidationError(
+            f"kernel_size dimensions must be positive, got ({k_h}, {k_w})."
+        )
+
+    fan_in = in_channels * k_h * k_w
+    fan_out = out_channels * k_h * k_w
+
+    if activation.lower() == "relu":
+        std = math.sqrt(2.0 / float(fan_in))
+    else:
+        std = math.sqrt(2.0 / float(fan_in + fan_out))
+
+    rng = random.Random(seed)
+
+    # Weights shape: [C_out, C_in, K_h, K_w]
+    weights: list[list[list[list[float]]]] = []
+    for _ in range(out_channels):
+        filter_3d: list[list[list[float]]] = []
+        for _ in range(in_channels):
+            kernel_2d: list[list[float]] = []
+            for _ in range(k_h):
+                row = [rng.gauss(0.0, std) for _ in range(k_w)]
+                kernel_2d.append(row)
+            filter_3d.append(kernel_2d)
+        weights.append(filter_3d)
+
+    # Bias vector shape: [C_out]
+    bias_vec: list[float] = [0.0 for _ in range(out_channels)] if bias else []
+
+    return weights, bias_vec

@@ -8,6 +8,49 @@ from prism.models.base import BaseVisionModel
 from prism.training.configuration import OptimizerSpecification
 
 
+def _zero_like(val: Any) -> Any:
+    """Create a matching nested structure of zeros for velocity buffers."""
+    if isinstance(val, list):
+        return [_zero_like(item) for item in val]
+    return 0.0
+
+
+def _apply_sgd_update(
+    param: Any,
+    grad: Any,
+    vel: Any,
+    lr: float,
+    momentum: float,
+    weight_decay: float,
+    is_weight: bool,
+) -> None:
+    """Recursively apply SGD in-place update with momentum and weight decay."""
+    if isinstance(param, list):
+        for i in range(len(param)):
+            if isinstance(param[i], list):
+                _apply_sgd_update(
+                    param=param[i],
+                    grad=grad[i],
+                    vel=vel[i] if vel is not None else None,
+                    lr=lr,
+                    momentum=momentum,
+                    weight_decay=weight_decay,
+                    is_weight=is_weight,
+                )
+            else:
+                g = float(grad[i])
+                if is_weight and weight_decay > 0.0:
+                    g += weight_decay * float(param[i])
+
+                if momentum > 0.0 and vel is not None:
+                    vel[i] = momentum * float(vel[i]) + g
+                    delta = vel[i]
+                else:
+                    delta = g
+
+                param[i] -= lr * delta
+
+
 class BaseOptimizer(ABC):
     """Abstract base class for model optimizers."""
 
@@ -35,7 +78,7 @@ class BaseOptimizer(ABC):
 
 
 class SGDOptimizer(BaseOptimizer):
-    """Stochastic Gradient Descent optimizer with optional momentum and weight decay."""
+    """Stochastic Gradient Descent optimizer supporting arbitrary tensor dimensions."""
 
     def __init__(
         self,
@@ -58,19 +101,9 @@ class SGDOptimizer(BaseOptimizer):
         self.momentum = momentum or 0.0
         self.weight_decay = weight_decay
 
-        # Initialize velocity buffers for arbitrary parameter dictionaries
+        # Initialize velocity buffers matching parameter shapes
         params = model.get_parameters()
-        self.velocity: dict[str, Any] = {}
-        for k, v in params.items():
-            if isinstance(v, list):
-                if v and isinstance(v[0], list):
-                    # 2D weight matrix
-                    self.velocity[k] = [
-                        [0.0 for _ in range(len(v[0]))] for _ in range(len(v))
-                    ]
-                else:
-                    # 1D bias vector
-                    self.velocity[k] = [0.0 for _ in range(len(v))]
+        self.velocity: dict[str, Any] = {k: _zero_like(v) for k, v in params.items()}
 
     @property
     def lr(self) -> float:
@@ -94,48 +127,17 @@ class SGDOptimizer(BaseOptimizer):
 
             grad_val = grads[grad_key]
             v_val = self.velocity.get(k)
+            is_weight = "weight" in k.lower()
 
-            # Check if parameter is a 2D weight matrix
-            if (
-                isinstance(param_val, list)
-                and param_val
-                and isinstance(param_val[0], list)
-            ):
-                is_weight = "weight" in k.lower()
-                rows = len(param_val)
-                cols = len(param_val[0])
-
-                for r in range(rows):
-                    for c in range(cols):
-                        g = grad_val[r][c]
-                        if is_weight and self.weight_decay > 0.0:
-                            g += self.weight_decay * param_val[r][c]
-
-                        if self.momentum > 0.0 and v_val is not None:
-                            v_val[r][c] = self.momentum * v_val[r][c] + g
-                            delta = v_val[r][c]
-                        else:
-                            delta = g
-
-                        param_val[r][c] -= self._lr * delta
-
-            # Check if parameter is a 1D vector (bias)
-            elif isinstance(param_val, list):
-                is_weight = "weight" in k.lower()
-                cols = len(param_val)
-
-                for c in range(cols):
-                    g = grad_val[c]
-                    if is_weight and self.weight_decay > 0.0:
-                        g += self.weight_decay * param_val[c]
-
-                    if self.momentum > 0.0 and v_val is not None:
-                        v_val[c] = self.momentum * v_val[c] + g
-                        delta = v_val[c]
-                    else:
-                        delta = g
-
-                    param_val[c] -= self._lr * delta
+            _apply_sgd_update(
+                param=param_val,
+                grad=grad_val,
+                vel=v_val,
+                lr=self._lr,
+                momentum=self.momentum,
+                weight_decay=self.weight_decay,
+                is_weight=is_weight,
+            )
 
         self.model.set_parameters(params)
 
