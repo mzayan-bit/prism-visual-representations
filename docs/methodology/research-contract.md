@@ -9,7 +9,7 @@ To maintain scientific integrity and prevent invalid comparisons, all contributi
 ---
 
 ### 1. Fair Comparison & Controlled Data Identity
-Different learning paradigms (e.g. Linear Models, CNNs, Vision Transformers, Self-Supervised Learning) must be compared under strictly controlled and explicitly documented conditions:
+Different learning paradigms (e.g. Linear Models, MLPs, CNNs, Vision Transformers, Self-Supervised Learning) must be compared under strictly controlled and explicitly documented conditions:
 - **Input Consistency**: Evaluated models must receive identical input dimensions, color space normalizations, and test split partitions.
 - **Canonical Sample Universes**: Datasets must declare deterministic sample identities (`SampleRecord`) and ordered universes (`CanonicalSampleManifest`).
 - **Fixed Benchmark Partitions**: Benchmark partitions (`PartitionManifest`) must derive validation splits deterministically while keeping official benchmark test splits strictly isolated.
@@ -20,15 +20,17 @@ Different learning paradigms (e.g. Linear Models, CNNs, Vision Transformers, Sel
 - **Compute & Parameter Parity**: Experimental configurations must explicitly document parameter counts, FLOPs, and gradient step budgets.
 - **Controlled Augmentation**: Data augmentations used during training or evaluation must be precisely recorded and held constant when isolating architectural differences.
 
-### 2. Strict Reproducibility & Runtime Guarantees
+### 2. Strict Reproducibility & Deep Learning Invariants
 Every experimental result generated in PRISM must be fully reproducible and explicitly audited prior to execution:
-- **Configuration Fingerprinting**: Semantic SHA-256 digests (`compute_fingerprint()`) calculated over model, data, partition, subset, and optimizer specifications.
-- **Deterministic Parameter Initialization**: Model parameters must be deterministically initialized using configured seeds without dependence on accidental global RNG state.
+- **Configuration Fingerprinting**: Semantic SHA-256 digests (`compute_fingerprint()`) calculated over model, data, partition, subset, scheduler, and optimizer specifications.
+- **Deterministic Parameter Initialization**: Model parameters must be deterministically initialized (e.g. Xavier for linear layers, He/Kaiming for ReLU hidden layers) using configured seeds without dependence on accidental global RNG state.
 - **Multi-Backend RNG Seeding**: Explicit initialization of seeds across Python standard library `random`, `PYTHONHASHSEED`, `numpy.random`, and PyTorch CPU/CUDA/MPS RNGs.
-- **Data & Ordering Fingerprints**: Cryptographic SHA-256 digests of canonical sample manifests, partition manifests, subset manifests, and batch orderings.
+- **Deterministic Dropout Masking**: Stochastic dropout masks during training must be deterministically derived from explicit experiment seed, layer index, and step counters. In evaluation mode, dropout must be strictly disabled (identity).
+- **Controlled Learning Rate Schedules**: Learning rate decay (Step, Cosine Annealing, Warmup) must be deterministic and logged into metric telemetry.
+- **Explicit Weight Decay Semantics**: Regularization must be applied through a single documented pathway (e.g. optimizer step) without duplicate loss penalties.
+- **Representation Extraction**: Intermediate hidden representations (`"input_flat"`, `"hidden_0"`, `"final_hidden"`) must be extracted without parameter mutation or stochastic dropout noise.
 - **Code Revision Provenance**: Active Git commit SHA, branch, and working tree cleanliness (`-uno` tracked modifications) captured via `inspect_git_provenance()`.
 - **Hardware & Environment**: Python runtime version, host OS, primary compute backend, and installed versions of allowlisted dependencies (`pydantic`, `torch`, `torchvision`, etc.).
-- **Transparent Limitations**: PRISM explicitly documents and logs non-deterministic hardware limits (e.g. CUDA atomicAdd operations, Apple Silicon MPS platform variances) rather than claiming false perfection.
 
 ### 3. No Silent Comparisons
 PRISM strictly prohibits unrecorded or implicit divergences between experimental conditions. The following are non-negotiable prohibitions:
@@ -37,7 +39,13 @@ PRISM strictly prohibits unrecorded or implicit divergences between experimental
 - **No Selective Tuning**: Hyperparameter search budgets must be balanced across compared paradigms.
 - **No In-Place Evaluation Modifications**: Evaluation routines must never mutate model parameters or gradient buffers.
 
-### 4. Experiment Traceability
+### 4. Controlled Comparison Contracts
+All experimental comparisons must be formally defined via `ControlledComparison`, explicitly documenting:
+- The baseline and candidate experiment identifiers.
+- The isolated varied factor(s) (e.g. `{"dropout": {"baseline": 0.0, "candidate": 0.2}}` or `{"hidden_dims": {"baseline": [], "candidate": [128]}}`).
+- The fixed invariant factors (dataset fingerprint, partition fingerprint, seed, optimization schedule).
+
+### 5. Experiment Traceability
 Every figure, table, metric entry, or embedding projection generated by PRISM must be traceable backwards through the provenance chain:
 
 ```
@@ -48,7 +56,9 @@ Artifact (Figure / Metric / Embedding)
         ↳ Canonical Universe (SHA-256) + Partition (SHA-256) + Subset (SHA-256) + Ordering (SHA-256) + Git SHA + Seed
 ```
 
-### 5. Honest Research
+---
+
+### 6. Honest Research
 - **Zero Synthetic Results**: Synthetic, fabricated, or mocked results must never be committed as experimental findings.
 - **Explicit Labeling**: All artifacts and documentation must explicitly distinguish their status:
   - **Planned**: Conceptually defined experiments with pending implementation.

@@ -94,9 +94,7 @@ def initialize_mlp_parameters(
         raise ValidationError("hidden_dims cannot be empty for an MLP.")
     for idx, dim in enumerate(hidden_dims):
         if dim <= 0:
-            raise ValidationError(
-                f"hidden_dims[{idx}] must be positive, got {dim}."
-            )
+            raise ValidationError(f"hidden_dims[{idx}] must be positive, got {dim}.")
 
     rng = random.Random(seed)
     all_dims = [in_features, *list(hidden_dims), num_classes]

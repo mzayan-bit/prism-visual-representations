@@ -35,17 +35,21 @@ DataPreparer.prepare(prepared_execution, ...)
 TrainingEngine.train(...)
         │
         ├── Execute Deterministic Epoch Loops (Forward -> Loss -> Backward -> SGD)
-        ├── Record Real-time MetricRecords into ExperimentRun
-        ├── Evaluate Test Partition via EvaluationEngine (EvaluationReport)
+        ├── Step Learning Rate Scheduler (Constant / Step / Cosine Annealing)
+        ├── Record Real-time MetricRecords (Loss, Accuracy, Learning Rate) into ExperimentRun
+        ├── Evaluate Test Partition via EvaluationEngine in Evaluation Mode
         └── Transition Run Lifecycle (RUNNING -> COMPLETED)
         │
         ▼
 TrainingResult (Consolidated execution metrics and evaluation summaries)
+        │
+        ▼
+extract_representations(...) (Expose intermediate hidden feature representations)
 ```
 
 ---
 
-## Defining, Preparing, and Training a Controlled Experiment
+## Defining, Preparing, and Training a Deep MLP Experiment
 
 ```python
 from prism.core.enums import (
@@ -58,8 +62,13 @@ from prism.core.enums import (
 from prism.data.adapters import CIFAR10Adapter
 from prism.data.manifests import ControlledDataReference, DatasetManifest
 from prism.data.preparer import DataPreparer
+from prism.models.mlp import MultiLayerPerceptron
 from prism.models.specifications import ModelSpecification
-from prism.training.configuration import TrainingConfiguration, OptimizerSpecification
+from prism.training.configuration import (
+    TrainingConfiguration,
+    OptimizerSpecification,
+    SchedulerSpecification,
+)
 from prism.training.engine import TrainingEngine
 from prism.evaluation.configuration import EvaluationConfiguration, MetricSpecification
 from prism.experiments.definitions import ExperimentDefinition
@@ -88,22 +97,30 @@ dataset = DatasetManifest(
     controlled_data=controlled_ref,
 )
 
-# 2. Declare Model Architecture (CS231N-Style Linear Softmax Baseline)
+# 2. Declare Model Architecture (Deep Multi-Layer Perceptron)
 model = ModelSpecification(
-    model_id="model-linear-softmax",
-    name="Linear Softmax Classifier",
-    family=ModelFamily.LINEAR,
-    architecture="linear_softmax",
+    model_id="model-cifar10-mlp",
+    name="CIFAR-10 2-Hidden-Layer MLP",
+    family=ModelFamily.MLP,
+    architecture="mlp",
     compatible_tasks=[TaskType.CLASSIFICATION],
     input_shape=(3, 32, 32),
     num_classes=10,
+    hyperparameters={
+        "hidden_dims": [512, 256],
+        "activation": "relu",
+        "dropout": 0.2,
+    },
 )
 
-# 3. Declare Training & Evaluation Budget
+# 3. Declare Training & Evaluation Budget with Cosine Annealing Schedule
 training = TrainingConfiguration(
-    epochs=10,
+    epochs=50,
     batch_size=64,
-    optimizer=OptimizerSpecification(type="sgd", lr=0.01, weight_decay=1e-4),
+    optimizer=OptimizerSpecification(
+        type="sgd", lr=0.05, momentum=0.9, weight_decay=1e-4
+    ),
+    scheduler=SchedulerSpecification(type="cosine", min_lr=0.001, warmup_epochs=5),
     precision=PrecisionMode.FP32,
 )
 
@@ -117,8 +134,8 @@ evaluation = EvaluationConfiguration(
 
 # 4. Construct Immutable Experiment Definition
 experiment = ExperimentDefinition(
-    experiment_id="exp-cifar10-linear-10pct",
-    name="CIFAR-10 Linear Softmax 10% Low-Data Baseline",
+    experiment_id="exp-cifar10-mlp-10pct",
+    name="CIFAR-10 MLP 10% Low-Data Baseline",
     task_type=TaskType.CLASSIFICATION,
     dataset=dataset,
     model=model,
@@ -167,7 +184,21 @@ result = engine.train(
     run=run,
 )
 
+# 8. Extract Intermediate Hidden Representations from Trained Model
+mlp_model = MultiLayerPerceptron(spec=model, seed=42)
+test_batch = [test_dataset[i].data for i in range(10)]
+
+hidden_0_reps = mlp_model.extract_representations(
+    test_batch, layer="hidden_0"
+)  # [10, 512]
+final_hidden_reps = mlp_model.extract_representations(
+    test_batch, layer="final_hidden"
+)  # [10, 256]
+
 print(f"Run Status: {result.status}")
 print(f"Final Train Loss: {result.final_train_loss:.4f}")
 print(f"Test Accuracy: {result.summary_metrics.get('test_top1_accuracy', 0.0):.4f}")
+print(
+    f"Extracted Final Hidden Representation Shape: {len(final_hidden_reps)}x{len(final_hidden_reps[0])}"
+)
 ```

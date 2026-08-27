@@ -12,13 +12,9 @@ class BaseLRScheduler(ABC):
 
     def __init__(self, base_lr: float, total_epochs: int) -> None:
         if base_lr <= 0.0:
-            raise ValidationError(
-                f"base_lr must be positive, got {base_lr}."
-            )
+            raise ValidationError(f"base_lr must be positive, got {base_lr}.")
         if total_epochs <= 0:
-            raise ValidationError(
-                f"total_epochs must be positive, got {total_epochs}."
-            )
+            raise ValidationError(f"total_epochs must be positive, got {total_epochs}.")
         self.base_lr = base_lr
         self.total_epochs = total_epochs
         self._history: list[float] = []
@@ -63,9 +59,7 @@ class StepLRScheduler(BaseLRScheduler):
     ) -> None:
         super().__init__(base_lr, total_epochs)
         if step_size <= 0:
-            raise ValidationError(
-                f"step_size must be positive, got {step_size}."
-            )
+            raise ValidationError(f"step_size must be positive, got {step_size}.")
         if gamma <= 0.0 or gamma > 1.0:
             raise ValidationError(f"gamma must be in (0.0, 1.0], got {gamma}.")
         if warmup_epochs < 0:
@@ -73,9 +67,7 @@ class StepLRScheduler(BaseLRScheduler):
                 f"warmup_epochs must be non-negative, got {warmup_epochs}."
             )
         if min_lr < 0.0:
-            raise ValidationError(
-                f"min_lr must be non-negative, got {min_lr}."
-            )
+            raise ValidationError(f"min_lr must be non-negative, got {min_lr}.")
 
         self.step_size = step_size
         self.gamma = gamma
@@ -110,9 +102,7 @@ class CosineAnnealingLRScheduler(BaseLRScheduler):
     ) -> None:
         super().__init__(base_lr, total_epochs)
         if min_lr < 0.0:
-            raise ValidationError(
-                f"min_lr must be non-negative, got {min_lr}."
-            )
+            raise ValidationError(f"min_lr must be non-negative, got {min_lr}.")
         if warmup_epochs < 0:
             raise ValidationError(
                 f"warmup_epochs must be non-negative, got {warmup_epochs}."

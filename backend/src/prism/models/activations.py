@@ -53,9 +53,7 @@ class ReLUActivation(BaseActivation):
                 raise ValidationError(
                     f"Row dimension mismatch in ReLU backward at index {i}."
                 )
-            row_grad = [
-                d_row[j] if x_row[j] > 0.0 else 0.0 for j in range(len(x_row))
-            ]
+            row_grad = [d_row[j] if x_row[j] > 0.0 else 0.0 for j in range(len(x_row))]
             d_in.append(row_grad)
         return d_in
 

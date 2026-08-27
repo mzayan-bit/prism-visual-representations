@@ -79,9 +79,7 @@ class SGDOptimizer(BaseOptimizer):
     @lr.setter
     def lr(self, value: float) -> None:
         if value < 0.0:
-            raise ValidationError(
-                f"Learning rate must be non-negative, got {value}."
-            )
+            raise ValidationError(f"Learning rate must be non-negative, got {value}.")
         self._lr = value
 
     def step(self) -> None:

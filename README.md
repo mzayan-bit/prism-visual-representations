@@ -20,10 +20,10 @@ Rather than serving as another generic computer vision dashboard, model zoo, or 
 ## Project Status
 
 > [!NOTE]
-> **Active Development**: PRISM has completed **Phase 6: Training Engine & Linear Softmax Baseline**.
-> The platform now features its first complete machine-learning loop: a CS231N-style multiclass linear softmax classifier (`LinearSoftmaxClassifier`), deterministic parameter initialization (`initialize_linear_parameters`), numerically stable cross-entropy loss with analytic gradients (`SoftmaxCrossEntropyLoss`), SGD optimization (`SGDOptimizer`), full run lifecycle execution (`TrainingEngine`), deterministic evaluation (`EvaluationEngine`), and immutable result recording (`TrainingResult`, `EvaluationReport`).
+> **Active Development**: PRISM has completed **Phase 7: Deep Learning Baselines, MLPs, Regularization & Schedulers**.
+> The platform now supports non-linear deep learning architectures: Multi-Layer Perceptrons (`MultiLayerPerceptron`), non-linear activation functions (`ReLUActivation`, `GELUActivation`), He/Kaiming and Xavier parameter initialization (`initialize_mlp_parameters`), deterministic inverted dropout, learning rate schedules (`ConstantLRScheduler`, `StepLRScheduler`, `CosineAnnealingLRScheduler`, warmup), hidden representation extraction (`extract_representations`), and controlled scientific comparison contracts (`ControlledComparison`).
 >
-> Deep learning baseline architectures (MLPs, regularization policies, learning rate schedulers) and convolutional vision models will be introduced in subsequent planned phases.
+> Convolutional architectures (CNNs, spatial feature maps, inductive biases) will be introduced in subsequent planned phases.
 
 ---
 
@@ -37,7 +37,7 @@ Rather than serving as another generic computer vision dashboard, model zoo, or 
 | **Phase 4** | Controlled Dataset Abstractions & Fixed Partition Manifests | :white_check_mark: Completed |
 | **Phase 5** | Executable Dataset Pipeline & Deterministic Data Loading | :white_check_mark: Completed |
 | **Phase 6** | Linear Classifiers & Pixel Baselines | :white_check_mark: Completed |
-| **Phase 7** | Deep Learning Baselines (MLPs, Optimization & Regularization) | :hourglass_flowing_sand: Planned |
+| **Phase 7** | Deep Learning Baselines (MLPs, Optimization & Regularization) | :white_check_mark: Completed |
 | **Phase 8** | Convolutional Architectures (CNNs & ResNets) | :hourglass_flowing_sand: Planned |
 | **Phase 9** | Vision Transformers (ViT) & Attention Geometry | :hourglass_flowing_sand: Planned |
 | **Phase 10** | Self-Supervised Learning & Representation Analysis (CKA, Probes) | :hourglass_flowing_sand: Planned |
@@ -52,9 +52,9 @@ Rather than serving as another generic computer vision dashboard, model zoo, or 
 ```
 Pixels and Linear Models
        ↓
-Neural Networks & Backpropagation
+Neural Networks & Backpropagation (MLPs)
        ↓
-Optimization & Regularization
+Optimization, Schedulers & Regularization
        ↓
 Convolutional Architectures (CNNs)
        ↓
@@ -90,16 +90,16 @@ prism-visual-representations/
 │   │       ├── artifacts/     # Artifact contracts and references
 │   │       ├── core/          # Base domain contracts, enums, errors, identifiers
 │   │       ├── data/          # Samples, universes, materialization, ordering, batching
-│   │       ├── experiments/   # Experiment definitions, runs, harness, seeding, context
-│   │       ├── models/        # Linear classifiers, initializations, vision model specs
-│   │       ├── training/      # Training engine, losses, SGD optimizer, results
+│   │       ├── experiments/   # Experiment definitions, runs, harness, comparisons
+│   │       ├── models/        # Linear classifiers, MLPs, activations, specifications
+│   │       ├── training/      # Training engine, losses, SGD, schedulers, results
 │   │       ├── evaluation/    # Evaluation engine, metrics, and structured reports
-│   │       ├── representations/# CKA, linear probing, singular value spectra
+│   │       ├── representations/# Representation descriptors, feature batches
 │   │       ├── robustness/    # Corruptions, distribution shifts, OOD tests
 │   │       ├── explainability/# Saliency, attention rollout, Grad-CAM
 │   │       ├── visualization/ # Projections (UMAP/t-SNE), figure generation
 │   │       └── utils/         # Seeding, hashing, structured logging
-│   └── tests/                 # Backend unit and module test suites
+│   └── tests/                 # Backend unit, smoke, and integration test suites
 │
 ├── frontend/                  # Next.js / TypeScript research observatory
 │   ├── app/                   # App Router pages and layout

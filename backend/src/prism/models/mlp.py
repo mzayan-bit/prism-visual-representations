@@ -40,9 +40,7 @@ class MultiLayerPerceptron(BaseVisionModel):
         self.hidden_dims: list[int] = [int(h) for h in raw_hidden]
         for idx, h in enumerate(self.hidden_dims):
             if h <= 0:
-                raise ValidationError(
-                    f"hidden_dims[{idx}] must be positive, got {h}."
-                )
+                raise ValidationError(f"hidden_dims[{idx}] must be positive, got {h}.")
 
         self.num_classes_val: int = spec.num_classes
         act_name = str(spec.hyperparameters.get("activation", "relu"))
@@ -147,9 +145,7 @@ class MultiLayerPerceptron(BaseVisionModel):
 
                 # Deterministic dropout seed derived from model seed, layer, and step
                 layer_seed = (
-                    (self.seed * 1000003)
-                    ^ (l_idx * 10007)
-                    ^ (self._step_counter * 31)
+                    (self.seed * 1000003) ^ (l_idx * 10007) ^ (self._step_counter * 31)
                 ) & 0x7FFFFFFF
                 rng = random.Random(layer_seed)
 
@@ -161,9 +157,7 @@ class MultiLayerPerceptron(BaseVisionModel):
                         for _ in range(fan_out)
                     ]
                     mask.append(m_row)
-                    h_next.append(
-                        [a[i][j] * m_row[j] for j in range(fan_out)]
-                    )
+                    h_next.append([a[i][j] * m_row[j] for j in range(fan_out)])
 
                 self._cached_masks.append(mask)
                 h_current = h_next
@@ -215,10 +209,9 @@ class MultiLayerPerceptron(BaseVisionModel):
             b_out = self.layer_biases[-1]
             return self._matmul_add_bias(h_current, w_out, b_out)
 
-        valid = (
-            ["input_flat", "final_hidden", "logits"]
-            + [f"hidden_{i}" for i in range(num_hidden)]
-        )
+        valid = ["input_flat", "final_hidden", "logits"] + [
+            f"hidden_{i}" for i in range(num_hidden)
+        ]
         raise ValidationError(
             f"Unknown layer '{layer}' for MultiLayerPerceptron. Supported: {valid}"
         )
@@ -331,9 +324,7 @@ class MultiLayerPerceptron(BaseVisionModel):
         params: dict[str, Any] = {}
         for l_idx in range(self.num_layers):
             tag = "out" if l_idx == self.num_layers - 1 else str(l_idx)
-            params[f"weights_{tag}"] = [
-                row[:] for row in self.layer_weights[l_idx]
-            ]
+            params[f"weights_{tag}"] = [row[:] for row in self.layer_weights[l_idx]]
             params[f"bias_{tag}"] = self.layer_biases[l_idx][:]
         return params
 

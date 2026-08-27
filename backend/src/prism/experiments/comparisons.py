@@ -77,9 +77,7 @@ class ControlledComparison(BaseModel):
             "subset_fingerprint": self.subset_fingerprint,
             "seed": self.seed,
         }
-        encoded = json.dumps(
-            payload, sort_keys=True, ensure_ascii=True
-        ).encode("utf-8")
+        encoded = json.dumps(payload, sort_keys=True, ensure_ascii=True).encode("utf-8")
         return hashlib.sha256(encoded).hexdigest()
 
     def to_dict(self) -> dict[str, Any]:
