@@ -22,15 +22,28 @@ class RepresentationDescriptor(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     layer_name: str = Field(
-        description="Source layer name (e.g. 'input_flat', 'hidden_0', 'final_hidden')"
+        description="Source layer name (e.g. 'input', 'conv_0', 'final_spatial')"
     )
     feature_dim: int = Field(
         gt=0,
-        description="Feature dimensionality of individual embedding vectors",
+        description="Feature dimensionality of individual vectors or spatial elements",
     )
     num_samples: int = Field(
         ge=0,
         description="Number of sample vectors in this representation batch",
+    )
+    representation_kind: str = Field(
+        default="vector",
+        description="Category: 'vector' (1D features) or 'spatial' (C, H, W maps)",
+    )
+    spatial_shape: tuple[int, int, int] | None = Field(
+        default=None,
+        description="Spatial dimensions (C, H, W) if representation_kind is 'spatial'",
+    )
+    receptive_field: int | None = Field(
+        default=None,
+        ge=1,
+        description="Effective receptive field size in input pixel coordinates",
     )
     sample_ids: list[str] | None = Field(
         default=None,
@@ -48,6 +61,11 @@ class RepresentationDescriptor(BaseModel):
         description="Auxiliary context (e.g. epoch, split, transform)",
     )
 
+    @property
+    def is_spatial(self) -> bool:
+        """Return True if this descriptor represents a spatial feature map."""
+        return self.representation_kind == "spatial"
+
     @field_validator("model_id")
     @classmethod
     def validate_model_id_field(cls, v: str) -> str:
@@ -59,6 +77,16 @@ class RepresentationDescriptor(BaseModel):
         if not v or not v.strip():
             raise ValueError("Layer name cannot be empty.")
         return v.strip().lower()
+
+    @field_validator("representation_kind")
+    @classmethod
+    def validate_kind(cls, v: str) -> str:
+        v_norm = v.strip().lower()
+        if v_norm not in ("vector", "spatial"):
+            raise ValueError(
+                f"representation_kind must be 'vector' or 'spatial', got '{v}'"
+            )
+        return v_norm
 
     def to_dict(self) -> dict[str, Any]:
         """Convert descriptor to dictionary."""
@@ -96,15 +124,15 @@ class RepresentationDescriptor(BaseModel):
 
 
 class RepresentationBatch(BaseModel):
-    """Runtime container coupling a RepresentationDescriptor with feature rows."""
+    """Runtime container coupling a RepresentationDescriptor with feature data."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     descriptor: RepresentationDescriptor = Field(
         description="Metadata descriptor of the representation"
     )
-    embeddings: list[list[float]] = Field(
-        description="Extracted feature embedding matrix [num_samples, feature_dim]"
+    embeddings: list[Any] = Field(
+        description="Extracted feature embedding [N, D] or spatial tensor [N, C, H, W]"
     )
 
     def to_dict(self) -> dict[str, Any]:

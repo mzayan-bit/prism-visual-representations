@@ -115,7 +115,7 @@ class LinearSoftmaxClassifier(BaseVisionModel):
 
     def extract_representations(
         self, inputs: Any, layer: str = "final_hidden"
-    ) -> list[list[float]]:
+    ) -> Any:
         """Extract representations at specified layer ('input_flat', 'final_hidden')."""
         valid_layers = ("input_flat", "input", "final_hidden", "logits")
         norm_layer = layer.lower().strip()

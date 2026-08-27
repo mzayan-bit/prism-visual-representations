@@ -180,7 +180,7 @@ class MultiLayerPerceptron(BaseVisionModel):
 
     def extract_representations(
         self, inputs: Any, layer: str = "final_hidden"
-    ) -> list[list[float]]:
+    ) -> Any:
         """Extract intermediate activations without modifying model state."""
         norm_layer = layer.lower().strip()
         h_current = self._prepare_inputs(inputs)

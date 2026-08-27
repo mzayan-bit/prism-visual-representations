@@ -18,6 +18,7 @@ from prism.evaluation.reports import EvaluationReport
 from prism.experiments.metrics import MetricRecord
 from prism.experiments.runs import ExperimentRun
 from prism.models.base import BaseVisionModel
+from prism.models.cnn import ConvolutionalNeuralNetwork
 from prism.models.linear import LinearSoftmaxClassifier
 from prism.models.mlp import MultiLayerPerceptron
 from prism.training.loss import SoftmaxCrossEntropyLoss, compute_accuracy
@@ -97,6 +98,8 @@ class TrainingEngine:
         seed = experiment.reproducibility.seed or 42
         if model is not None:
             model_inst = model
+        elif experiment.model.family == ModelFamily.CNN:
+            model_inst = ConvolutionalNeuralNetwork(spec=experiment.model, seed=seed)
         elif experiment.model.family == ModelFamily.MLP:
             model_inst = MultiLayerPerceptron(spec=experiment.model, seed=seed)
         else:

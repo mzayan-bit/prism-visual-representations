@@ -75,6 +75,6 @@ class BaseVisionModel(ABC):
     @abstractmethod
     def extract_representations(
         self, inputs: Any, layer: str = "final_hidden"
-    ) -> list[list[float]]:
-        """Extract intermediate representations or activations at a specified layer."""
+    ) -> Any:
+        """Extract intermediate representations, feature vectors, or spatial maps."""
         ...

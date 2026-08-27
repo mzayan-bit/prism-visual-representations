@@ -2,8 +2,61 @@
 
 import math
 from abc import ABC, abstractmethod
+from typing import Any
 
 from prism.core.errors import ConfigurationError, ValidationError
+
+
+def _relu_forward(x: Any) -> Any:
+    if isinstance(x, list):
+        return [_relu_forward(item) for item in x]
+    return max(0.0, float(x))
+
+
+def _relu_backward(x: Any, d_out: Any) -> Any:
+    if isinstance(x, list):
+        if not isinstance(d_out, list) or len(x) != len(d_out):
+            raise ValidationError("Shape mismatch in ReLU backward.")
+        return [_relu_backward(x[i], d_out[i]) for i in range(len(x))]
+    return float(d_out) if float(x) > 0.0 else 0.0
+
+
+def _gelu_forward_val(val: float, sqrt_2_over_pi: float, coeff: float) -> float:
+    cube = val * val * val
+    inner = sqrt_2_over_pi * (val + coeff * cube)
+    clamped_inner = max(-50.0, min(50.0, inner))
+    return 0.5 * val * (1.0 + math.tanh(clamped_inner))
+
+
+def _gelu_forward(x: Any, sqrt_2_over_pi: float, coeff: float) -> Any:
+    if isinstance(x, list):
+        return [_gelu_forward(item, sqrt_2_over_pi, coeff) for item in x]
+    return _gelu_forward_val(float(x), sqrt_2_over_pi, coeff)
+
+
+def _gelu_backward_val(
+    val: float, dout_val: float, sqrt_2_over_pi: float, coeff: float
+) -> float:
+    cube = val * val * val
+    inner = sqrt_2_over_pi * (val + coeff * cube)
+    clamped_inner = max(-50.0, min(50.0, inner))
+    t = math.tanh(clamped_inner)
+    dt_dx = (1.0 - t * t) * sqrt_2_over_pi * (1.0 + 3.0 * coeff * val * val)
+    df_dx = 0.5 * (1.0 + t) + 0.5 * val * dt_dx
+    return dout_val * df_dx
+
+
+def _gelu_backward(
+    x: Any, d_out: Any, sqrt_2_over_pi: float, coeff: float
+) -> Any:
+    if isinstance(x, list):
+        if not isinstance(d_out, list) or len(x) != len(d_out):
+            raise ValidationError("Shape mismatch in GELU backward.")
+        return [
+            _gelu_backward(x[i], d_out[i], sqrt_2_over_pi, coeff)
+            for i in range(len(x))
+        ]
+    return _gelu_backward_val(float(x), float(d_out), sqrt_2_over_pi, coeff)
 
 
 class BaseActivation(ABC):
@@ -16,14 +69,12 @@ class BaseActivation(ABC):
         ...
 
     @abstractmethod
-    def forward(self, x: list[list[float]]) -> list[list[float]]:
-        """Apply activation elementwise to a 2D tensor [B, D]."""
+    def forward(self, x: Any) -> Any:
+        """Apply activation elementwise to input tensor (2D or 4D)."""
         ...
 
     @abstractmethod
-    def backward(
-        self, x: list[list[float]], d_out: list[list[float]]
-    ) -> list[list[float]]:
+    def backward(self, x: Any, d_out: Any) -> Any:
         """Compute upstream derivative given pre-activation x and upstream d_out."""
         ...
 
@@ -35,27 +86,11 @@ class ReLUActivation(BaseActivation):
     def name(self) -> str:
         return "relu"
 
-    def forward(self, x: list[list[float]]) -> list[list[float]]:
-        return [[max(0.0, val) for val in row] for row in x]
+    def forward(self, x: Any) -> Any:
+        return _relu_forward(x)
 
-    def backward(
-        self, x: list[list[float]], d_out: list[list[float]]
-    ) -> list[list[float]]:
-        if len(x) != len(d_out):
-            raise ValidationError(
-                f"Shape mismatch in ReLU backward: {len(x)} vs {len(d_out)}."
-            )
-        d_in: list[list[float]] = []
-        for i in range(len(x)):
-            x_row = x[i]
-            d_row = d_out[i]
-            if len(x_row) != len(d_row):
-                raise ValidationError(
-                    f"Row dimension mismatch in ReLU backward at index {i}."
-                )
-            row_grad = [d_row[j] if x_row[j] > 0.0 else 0.0 for j in range(len(x_row))]
-            d_in.append(row_grad)
-        return d_in
+    def backward(self, x: Any, d_out: Any) -> Any:
+        return _relu_backward(x, d_out)
 
 
 class GELUActivation(BaseActivation):
@@ -68,51 +103,11 @@ class GELUActivation(BaseActivation):
     def name(self) -> str:
         return "gelu"
 
-    def forward(self, x: list[list[float]]) -> list[list[float]]:
-        out: list[list[float]] = []
-        for row in x:
-            out_row: list[float] = []
-            for val in row:
-                cube = val * val * val
-                inner = self.SQRT_2_OVER_PI * (val + self.COEFF * cube)
-                # Clamp inner to prevent overflow in math.tanh
-                clamped_inner = max(-50.0, min(50.0, inner))
-                res = 0.5 * val * (1.0 + math.tanh(clamped_inner))
-                out_row.append(res)
-            out.append(out_row)
-        return out
+    def forward(self, x: Any) -> Any:
+        return _gelu_forward(x, self.SQRT_2_OVER_PI, self.COEFF)
 
-    def backward(
-        self, x: list[list[float]], d_out: list[list[float]]
-    ) -> list[list[float]]:
-        if len(x) != len(d_out):
-            raise ValidationError(
-                f"Shape mismatch in GELU backward: {len(x)} vs {len(d_out)}."
-            )
-        d_in: list[list[float]] = []
-        for i in range(len(x)):
-            x_row = x[i]
-            d_row = d_out[i]
-            if len(x_row) != len(d_row):
-                raise ValidationError(
-                    f"Row dimension mismatch in GELU backward at index {i}."
-                )
-            in_row: list[float] = []
-            for j in range(len(x_row)):
-                val = x_row[j]
-                cube = val * val * val
-                inner = self.SQRT_2_OVER_PI * (val + self.COEFF * cube)
-                clamped_inner = max(-50.0, min(50.0, inner))
-                t = math.tanh(clamped_inner)
-                dt_dx = (
-                    (1.0 - t * t)
-                    * self.SQRT_2_OVER_PI
-                    * (1.0 + 3.0 * self.COEFF * val * val)
-                )
-                df_dx = 0.5 * (1.0 + t) + 0.5 * val * dt_dx
-                in_row.append(d_row[j] * df_dx)
-            d_in.append(in_row)
-        return d_in
+    def backward(self, x: Any, d_out: Any) -> Any:
+        return _gelu_backward(x, d_out, self.SQRT_2_OVER_PI, self.COEFF)
 
 
 def get_activation(name: str = "relu") -> BaseActivation:

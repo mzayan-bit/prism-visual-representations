@@ -1,4 +1,4 @@
-"""Model architectures, spatial layers, and parameter initializations."""
+"""Model architectures, spatial layers, CNNs, and parameter initializations."""
 
 from prism.models.activations import (
     BaseActivation,
@@ -7,6 +7,7 @@ from prism.models.activations import (
     get_activation,
 )
 from prism.models.base import BaseVisionModel
+from prism.models.cnn import ConvolutionalNeuralNetwork, SimpleCNN
 from prism.models.convolution import Conv2D
 from prism.models.initialization import (
     initialize_conv2d_parameters,
@@ -29,12 +30,14 @@ __all__ = [
     "BaseActivation",
     "BaseVisionModel",
     "Conv2D",
+    "ConvolutionalNeuralNetwork",
     "GELUActivation",
     "LinearSoftmaxClassifier",
     "MaxPool2D",
     "ModelSpecification",
     "MultiLayerPerceptron",
     "ReLUActivation",
+    "SimpleCNN",
     "compute_conv2d_output_shape",
     "compute_pool2d_output_shape",
     "compute_receptive_field",
