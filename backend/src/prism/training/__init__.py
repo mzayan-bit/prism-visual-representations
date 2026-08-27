@@ -7,6 +7,7 @@ from prism.training.configuration import (
     SchedulerSpecification,
     TrainingConfiguration,
 )
+from prism.training.engine import TrainingEngine
 from prism.training.loss import (
     SoftmaxCrossEntropyLoss,
     compute_accuracy,
@@ -16,6 +17,7 @@ from prism.training.optimizers import (
     SGDOptimizer,
     create_optimizer,
 )
+from prism.training.results import TrainingResult
 
 __all__ = [
     "BaseOptimizer",
@@ -26,6 +28,8 @@ __all__ = [
     "SchedulerSpecification",
     "SoftmaxCrossEntropyLoss",
     "TrainingConfiguration",
+    "TrainingEngine",
+    "TrainingResult",
     "compute_accuracy",
     "create_optimizer",
 ]
