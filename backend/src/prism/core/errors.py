@@ -88,3 +88,15 @@ class SampleResolutionError(PrismError):
 
 class DataPreparationError(PrismError):
     """Raised when preparing executable datasets or batching fails."""
+
+
+class TrainingError(PrismError):
+    """Raised when executing model training fails."""
+
+
+class NumericalInstabilityError(TrainingError):
+    """Raised when a non-finite loss (NaN / Inf) or numerical divergence occurs."""
+
+
+class EvaluationError(PrismError):
+    """Raised when evaluating a model on a target dataset split fails."""
