@@ -193,9 +193,7 @@ class Conv2D:
                                     x_val = self._cached_x_pad[n][c][h_start + kh][
                                         w_start + kw
                                     ]
-                                    self.grad_weights[f][c][kh][kw] += (
-                                        dout_val * x_val
-                                    )
+                                    self.grad_weights[f][c][kh][kw] += dout_val * x_val
                                     dx_pad[n][c][h_start + kh][w_start + kw] += (
                                         dout_val * filter_weights[c][kh][kw]
                                     )

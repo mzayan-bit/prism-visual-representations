@@ -14,10 +14,10 @@ prism-visual-representations/
 │   │       ├── core/          # Base enums, identifiers, errors, metadata
 │   │       ├── data/          # Samples, universes, materialization, ordering, batching
 │   │       ├── experiments/   # Definitions, runs, harness, seeding, comparisons
-│   │       ├── models/        # Linear models, MLPs, activations, specifications
+│   │       ├── models/        # Linear, MLP, CNN models, conv2d, pooling, spatial utils
 │   │       ├── training/      # Training engine, losses, SGD, LR schedulers, results
 │   │       ├── evaluation/    # Evaluation engine, metrics, and structured reports
-│   │       ├── representations/# Representation descriptors, feature batches
+│   │       ├── representations/# Representation descriptors, feature batches, spatial maps
 │   │       ├── robustness/    # Corruptions, distribution shifts, OOD tests
 │   │       ├── explainability/# Saliency, attention rollout, Grad-CAM
 │   │       ├── visualization/ # Projections (UMAP/t-SNE), figure generation
@@ -54,10 +54,10 @@ prism-visual-representations/
 
 ## Trainable Baseline & Deep Learning Architecture
 
-PRISM supports both linear classifiers and deep non-linear Multi-Layer Perceptrons (MLPs) with explicit regularization, deterministic dropout, and learning-rate scheduling:
+PRISM supports linear classifiers, deep MLPs, and Convolutional Neural Networks (CNNs) with explicit spatial representations, deterministic pooling, regularization, and learning-rate scheduling:
 
 ```
-ExperimentDefinition
+ExperimentDefinition (Linear / MLP / CNN Specification)
         │
         ▼
 Runtime Preparation (ExperimentExecutionHarness.prepare)
@@ -66,64 +66,67 @@ Runtime Preparation (ExperimentExecutionHarness.prepare)
 Materialized Dataset & Deterministic Batches (DataPreparer)
         │
         ▼
-Model Execution (LinearSoftmaxClassifier / MultiLayerPerceptron)
+Model Execution (LinearSoftmaxClassifier / MultiLayerPerceptron / ConvolutionalNeuralNetwork)
         │
-        ├── 1. Flatten Input: [B, C, H, W] -> [B, D]
-        ├── 2. Hidden Layers: H_l+1 = Activation(H_l @ W_l + b_l)
-        ├── 3. Deterministic Dropout (Training Mode Only): H_l+1 * Mask / (1 - p)
-        ├── 4. Representation Extraction: "input_flat", "hidden_l", "final_hidden"
-        └── 5. Output Layer: Logits Z = H_final @ W_out + b_out
+        ├── 1. Spatial Processing: [N, C, H, W] preserved through Conv2D blocks
+        ├── 2. Multi-Channel Convolutions: Y_conv = Conv2D(X, W, b, stride, pad)
+        ├── 3. Spatial Non-Linearities: A = Activation(Y_conv)
+        ├── 4. Spatial Max Pooling: Y_pool = MaxPool2D(A, kernel, stride)
+        ├── 5. Spatial Feature Maps: "conv_0", "pool_0", ..., "final_spatial" [N, C_last, H_last, W_last]
+        ├── 6. Flatten to Vector: [N, D_spatial] where D_spatial = C_last * H_last * W_last
+        └── 7. Classifier Head & Raw Logits: Z = H @ W_cls + b_cls [N, num_classes]
         │
         ▼
 SoftmaxCrossEntropyLoss (Numerically Stabilized)
         │
-        ├── 6. Loss = - (1/B) * sum(log(P_yi))
-        └── 7. Analytic Gradient: dZ = (P - 1(y==c)) / B
+        ├── 8. Loss = - (1/B) * sum(log(P_yi))
+        └── 9. Analytic Gradient: dZ = (P - 1(y==c)) / B
         │
         ▼
 Backward Pass & Optimization (SGDOptimizer + Scheduler)
         │
-        ├── 8. Backpropagation across all hidden layers & activations
-        ├── 9. Scheduler Steps LR: lr(epoch) via Step or Cosine Annealing
-        └── 10. Optimizer Step: W_l <- W_l - lr * (mu * v_W + dW_l + lambda * W_l)
+        ├── 10. Classifier backprop -> dH_spatial [N, D_spatial]
+        ├── 11. Spatial unflatten -> dY_final_spatial [N, C_last, H_last, W_last]
+        ├── 12. Pool argmax routing -> Activation derivative -> Conv2D weight/input gradients
+        ├── 13. Scheduler Steps LR: lr(epoch) via Step or Cosine Annealing
+        └── 14. Optimizer Step: W_l <- W_l - lr * (mu * v_W_l + dW_l + lambda * W_l)
         │
         ▼
 Evaluation Engine & Metrics Logging
         │
-        ├── 11. MetricRecords logged into ExperimentRun (loss, acc, lr)
-        └── 12. EvaluationReport on Test Partition (Eval mode, dropout disabled)
+        ├── 15. MetricRecords logged into ExperimentRun (loss, acc, lr)
+        └── 16. EvaluationReport on Test Partition (Eval mode, dropout disabled)
         │
         ▼
 TrainingResult & Completed Run Lifecycle
 ```
 
-### 1. `MultiLayerPerceptron` (`prism.models.mlp`)
-- Configurable hidden layers (e.g. `[128]`, `[512, 256]`, `[1024, 512, 256]`).
-- Supports non-linear activation functions (`ReLU`, `GELU`).
-- Supports deterministic inverted dropout ($0.0 \le p < 1.0$) with explicit per-step RNG seeding.
-- Full analytical backpropagation propagating gradients through output, activations, dropout masks, and hidden layers.
+### 1. `Conv2D` (`prism.models.convolution`)
+- Multi-channel 2D convolution layer operating on $[N, C_{\text{in}}, H_{\text{in}}, W_{\text{in}}]$ tensors.
+- Supports configurable kernel sizes, strides, zero-padding, and optional bias.
+- Full analytical backpropagation computing exact gradients w.r.t weights ($dW$), bias ($db$), and inputs ($dX$).
 
-### 2. `BaseActivation` & Analytical Derivatives (`prism.models.activations`)
-- `ReLUActivation`: $f(x) = \max(0, x)$, $f'(x) = 1(x > 0)$.
-- `GELUActivation`: Smooth Gaussian Error Linear Unit with exact analytic derivative.
+### 2. `MaxPool2D` & `AvgPool2D` (`prism.models.pooling`)
+- `MaxPool2D`: Spatial maximum downsampling with exact argmax index tracking and gradient routing.
+- `AvgPool2D`: Spatial average downsampling with uniform gradient distribution.
 
-### 3. Parameter Initializations (`prism.models.initialization`)
-- `initialize_linear_parameters`: Xavier Gaussian initialization with zero biases.
-- `initialize_mlp_parameters`: He/Kaiming normal initialization for ReLU hidden layers and Xavier initialization for output layers.
+### 3. `ConvolutionalNeuralNetwork` (`prism.models.cnn`)
+- Composable convolutional baseline stacking Conv2D $\to$ Activation $\to$ MaxPool blocks.
+- Automatically calculates spatial dimension reduction and derives classifier input size.
+- Tracks cumulative receptive field size and effective stride jump across stages.
+- Exposes intermediate spatial feature maps (`"final_spatial"`) and final vector representations (`"final_hidden"`).
 
-### 4. Learning Rate Schedulers (`prism.training.schedulers`)
-- `ConstantLRScheduler`: Maintains constant learning rate across training.
-- `StepLRScheduler`: Decays learning rate by factor $\gamma$ every `step_size` epochs.
-- `CosineAnnealingLRScheduler`: Cosine decay from `base_lr` to `min_lr` over total epochs.
-- Linear warmup support across schedulers.
+### 4. Parameter Initializations (`prism.models.initialization`)
+- `initialize_linear_parameters`: Xavier Gaussian initialization.
+- `initialize_mlp_parameters`: He/Kaiming normal for ReLU hidden layers and Xavier for output.
+- `initialize_conv2d_parameters`: He/Kaiming normal scaled by receptive field fan-in ($C_{\text{in}} \times K_h \times K_w$).
 
-### 5. Representation Extraction (`prism.representations.contracts`)
-- Models expose `extract_representations(inputs, layer="final_hidden")`.
-- Supports standardized layer handles: `"input_flat"`, `"hidden_0"`, `"hidden_1"`, ..., `"final_hidden"`, `"logits"`.
-- `RepresentationDescriptor` and `RepresentationBatch` metadata containers.
+### 5. Representation Extraction & Metadata (`prism.representations.contracts`)
+- `RepresentationDescriptor` and `RepresentationBatch` supporting both 1D vector embeddings and 3D/4D spatial feature maps.
+- Tracks `representation_kind` (`"vector"` vs `"spatial"`), `spatial_shape` $(C, H, W)$, and `receptive_field`.
 
 ### 6. Controlled Comparisons (`prism.experiments.comparisons`)
-- `ControlledComparison` schema explicitly binding baseline and candidate experiments, isolated varied factors, invariant fixed factors, and deterministic fingerprints.
+- `ControlledComparison` schema explicitly binding baseline and candidate experiments, isolated varied factors (Linear vs MLP vs CNN), invariant fixed factors, and deterministic SHA-256 fingerprints.
 
 ---
 
@@ -136,7 +139,7 @@ Defines system-wide primitives (`enums`, `identifiers`, `errors`, `metadata`).
 Manifests, sample records, canonical universes, partition generators, nested subsets, dataset materialization, deterministic ordering, and batch loading.
 
 ### `prism.models`
-Declarative model specifications (`ModelSpecification`), base vision model contract (`BaseVisionModel`), linear classifiers, deep MLPs, activations, and parameter initializations.
+Model specifications (`ModelSpecification`), base model interface (`BaseVisionModel`), linear classifiers, MLPs, CNNs, Conv2D, pooling, and parameter initializations.
 
 ### `prism.training`
 Training configurations (`TrainingConfiguration`), numerical losses (`SoftmaxCrossEntropyLoss`), optimizers (`SGDOptimizer`), learning rate schedulers (`BaseLRScheduler`), training engine (`TrainingEngine`), and execution results (`TrainingResult`).
@@ -145,7 +148,7 @@ Training configurations (`TrainingConfiguration`), numerical losses (`SoftmaxCro
 Standardized evaluation protocols (`EvaluationConfiguration`, `MetricSpecification`), evaluation engine (`EvaluationEngine`), and structured reports (`EvaluationReport`).
 
 ### `prism.representations`
-Representation extraction metadata contracts (`RepresentationDescriptor`, `RepresentationBatch`) and representation analysis tools.
+Representation extraction metadata contracts (`RepresentationDescriptor`, `RepresentationBatch`) supporting vector and spatial representations.
 
 ### `prism.experiments`
 Declarative experiment definitions (`ExperimentDefinition`), run lifecycle tracking (`ExperimentRun`), runtime harness (`ExperimentExecutionHarness`), and controlled comparison contracts (`ControlledComparison`).

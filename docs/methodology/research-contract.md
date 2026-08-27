@@ -20,32 +20,43 @@ Different learning paradigms (e.g. Linear Models, MLPs, CNNs, Vision Transformer
 - **Compute & Parameter Parity**: Experimental configurations must explicitly document parameter counts, FLOPs, and gradient step budgets.
 - **Controlled Augmentation**: Data augmentations used during training or evaluation must be precisely recorded and held constant when isolating architectural differences.
 
-### 2. Strict Reproducibility & Deep Learning Invariants
+### 2. Spatial Inductive Bias & Equivariance Standards
+When evaluating Convolutional Neural Networks against non-spatial models (Linear classifiers, MLPs):
+- **Preservation of Spatial Structure**: CNNs operate natively on $N \times C \times H \times W$ feature maps. Images must not be flattened prior to spatial convolution layers.
+- **Local Connectivity & Weight Sharing**: Kernels slide over local receptive fields with shared weights across spatial translations.
+- **Translation Equivariance vs Invariance**:
+  - **Equivariance**: A spatial translation of the input translates the internal feature map correspondingly: $f(T_g(x)) = T_g(f(x))$.
+  - **Invariance**: Downstream pooling and dense classifier projections compress spatial maps toward translation invariance: $f(T_g(x)) \approx f(x)$.
+  - Claims regarding spatial properties must distinguish equivariance in intermediate feature maps from invariance in classifier logits.
+- **Receptive Field Traceability**: Convolutional architectures must provide deterministic receptive field ($RF$) and effective stride ($J$) calculations per layer.
+- **Spatial Feature Map Extraction**: Intermediate spatial feature maps (`"conv_0"`, `"pool_0"`, `"final_spatial"`) must be extractable with preserved spatial dimensions $[N, C, H, W]$.
+
+### 3. Strict Reproducibility & Deep Learning Invariants
 Every experimental result generated in PRISM must be fully reproducible and explicitly audited prior to execution:
 - **Configuration Fingerprinting**: Semantic SHA-256 digests (`compute_fingerprint()`) calculated over model, data, partition, subset, scheduler, and optimizer specifications.
-- **Deterministic Parameter Initialization**: Model parameters must be deterministically initialized (e.g. Xavier for linear layers, He/Kaiming for ReLU hidden layers) using configured seeds without dependence on accidental global RNG state.
+- **Deterministic Parameter Initialization**: Model parameters must be deterministically initialized (e.g. Xavier for linear layers, He/Kaiming for ReLU hidden layers and Conv2D kernels) using configured seeds without dependence on accidental global RNG state.
 - **Multi-Backend RNG Seeding**: Explicit initialization of seeds across Python standard library `random`, `PYTHONHASHSEED`, `numpy.random`, and PyTorch CPU/CUDA/MPS RNGs.
 - **Deterministic Dropout Masking**: Stochastic dropout masks during training must be deterministically derived from explicit experiment seed, layer index, and step counters. In evaluation mode, dropout must be strictly disabled (identity).
 - **Controlled Learning Rate Schedules**: Learning rate decay (Step, Cosine Annealing, Warmup) must be deterministic and logged into metric telemetry.
 - **Explicit Weight Decay Semantics**: Regularization must be applied through a single documented pathway (e.g. optimizer step) without duplicate loss penalties.
-- **Representation Extraction**: Intermediate hidden representations (`"input_flat"`, `"hidden_0"`, `"final_hidden"`) must be extracted without parameter mutation or stochastic dropout noise.
+- **Representation Extraction**: Intermediate hidden representations (`"input"`, `"final_spatial"`, `"final_hidden"`) must be extracted without parameter mutation or stochastic dropout noise.
 - **Code Revision Provenance**: Active Git commit SHA, branch, and working tree cleanliness (`-uno` tracked modifications) captured via `inspect_git_provenance()`.
 - **Hardware & Environment**: Python runtime version, host OS, primary compute backend, and installed versions of allowlisted dependencies (`pydantic`, `torch`, `torchvision`, etc.).
 
-### 3. No Silent Comparisons
+### 4. No Silent Comparisons
 PRISM strictly prohibits unrecorded or implicit divergences between experimental conditions. The following are non-negotiable prohibitions:
 - **No Hidden Split Alterations**: Test sets and validation sets are immutable once benchmark manifests are registered.
 - **No Uncontrolled Preprocessing**: Data pipelines must execute through deterministic abstractions in `prism.data`.
 - **No Selective Tuning**: Hyperparameter search budgets must be balanced across compared paradigms.
 - **No In-Place Evaluation Modifications**: Evaluation routines must never mutate model parameters or gradient buffers.
 
-### 4. Controlled Comparison Contracts
+### 5. Controlled Comparison Contracts
 All experimental comparisons must be formally defined via `ControlledComparison`, explicitly documenting:
 - The baseline and candidate experiment identifiers.
-- The isolated varied factor(s) (e.g. `{"dropout": {"baseline": 0.0, "candidate": 0.2}}` or `{"hidden_dims": {"baseline": [], "candidate": [128]}}`).
+- The isolated varied factor(s) (e.g. `{"model_family": {"baseline": "mlp", "candidate": "cnn"}}` or `{"conv_channels": {"baseline": [16, 32], "candidate": [32, 64]}}`).
 - The fixed invariant factors (dataset fingerprint, partition fingerprint, seed, optimization schedule).
 
-### 5. Experiment Traceability
+### 6. Experiment Traceability
 Every figure, table, metric entry, or embedding projection generated by PRISM must be traceable backwards through the provenance chain:
 
 ```
@@ -58,7 +69,7 @@ Artifact (Figure / Metric / Embedding)
 
 ---
 
-### 6. Honest Research
+### 7. Honest Research
 - **Zero Synthetic Results**: Synthetic, fabricated, or mocked results must never be committed as experimental findings.
 - **Explicit Labeling**: All artifacts and documentation must explicitly distinguish their status:
   - **Planned**: Conceptually defined experiments with pending implementation.

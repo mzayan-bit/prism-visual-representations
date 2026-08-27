@@ -54,9 +54,7 @@ def compute_conv2d_output_shape(
             f"kernel_size must be strictly positive, got ({k_h}, {k_w})."
         )
     if s_h <= 0 or s_w <= 0:
-        raise ValidationError(
-            f"stride must be strictly positive, got ({s_h}, {s_w})."
-        )
+        raise ValidationError(f"stride must be strictly positive, got ({s_h}, {s_w}).")
 
     eff_h = input_height + 2 * p_h
     eff_w = input_width + 2 * p_w
@@ -119,8 +117,7 @@ def compute_receptive_field(
     for idx, (k, s) in enumerate(stages):
         if k <= 0 or s <= 0:
             raise ValidationError(
-                f"Stage {idx} parameters must be positive, "
-                f"got kernel={k}, stride={s}."
+                f"Stage {idx} parameters must be positive, got kernel={k}, stride={s}."
             )
         rf += (k - 1) * jump
         jump *= s
@@ -146,20 +143,13 @@ def ensure_4d_tensor(data: Any) -> list[list[list[list[float]]]]:
                 if isinstance(third_elem, (list, tuple)):
                     # Already 4D: [N, C, H, W]
                     return [
-                        [
-                            [
-                                [float(val) for val in row]
-                                for row in ch
-                            ]
-                            for ch in sample
-                        ]
+                        [[[float(val) for val in row] for row in ch] for ch in sample]
                         for sample in data
                     ]
                 else:
                     # 3D: [C, H, W] -> wrap to [1, C, H, W]
                     single_sample = [
-                        [[float(val) for val in row] for row in ch]
-                        for ch in data
+                        [[float(val) for val in row] for row in ch] for ch in data
                     ]
                     return [single_sample]
 

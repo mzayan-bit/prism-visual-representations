@@ -255,9 +255,7 @@ class AvgPool2D:
                         grad_val = d_out[n][c][i][j] / window_area
                         for kh in range(self.k_h):
                             for kw in range(self.k_w):
-                                dx_pad[n][c][h_start + kh][
-                                    w_start + kw
-                                ] += grad_val
+                                dx_pad[n][c][h_start + kh][w_start + kw] += grad_val
 
         # Unpad dx_pad to [N, C, H_in, W_in]
         dx: list[list[list[list[float]]]] = []

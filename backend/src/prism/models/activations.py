@@ -46,15 +46,12 @@ def _gelu_backward_val(
     return dout_val * df_dx
 
 
-def _gelu_backward(
-    x: Any, d_out: Any, sqrt_2_over_pi: float, coeff: float
-) -> Any:
+def _gelu_backward(x: Any, d_out: Any, sqrt_2_over_pi: float, coeff: float) -> Any:
     if isinstance(x, list):
         if not isinstance(d_out, list) or len(x) != len(d_out):
             raise ValidationError("Shape mismatch in GELU backward.")
         return [
-            _gelu_backward(x[i], d_out[i], sqrt_2_over_pi, coeff)
-            for i in range(len(x))
+            _gelu_backward(x[i], d_out[i], sqrt_2_over_pi, coeff) for i in range(len(x))
         ]
     return _gelu_backward_val(float(x), float(d_out), sqrt_2_over_pi, coeff)
 

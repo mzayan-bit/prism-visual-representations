@@ -20,10 +20,10 @@ Rather than serving as another generic computer vision dashboard, model zoo, or 
 ## Project Status
 
 > [!NOTE]
-> **Active Development**: PRISM has completed **Phase 7: Deep Learning Baselines, MLPs, Regularization & Schedulers**.
-> The platform now supports non-linear deep learning architectures: Multi-Layer Perceptrons (`MultiLayerPerceptron`), non-linear activation functions (`ReLUActivation`, `GELUActivation`), He/Kaiming and Xavier parameter initialization (`initialize_mlp_parameters`), deterministic inverted dropout, learning rate schedules (`ConstantLRScheduler`, `StepLRScheduler`, `CosineAnnealingLRScheduler`, warmup), hidden representation extraction (`extract_representations`), and controlled scientific comparison contracts (`ControlledComparison`).
+> **Active Development**: PRISM has completed **Phase 8: CNN Foundations, Convolutional Feature Learning, Spatial Representations, Pooling & Controlled CNN Comparisons**.
+> The platform now supports spatially structured vision architectures: multi-channel 2D convolutions (`Conv2D`), analytical backpropagation w.r.t weights and inputs, deterministic He/Kaiming initialization (`initialize_conv2d_parameters`), spatial pooling (`MaxPool2D`, `AvgPool2D`), composable CNN models (`ConvolutionalNeuralNetwork` / `SimpleCNN`), receptive field tracking, intermediate spatial feature map extraction (`RepresentationDescriptor`, `RepresentationBatch`), and controlled scientific comparisons across Linear, MLP, and CNN paradigms (`ControlledComparison`).
 >
-> Convolutional architectures (CNNs, spatial feature maps, inductive biases) will be introduced in subsequent planned phases.
+> Vision Transformers (ViT), self-attention geometry, and self-supervised learning paradigms will be introduced in subsequent planned phases.
 
 ---
 
@@ -38,7 +38,7 @@ Rather than serving as another generic computer vision dashboard, model zoo, or 
 | **Phase 5** | Executable Dataset Pipeline & Deterministic Data Loading | :white_check_mark: Completed |
 | **Phase 6** | Linear Classifiers & Pixel Baselines | :white_check_mark: Completed |
 | **Phase 7** | Deep Learning Baselines (MLPs, Optimization & Regularization) | :white_check_mark: Completed |
-| **Phase 8** | Convolutional Architectures (CNNs & ResNets) | :hourglass_flowing_sand: Planned |
+| **Phase 8** | Convolutional Architectures (CNNs & Spatial Representations) | :white_check_mark: Completed |
 | **Phase 9** | Vision Transformers (ViT) & Attention Geometry | :hourglass_flowing_sand: Planned |
 | **Phase 10** | Self-Supervised Learning & Representation Analysis (CKA, Probes) | :hourglass_flowing_sand: Planned |
 | **Phase 11** | Robustness Under Corruptions & Distribution Shifts | :hourglass_flowing_sand: Planned |
@@ -56,9 +56,9 @@ Neural Networks & Backpropagation (MLPs)
        ↓
 Optimization, Schedulers & Regularization
        ↓
-Convolutional Architectures (CNNs)
+Convolutional Architectures & Spatial Feature Maps (CNNs)
        ↓
-Vision Transformers & Attention
+Vision Transformers & Attention Geometry
        ↓
 Self-Supervised Learning (Contrastive / Masked)
        ↓
@@ -91,10 +91,10 @@ prism-visual-representations/
 │   │       ├── core/          # Base domain contracts, enums, errors, identifiers
 │   │       ├── data/          # Samples, universes, materialization, ordering, batching
 │   │       ├── experiments/   # Experiment definitions, runs, harness, comparisons
-│   │       ├── models/        # Linear classifiers, MLPs, activations, specifications
+│   │       ├── models/        # Linear classifiers, MLPs, CNNs, Conv2D, pooling
 │   │       ├── training/      # Training engine, losses, SGD, schedulers, results
 │   │       ├── evaluation/    # Evaluation engine, metrics, and structured reports
-│   │       ├── representations/# Representation descriptors, feature batches
+│   │       ├── representations/# Representation descriptors, feature batches, spatial maps
 │   │       ├── robustness/    # Corruptions, distribution shifts, OOD tests
 │   │       ├── explainability/# Saliency, attention rollout, Grad-CAM
 │   │       ├── visualization/ # Projections (UMAP/t-SNE), figure generation

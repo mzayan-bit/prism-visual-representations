@@ -75,9 +75,7 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
                 f"Dropout probability must be in [0.0, 1.0), got {self.dropout_rate}."
             )
 
-        self.classifier_hidden_dims: list[int] = hp.get(
-            "classifier_hidden_dims", []
-        )
+        self.classifier_hidden_dims: list[int] = hp.get("classifier_hidden_dims", [])
 
         raw_kernel_sizes = hp.get("kernel_sizes", 3)
         raw_strides = hp.get("strides", 1)
@@ -156,9 +154,7 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
                 ps_h, ps_w = normalize_spatial_pair(
                     p_stride if p_stride is not None else p_size, "pool_stride"
                 )
-                self.stage_rf_tracking.append(
-                    (max(pk_h, pk_w), max(ps_h, ps_w))
-                )
+                self.stage_rf_tracking.append((max(pk_h, pk_w), max(ps_h, ps_w)))
 
                 cur_h, cur_w = compute_pool2d_output_shape(
                     input_height=cur_h,
@@ -218,9 +214,7 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
         rf, _ = compute_receptive_field(self.stage_rf_tracking)
         return rf
 
-    def _flatten_spatial(
-        self, x: list[list[list[list[float]]]]
-    ) -> list[list[float]]:
+    def _flatten_spatial(self, x: list[list[list[list[float]]]]) -> list[list[float]]:
         """Flatten 4D spatial feature tensor [N, C, H, W] to 2D vector matrix [N, D]."""
         n_samples = len(x)
         c_channels = len(x[0])
@@ -259,9 +253,7 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
             out_4d.append(sample_4d)
         return out_4d
 
-    def _convert_input_to_4d(
-        self, inputs: Any
-    ) -> list[list[list[list[float]]]]:
+    def _convert_input_to_4d(self, inputs: Any) -> list[list[list[list[float]]]]:
         """Safely convert arbitrary input batches (nested 4D or flattened 2D) to 4D."""
         if not isinstance(inputs, (list, tuple)) or not inputs:
             raise ValidationError("Input batch cannot be empty.")
@@ -396,9 +388,7 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
                 p_keep = 1.0 - self.dropout_rate
                 scale = 1.0 / p_keep
                 drop_seed = (
-                    (self.seed * 1000003)
-                    ^ (l_idx * 10007)
-                    ^ (self._step_counter * 31)
+                    (self.seed * 1000003) ^ (l_idx * 10007) ^ (self._step_counter * 31)
                 ) & 0x7FFFFFFF
                 rng = random.Random(drop_seed)
 
@@ -434,9 +424,7 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
             or not self._cached_block_states
             or not self._cached_fc_states
         ):
-            raise ValidationError(
-                "Cannot perform backward pass before forward pass."
-            )
+            raise ValidationError("Cannot perform backward pass before forward pass.")
 
         n_samples = len(d_logits)
         num_fc = len(self.fc_weights)
@@ -461,10 +449,7 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
                 mask = fc_state["dropout_mask"]
                 if mask is not None:
                     d_a = [
-                        [
-                            d_a[n][j] * mask[n][j]
-                            for j in range(len(d_a[0]))
-                        ]
+                        [d_a[n][j] * mask[n][j] for j in range(len(d_a[0]))]
                         for n in range(len(d_a))
                     ]
                 act = get_activation(self.activation_name)
@@ -507,11 +492,7 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
             block_state = self._cached_block_states[b_idx]
 
             # Backward Pool
-            d_act = (
-                pool.backward(cur_d_spatial)
-                if pool is not None
-                else cur_d_spatial
-            )
+            d_act = pool.backward(cur_d_spatial) if pool is not None else cur_d_spatial
 
             # Backward Activation
             d_conv = act.backward(block_state["conv_pre"], d_act)
@@ -520,9 +501,7 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
             d_prev_block = conv.backward(d_conv)
             cur_d_spatial = d_prev_block
 
-    def extract_representations(
-        self, inputs: Any, layer: str = "final_hidden"
-    ) -> Any:
+    def extract_representations(self, inputs: Any, layer: str = "final_hidden") -> Any:
         """Extract intermediate features or spatial feature maps in evaluation mode."""
         layer_norm = layer.strip().lower()
 
@@ -593,10 +572,7 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
             conv.zero_grad()
 
         self.grad_fc_weights: list[list[list[float]]] = [
-            [
-                [0.0 for _ in range(len(w[0]))]
-                for _ in range(len(w))
-            ]
+            [[0.0 for _ in range(len(w[0]))] for _ in range(len(w))]
             for w in self.fc_weights
         ]
         self.grad_fc_biases: list[list[float]] = [

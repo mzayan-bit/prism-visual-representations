@@ -73,8 +73,6 @@ class BaseVisionModel(ABC):
         ...
 
     @abstractmethod
-    def extract_representations(
-        self, inputs: Any, layer: str = "final_hidden"
-    ) -> Any:
+    def extract_representations(self, inputs: Any, layer: str = "final_hidden") -> Any:
         """Extract intermediate representations, feature vectors, or spatial maps."""
         ...

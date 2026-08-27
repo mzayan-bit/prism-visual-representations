@@ -44,12 +44,12 @@ TrainingEngine.train(...)
 TrainingResult (Consolidated execution metrics and evaluation summaries)
         │
         ▼
-extract_representations(...) (Expose intermediate hidden feature representations)
+extract_representations(...) (Extract intermediate spatial feature maps & vector embeddings)
 ```
 
 ---
 
-## Defining, Preparing, and Training a Deep MLP Experiment
+## Defining, Preparing, and Training a Convolutional Neural Network (CNN) Experiment
 
 ```python
 from prism.core.enums import (
@@ -62,7 +62,7 @@ from prism.core.enums import (
 from prism.data.adapters import CIFAR10Adapter
 from prism.data.manifests import ControlledDataReference, DatasetManifest
 from prism.data.preparer import DataPreparer
-from prism.models.mlp import MultiLayerPerceptron
+from prism.models.cnn import ConvolutionalNeuralNetwork
 from prism.models.specifications import ModelSpecification
 from prism.training.configuration import (
     TrainingConfiguration,
@@ -74,6 +74,10 @@ from prism.evaluation.configuration import EvaluationConfiguration, MetricSpecif
 from prism.experiments.definitions import ExperimentDefinition
 from prism.experiments.reproducibility import ReproducibilityConfiguration
 from prism.experiments.harness import ExperimentExecutionHarness
+from prism.representations.contracts import (
+    RepresentationDescriptor,
+    RepresentationBatch,
+)
 
 # 1. Obtain standardized CIFAR-10 manifests & 10% nested subset
 adapter = CIFAR10Adapter()
@@ -97,19 +101,24 @@ dataset = DatasetManifest(
     controlled_data=controlled_ref,
 )
 
-# 2. Declare Model Architecture (Deep Multi-Layer Perceptron)
+# 2. Declare Model Architecture (2-Block Spatial CNN)
 model = ModelSpecification(
-    model_id="model-cifar10-mlp",
-    name="CIFAR-10 2-Hidden-Layer MLP",
-    family=ModelFamily.MLP,
-    architecture="mlp",
+    model_id="model-cifar10-cnn",
+    name="CIFAR-10 2-Block ConvNet",
+    family=ModelFamily.CNN,
+    architecture="cnn",
     compatible_tasks=[TaskType.CLASSIFICATION],
     input_shape=(3, 32, 32),
     num_classes=10,
     hyperparameters={
-        "hidden_dims": [512, 256],
+        "conv_channels": [32, 64],
+        "kernel_sizes": 3,
+        "strides": 1,
+        "paddings": 1,
+        "pool_sizes": 2,
+        "pool_strides": 2,
         "activation": "relu",
-        "dropout": 0.2,
+        "dropout": 0.1,
     },
 )
 
@@ -134,8 +143,8 @@ evaluation = EvaluationConfiguration(
 
 # 4. Construct Immutable Experiment Definition
 experiment = ExperimentDefinition(
-    experiment_id="exp-cifar10-mlp-10pct",
-    name="CIFAR-10 MLP 10% Low-Data Baseline",
+    experiment_id="exp-cifar10-cnn-10pct",
+    name="CIFAR-10 CNN 10% Low-Data Baseline",
     task_type=TaskType.CLASSIFICATION,
     dataset=dataset,
     model=model,
@@ -184,21 +193,22 @@ result = engine.train(
     run=run,
 )
 
-# 8. Extract Intermediate Hidden Representations from Trained Model
-mlp_model = MultiLayerPerceptron(spec=model, seed=42)
+# 8. Extract Spatial Feature Maps and Final Vector Representations
+cnn_model = ConvolutionalNeuralNetwork(spec=model, seed=42)
 test_batch = [test_dataset[i].data for i in range(10)]
 
-hidden_0_reps = mlp_model.extract_representations(
-    test_batch, layer="hidden_0"
-)  # [10, 512]
-final_hidden_reps = mlp_model.extract_representations(
-    test_batch, layer="final_hidden"
-)  # [10, 256]
+# Extract intermediate spatial feature maps: [10, 64, 8, 8]
+spatial_maps = cnn_model.extract_representations(test_batch, layer="final_spatial")
+
+# Extract final flattened vector representations: [10, 4096]
+vector_reps = cnn_model.extract_representations(test_batch, layer="final_hidden")
 
 print(f"Run Status: {result.status}")
 print(f"Final Train Loss: {result.final_train_loss:.4f}")
 print(f"Test Accuracy: {result.summary_metrics.get('test_top1_accuracy', 0.0):.4f}")
 print(
-    f"Extracted Final Hidden Representation Shape: {len(final_hidden_reps)}x{len(final_hidden_reps[0])}"
+    f"Final Spatial Feature Map Shape: {len(spatial_maps)}x{len(spatial_maps[0])}x{len(spatial_maps[0][0])}x{len(spatial_maps[0][0][0])}"
 )
+print(f"Final Vector Representation Shape: {len(vector_reps)}x{len(vector_reps[0])}")
+print(f"Receptive Field: {cnn_model.receptive_field} pixels")
 ```

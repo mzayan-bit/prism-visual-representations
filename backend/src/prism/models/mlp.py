@@ -178,9 +178,7 @@ class MultiLayerPerceptron(BaseVisionModel):
 
         return logits
 
-    def extract_representations(
-        self, inputs: Any, layer: str = "final_hidden"
-    ) -> Any:
+    def extract_representations(self, inputs: Any, layer: str = "final_hidden") -> Any:
         """Extract intermediate activations without modifying model state."""
         norm_layer = layer.lower().strip()
         h_current = self._prepare_inputs(inputs)
