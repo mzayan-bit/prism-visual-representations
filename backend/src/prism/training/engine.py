@@ -6,7 +6,7 @@ import time
 import traceback
 from typing import TYPE_CHECKING, Any
 
-from prism.core.enums import RunStatus
+from prism.core.enums import ModelFamily, RunStatus
 from prism.core.errors import (
     TrainingError,
     ValidationError,
@@ -19,9 +19,11 @@ from prism.experiments.metrics import MetricRecord
 from prism.experiments.runs import ExperimentRun
 from prism.models.base import BaseVisionModel
 from prism.models.linear import LinearSoftmaxClassifier
+from prism.models.mlp import MultiLayerPerceptron
 from prism.training.loss import SoftmaxCrossEntropyLoss, compute_accuracy
 from prism.training.optimizers import BaseOptimizer, create_optimizer
 from prism.training.results import TrainingResult
+from prism.training.schedulers import create_scheduler
 
 if TYPE_CHECKING:
     from prism.evaluation.engine import EvaluationEngine
@@ -64,7 +66,9 @@ class TrainingEngine:
         - Validates compatibility across experiment definition and prepared context.
         - Respects ExperimentRun lifecycle state machine.
         - Employs deterministic epoch-aware batch ordering.
-        - Logs actual, finite metrics derived directly from model predictions.
+        - Supports Linear and MLP model architectures with activations and dropout.
+        - Evaluates learning rate schedules and logs actual LR telemetry.
+        - Strictly separates training mode (dropout active) from evaluation mode.
         - Transitions to COMPLETED on success, or FAILED on failure.
         """
         # 1. Compatibility Validation
@@ -89,14 +93,24 @@ class TrainingEngine:
                 f"Cannot start training run in status '{run_inst.status}'."
             )
 
-        # 2. Model & Optimizer Initialization
-        model_inst = model or LinearSoftmaxClassifier(
-            spec=experiment.model,
-            seed=experiment.reproducibility.seed or 42,
-        )
+        # 2. Model, Optimizer, and Scheduler Initialization
+        seed = experiment.reproducibility.seed or 42
+        if model is not None:
+            model_inst = model
+        elif experiment.model.family == ModelFamily.MLP:
+            model_inst = MultiLayerPerceptron(spec=experiment.model, seed=seed)
+        else:
+            model_inst = LinearSoftmaxClassifier(spec=experiment.model, seed=seed)
+
         optimizer: BaseOptimizer = create_optimizer(
             config=experiment.training.optimizer,
             model=model_inst,
+        )
+
+        scheduler = create_scheduler(
+            spec=experiment.training.scheduler,
+            base_lr=experiment.training.optimizer.lr,
+            total_epochs=experiment.training.epochs,
         )
 
         # 3. Transition to RUNNING
@@ -115,6 +129,24 @@ class TrainingEngine:
             for epoch in range(epochs):
                 train_loader.set_epoch(epoch)
 
+                # Update learning rate via scheduler
+                current_lr = scheduler.step(epoch)
+                optimizer.lr = current_lr
+
+                # Ensure model is in training mode for dropout / stochastic behavior
+                model_inst.train()
+
+                # Record learning rate metric for the current epoch
+                run_inst.add_metric(
+                    MetricRecord(
+                        metric_name="learning_rate",
+                        value=current_lr,
+                        split="train",
+                        epoch=epoch,
+                        step=total_batches,
+                    )
+                )
+
                 epoch_loss = 0.0
                 epoch_samples = 0
                 epoch_logits: list[list[float]] = []
@@ -122,14 +154,12 @@ class TrainingEngine:
 
                 for batch in train_loader:
                     logits = model_inst.forward(batch.data)
-                    weights = (
-                        model_inst.weights if hasattr(model_inst, "weights") else None
-                    )
+
+                    # Optimizer directly applies weight decay during step()
                     batch_loss, d_logits = self.loss_fn(
                         logits=logits,
                         targets=batch.targets,
-                        weight_decay=experiment.training.optimizer.weight_decay,
-                        weights=weights,
+                        weight_decay=0.0,
                     )
 
                     model_inst.zero_grad()
@@ -178,6 +208,7 @@ class TrainingEngine:
 
                 # Optional validation evaluation during training
                 if val_loader is not None:
+                    model_inst.eval()
                     val_report = self.eval_engine.evaluate(
                         model=model_inst,
                         loader=val_loader,
@@ -190,9 +221,11 @@ class TrainingEngine:
                     for rec in val_report.metric_records:
                         run_inst.add_metric(rec)
                     evaluation_reports.append(val_report)
+                    model_inst.train()
 
             # Post-training test evaluation
             if test_loader is not None:
+                model_inst.eval()
                 test_report = self.eval_engine.evaluate(
                     model=model_inst,
                     loader=test_loader,
@@ -208,9 +241,11 @@ class TrainingEngine:
                 evaluation_reports.append(test_report)
                 summary_metrics.update(test_report.summary_metrics)
 
+            model_inst.eval()
             duration = time.perf_counter() - start_time
             summary_metrics["final_train_loss"] = final_train_loss
             summary_metrics["final_train_accuracy"] = final_train_accuracy
+            summary_metrics["final_learning_rate"] = optimizer.lr
 
             # Complete Run Lifecycle
             run_inst.complete(summary_metrics=summary_metrics)

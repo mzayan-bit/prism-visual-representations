@@ -1,5 +1,6 @@
 """Experiment specification, deterministic execution, and run tracking."""
 
+from prism.experiments.comparisons import ControlledComparison
 from prism.experiments.context import PreparedExecution, RuntimeContext
 from prism.experiments.definitions import ExperimentDefinition
 from prism.experiments.environment import (
@@ -33,6 +34,7 @@ __all__ = [
     "ALLOWED_TRANSITIONS",
     "DEFAULT_ALLOWLIST_PACKAGES",
     "DEFAULT_EXCLUDED_KEYS",
+    "ControlledComparison",
     "ExperimentDefinition",
     "ExperimentExecutionHarness",
     "ExperimentRun",
