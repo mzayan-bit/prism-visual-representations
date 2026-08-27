@@ -1,3 +1,11 @@
-"""Representation geometry, similarity metrics, and linear probing."""
+"""Representation extraction, manifold analysis, and representation geometry."""
 
-__all__ = []
+from prism.representations.contracts import (
+    RepresentationBatch,
+    RepresentationDescriptor,
+)
+
+__all__ = [
+    "RepresentationBatch",
+    "RepresentationDescriptor",
+]

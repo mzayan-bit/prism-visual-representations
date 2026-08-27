@@ -11,6 +11,7 @@ class BaseVisionModel(ABC):
 
     def __init__(self, spec: ModelSpecification) -> None:
         self.spec = spec
+        self._is_training: bool = True
 
     @property
     def model_id(self) -> str:
@@ -25,6 +26,21 @@ class BaseVisionModel(ABC):
                 f"Model '{self.model_id}' does not have num_classes specified."
             )
         return self.spec.num_classes
+
+    @property
+    def is_training(self) -> bool:
+        """Return True if model is in training mode, False if in evaluation mode."""
+        return self._is_training
+
+    def train(self, mode: bool = True) -> "BaseVisionModel":
+        """Set training mode (enables dropout and training-specific behaviors)."""
+        self._is_training = mode
+        return self
+
+    def eval(self) -> "BaseVisionModel":
+        """Set evaluation mode (disables dropout and stochastic behaviors)."""
+        self._is_training = False
+        return self
 
     @abstractmethod
     def forward(self, inputs: Any) -> list[list[float]]:
@@ -54,4 +70,11 @@ class BaseVisionModel(ABC):
     @abstractmethod
     def get_gradients(self) -> dict[str, Any]:
         """Return a mapping of parameter names to their computed gradients."""
+        ...
+
+    @abstractmethod
+    def extract_representations(
+        self, inputs: Any, layer: str = "final_hidden"
+    ) -> list[list[float]]:
+        """Extract intermediate representations or activations at a specified layer."""
         ...

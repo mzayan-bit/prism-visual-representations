@@ -68,12 +68,11 @@ class LinearSoftmaxClassifier(BaseVisionModel):
         self.zero_grad()
         self._last_x: list[list[float]] | None = None
 
-    def forward(self, inputs: Any) -> list[list[float]]:
-        """Compute forward pass producing raw linear logits [B, num_classes]."""
+    def _prepare_inputs(self, inputs: Any) -> list[list[float]]:
+        """Flatten and validate batch of inputs into shape [B, in_features]."""
         if inputs is None:
             raise ValidationError("Model input cannot be None.")
 
-        # If inputs is a batch sequence of examples
         if isinstance(inputs, Sequence) and not isinstance(inputs, (str, bytes)):
             raw_batch = list(inputs)
         else:
@@ -82,9 +81,7 @@ class LinearSoftmaxClassifier(BaseVisionModel):
         if not raw_batch:
             raise ValidationError("Batch cannot be empty.")
 
-        batch_size = len(raw_batch)
         x_flat: list[list[float]] = []
-
         for idx, item in enumerate(raw_batch):
             flat = _flatten_single_input(item)
             if len(flat) != self.in_features:
@@ -93,8 +90,13 @@ class LinearSoftmaxClassifier(BaseVisionModel):
                     f"expected in_features={self.in_features}."
                 )
             x_flat.append(flat)
+        return x_flat
 
+    def forward(self, inputs: Any) -> list[list[float]]:
+        """Compute forward pass producing raw linear logits [B, num_classes]."""
+        x_flat = self._prepare_inputs(inputs)
         self._last_x = x_flat
+        batch_size = len(x_flat)
 
         # Matrix multiply: Z = XW + b
         # X: [B, D], W: [D, C], b: [C] -> Z: [B, C]
@@ -110,6 +112,25 @@ class LinearSoftmaxClassifier(BaseVisionModel):
             logits.append(row_logits)
 
         return logits
+
+    def extract_representations(
+        self, inputs: Any, layer: str = "final_hidden"
+    ) -> list[list[float]]:
+        """Extract representations at specified layer ('input_flat', 'final_hidden')."""
+        valid_layers = ("input_flat", "input", "final_hidden", "logits")
+        norm_layer = layer.lower().strip()
+        if norm_layer not in valid_layers:
+            raise ValidationError(
+                f"Unknown layer '{layer}' for LinearSoftmaxClassifier. "
+                f"Supported layers: {valid_layers}"
+            )
+
+        x_flat = self._prepare_inputs(inputs)
+        if norm_layer in ("input_flat", "input", "final_hidden"):
+            return x_flat
+
+        # 'logits'
+        return self.forward(inputs)
 
     def backward(self, d_logits: list[list[float]]) -> None:
         """Compute parameter gradients given loss derivatives d_logits [B, C]."""

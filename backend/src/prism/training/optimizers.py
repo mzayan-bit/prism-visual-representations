@@ -11,6 +11,18 @@ from prism.training.configuration import OptimizerSpecification
 class BaseOptimizer(ABC):
     """Abstract base class for model optimizers."""
 
+    @property
+    @abstractmethod
+    def lr(self) -> float:
+        """Current effective learning rate."""
+        ...
+
+    @lr.setter
+    @abstractmethod
+    def lr(self, value: float) -> None:
+        """Set current effective learning rate."""
+        ...
+
     @abstractmethod
     def step(self) -> None:
         """Perform a single optimization step updating model parameters."""
@@ -42,64 +54,90 @@ class SGDOptimizer(BaseOptimizer):
             raise ValidationError(f"Momentum must be in [0.0, 1.0], got {momentum}.")
 
         self.model = model
-        self.lr = lr
+        self._lr = lr
         self.momentum = momentum or 0.0
         self.weight_decay = weight_decay
 
-        # Initialize velocity buffers for parameters
+        # Initialize velocity buffers for arbitrary parameter dictionaries
         params = model.get_parameters()
         self.velocity: dict[str, Any] = {}
-        if "weights" in params:
-            weights = params["weights"]
-            self.velocity["weights"] = [
-                [0.0 for _ in range(len(weights[0]))] for _ in range(len(weights))
-            ]
-        if "bias" in params:
-            bias = params["bias"]
-            self.velocity["bias"] = [0.0 for _ in range(len(bias))]
+        for k, v in params.items():
+            if isinstance(v, list):
+                if v and isinstance(v[0], list):
+                    # 2D weight matrix
+                    self.velocity[k] = [
+                        [0.0 for _ in range(len(v[0]))] for _ in range(len(v))
+                    ]
+                else:
+                    # 1D bias vector
+                    self.velocity[k] = [0.0 for _ in range(len(v))]
+
+    @property
+    def lr(self) -> float:
+        return self._lr
+
+    @lr.setter
+    def lr(self, value: float) -> None:
+        if value < 0.0:
+            raise ValidationError(
+                f"Learning rate must be non-negative, got {value}."
+            )
+        self._lr = value
 
     def step(self) -> None:
         """Update model parameters using computed gradients."""
         params = self.model.get_parameters()
         grads = self.model.get_gradients()
 
-        if "weights" in params and "grad_weights" in grads:
-            weights = params["weights"]
-            grad_weights = grads["grad_weights"]
-            v_weights = self.velocity.get("weights")
+        for k, param_val in params.items():
+            grad_key = f"grad_{k}"
+            if grad_key not in grads:
+                continue
 
-            d_rows = len(weights)
-            c_cols = len(weights[0])
+            grad_val = grads[grad_key]
+            v_val = self.velocity.get(k)
 
-            for d in range(d_rows):
-                for c in range(c_cols):
-                    grad = grad_weights[d][c]
-                    if self.weight_decay > 0.0:
-                        grad += self.weight_decay * weights[d][c]
+            # Check if parameter is a 2D weight matrix
+            if (
+                isinstance(param_val, list)
+                and param_val
+                and isinstance(param_val[0], list)
+            ):
+                is_weight = "weight" in k.lower()
+                rows = len(param_val)
+                cols = len(param_val[0])
 
-                    if self.momentum > 0.0 and v_weights is not None:
-                        v_weights[d][c] = self.momentum * v_weights[d][c] + grad
-                        delta = v_weights[d][c]
+                for r in range(rows):
+                    for c in range(cols):
+                        g = grad_val[r][c]
+                        if is_weight and self.weight_decay > 0.0:
+                            g += self.weight_decay * param_val[r][c]
+
+                        if self.momentum > 0.0 and v_val is not None:
+                            v_val[r][c] = self.momentum * v_val[r][c] + g
+                            delta = v_val[r][c]
+                        else:
+                            delta = g
+
+                        param_val[r][c] -= self._lr * delta
+
+            # Check if parameter is a 1D vector (bias)
+            elif isinstance(param_val, list):
+                is_weight = "weight" in k.lower()
+                cols = len(param_val)
+
+                for c in range(cols):
+                    g = grad_val[c]
+                    if is_weight and self.weight_decay > 0.0:
+                        g += self.weight_decay * param_val[c]
+
+                    if self.momentum > 0.0 and v_val is not None:
+                        v_val[c] = self.momentum * v_val[c] + g
+                        delta = v_val[c]
                     else:
-                        delta = grad
+                        delta = g
 
-                    weights[d][c] -= self.lr * delta
-
-        if "bias" in params and "grad_bias" in grads:
-            bias = params["bias"]
-            grad_bias = grads["grad_bias"]
-            v_bias = self.velocity.get("bias")
-
-            c_cols = len(bias)
-            for c in range(c_cols):
-                grad_b = grad_bias[c]
-                if self.momentum > 0.0 and v_bias is not None:
-                    v_bias[c] = self.momentum * v_bias[c] + grad_b
-                    delta_b = v_bias[c]
-                else:
-                    delta_b = grad_b
-
-                bias[c] -= self.lr * delta_b
+                    param_val[c] -= self._lr * delta
 
         self.model.set_parameters(params)
 
@@ -122,5 +160,5 @@ def create_optimizer(
             weight_decay=config.weight_decay,
         )
     raise ConfigurationError(
-        f"Unsupported optimizer type '{config.type}'. Phase 6 baseline supports 'sgd'."
+        f"Unsupported optimizer type '{config.type}'. PRISM supports 'sgd'."
     )
