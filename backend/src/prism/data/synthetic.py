@@ -163,10 +163,13 @@ class SyntheticVisionAdapter(BenchmarkDatasetAdapter):
         canonical = self.get_canonical_manifest()
         record = canonical.get_sample(sample_id)
 
-        _c, h, w = self._image_shape
+        c, h, w = self._image_shape
         synthetic_payload = [
-            [(float(record.source_index % 255) / 255.0) for _ in range(w)]
-            for _ in range(h)
+            [
+                [(float((record.source_index + ch) % 255) / 255.0) for _ in range(w)]
+                for _ in range(h)
+            ]
+            for ch in range(c)
         ]
 
         return MaterializedSample(

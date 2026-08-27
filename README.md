@@ -20,10 +20,10 @@ Rather than serving as another generic computer vision dashboard, model zoo, or 
 ## Project Status
 
 > [!NOTE]
-> **Active Development**: PRISM has completed **Phase 5: Executable Dataset Pipeline & Deterministic Data Loading**.
-> The platform now provides runtime sample materialization (`MaterializedSample`, `MaterializedDataset`), deterministic data ordering strategies (`OrderingStrategy.SEQUENTIAL`, `FIXED_SHUFFLE`, `EPOCH_AWARE_SHUFFLE`), ordering fingerprints, reproducible batch loading with sample traceability (`DeterministicBatchLoader`, `MaterializedBatch`), and auditable data runtime context tracking (`DataRuntimeContext`, `DataPreparer`).
+> **Active Development**: PRISM has completed **Phase 6: Training Engine & Linear Softmax Baseline**.
+> The platform now features its first complete machine-learning loop: a CS231N-style multiclass linear softmax classifier (`LinearSoftmaxClassifier`), deterministic parameter initialization (`initialize_linear_parameters`), numerically stable cross-entropy loss with analytic gradients (`SoftmaxCrossEntropyLoss`), SGD optimization (`SGDOptimizer`), full run lifecycle execution (`TrainingEngine`), deterministic evaluation (`EvaluationEngine`), and immutable result recording (`TrainingResult`, `EvaluationReport`).
 >
-> Trainable linear classifiers, baseline training engines, and optimization lifecycles will be introduced in subsequent planned phases.
+> Deep learning baseline architectures (MLPs, regularization policies, learning rate schedulers) and convolutional vision models will be introduced in subsequent planned phases.
 
 ---
 
@@ -36,7 +36,7 @@ Rather than serving as another generic computer vision dashboard, model zoo, or 
 | **Phase 3** | Reproducibility Runtime Infrastructure, Seeding & Execution Harness | :white_check_mark: Completed |
 | **Phase 4** | Controlled Dataset Abstractions & Fixed Partition Manifests | :white_check_mark: Completed |
 | **Phase 5** | Executable Dataset Pipeline & Deterministic Data Loading | :white_check_mark: Completed |
-| **Phase 6** | Linear Classifiers & Pixel Baselines | :hourglass_flowing_sand: Planned |
+| **Phase 6** | Linear Classifiers & Pixel Baselines | :white_check_mark: Completed |
 | **Phase 7** | Deep Learning Baselines (MLPs, Optimization & Regularization) | :hourglass_flowing_sand: Planned |
 | **Phase 8** | Convolutional Architectures (CNNs & ResNets) | :hourglass_flowing_sand: Planned |
 | **Phase 9** | Vision Transformers (ViT) & Attention Geometry | :hourglass_flowing_sand: Planned |
@@ -91,9 +91,9 @@ prism-visual-representations/
 │   │       ├── core/          # Base domain contracts, enums, errors, identifiers
 │   │       ├── data/          # Samples, universes, materialization, ordering, batching
 │   │       ├── experiments/   # Experiment definitions, runs, harness, seeding, context
-│   │       ├── models/        # Vision backbones, probe heads, model registry
-│   │       ├── training/      # Deterministic training loops and optimization
-│   │       ├── evaluation/    # Metric evaluation, calibration, benchmarks
+│   │       ├── models/        # Linear classifiers, initializations, vision model specs
+│   │       ├── training/      # Training engine, losses, SGD optimizer, results
+│   │       ├── evaluation/    # Evaluation engine, metrics, and structured reports
 │   │       ├── representations/# CKA, linear probing, singular value spectra
 │   │       ├── robustness/    # Corruptions, distribution shifts, OOD tests
 │   │       ├── explainability/# Saliency, attention rollout, Grad-CAM
@@ -153,7 +153,6 @@ uv pip install -e ".[dev]"
 ### Frontend Setup
 ```bash
 cd frontend
-npm install
 npm run dev
 ```
 The development landing page will be available at `http://localhost:3000`.

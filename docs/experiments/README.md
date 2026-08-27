@@ -32,19 +32,20 @@ DataPreparer.prepare(prepared_execution, ...)
         └── Output MaterializedDataset + DeterministicBatchLoader + DataRuntimeContext
         │
         ▼
-ExperimentRun (Execution instance & lifecycle state machine)
+TrainingEngine.train(...)
         │
-        ├── [PLANNED] ➔ [RUNNING] ➔ [COMPLETED / FAILED / CANCELLED]
-        │
-        ├── Record MetricRecords & Register ArtifactReferences
+        ├── Execute Deterministic Epoch Loops (Forward -> Loss -> Backward -> SGD)
+        ├── Record Real-time MetricRecords into ExperimentRun
+        ├── Evaluate Test Partition via EvaluationEngine (EvaluationReport)
+        └── Transition Run Lifecycle (RUNNING -> COMPLETED)
         │
         ▼
-EvaluationReport (Immutable compiled evaluation summary)
+TrainingResult (Consolidated execution metrics and evaluation summaries)
 ```
 
 ---
 
-## Defining and Preparing a Controlled Experiment
+## Defining, Preparing, and Training a Controlled Experiment
 
 ```python
 from prism.core.enums import (
@@ -59,6 +60,7 @@ from prism.data.manifests import ControlledDataReference, DatasetManifest
 from prism.data.preparer import DataPreparer
 from prism.models.specifications import ModelSpecification
 from prism.training.configuration import TrainingConfiguration, OptimizerSpecification
+from prism.training.engine import TrainingEngine
 from prism.evaluation.configuration import EvaluationConfiguration, MetricSpecification
 from prism.experiments.definitions import ExperimentDefinition
 from prism.experiments.reproducibility import ReproducibilityConfiguration
@@ -86,21 +88,22 @@ dataset = DatasetManifest(
     controlled_data=controlled_ref,
 )
 
-# 2. Declare Model Architecture
+# 2. Declare Model Architecture (CS231N-Style Linear Softmax Baseline)
 model = ModelSpecification(
-    model_id="model-resnet18",
-    name="ResNet-18",
-    family=ModelFamily.RESNET,
-    architecture="resnet18",
+    model_id="model-linear-softmax",
+    name="Linear Softmax Classifier",
+    family=ModelFamily.LINEAR,
+    architecture="linear_softmax",
     compatible_tasks=[TaskType.CLASSIFICATION],
+    input_shape=(3, 32, 32),
     num_classes=10,
 )
 
 # 3. Declare Training & Evaluation Budget
 training = TrainingConfiguration(
-    epochs=100,
-    batch_size=128,
-    optimizer=OptimizerSpecification(type="adamw", lr=1e-3),
+    epochs=10,
+    batch_size=64,
+    optimizer=OptimizerSpecification(type="sgd", lr=0.01, weight_decay=1e-4),
     precision=PrecisionMode.FP32,
 )
 
@@ -114,8 +117,8 @@ evaluation = EvaluationConfiguration(
 
 # 4. Construct Immutable Experiment Definition
 experiment = ExperimentDefinition(
-    experiment_id="exp-cifar10-resnet18-10pct",
-    name="CIFAR-10 ResNet-18 10% Low-Data Regime",
+    experiment_id="exp-cifar10-linear-10pct",
+    name="CIFAR-10 Linear Softmax 10% Low-Data Baseline",
     task_type=TaskType.CLASSIFICATION,
     dataset=dataset,
     model=model,
@@ -128,57 +131,43 @@ experiment = ExperimentDefinition(
 harness = ExperimentExecutionHarness()
 run, prepared_context = harness.prepare(experiment)
 
-# 6. Explicitly Prepare Materialized Data and Batch Loader
+# 6. Materialize Train and Test Datasets
 preparer = DataPreparer()
-mat_dataset, batch_loader, data_context = preparer.prepare(
+train_dataset, train_loader, _ = preparer.prepare(
     adapter=adapter,
     canonical_manifest=canonical,
     partition_manifest=partition,
     subset_manifest=subset_10pct,
-    batch_size=128,
+    batch_size=64,
     ordering_strategy=OrderingStrategy.EPOCH_AWARE_SHUFFLE,
     seed=42,
-    epoch=0,
     prepared_execution=prepared_context,
 )
 
-print(f"Materialized samples: {len(mat_dataset)}")
-print(f"Batches per epoch: {len(batch_loader)}")
-print(f"Ordering fingerprint: {data_context.ordering_fingerprint}")
-```
-
----
-
-## Executing and Tracking a Run
-
-```python
-from prism.experiments.metrics import MetricRecord
-from prism.artifacts.contracts import ArtifactReference
-from prism.core.enums import ArtifactType
-
-# Start planned run
-run.start()
-
-# Iterate through traceable batches
-for batch in batch_loader:
-    # batch.sample_ids contains traceable sample identities
-    # batch.data contains preprocessed payload
-    pass
-
-# Record telemetry during training/evaluation
-run.add_metric(MetricRecord(metric_name="top1_accuracy", value=0.885, split="test"))
-
-# Register produced artifacts
-run.add_artifact(
-    ArtifactReference(
-        artifact_id="art-checkpoint-best",
-        artifact_type=ArtifactType.CHECKPOINT,
-        logical_name="best_checkpoint",
-        uri="artifacts/checkpoints/best.pt",
-        producing_run_id=run.run_id,
-    )
+test_dataset, test_loader, _ = preparer.prepare(
+    adapter=adapter,
+    canonical_manifest=canonical,
+    partition_manifest=partition,
+    split_name="test",
+    batch_size=100,
+    ordering_strategy=OrderingStrategy.SEQUENTIAL,
+    seed=42,
+    prepared_execution=prepared_context,
 )
 
-# Complete run
-run.complete(summary_metrics={"top1_accuracy": 0.885})
+# 7. Execute Training and Evaluation Loop
+engine = TrainingEngine()
+result = engine.train(
+    experiment=experiment,
+    prepared_execution=prepared_context,
+    train_dataset=train_dataset,
+    train_loader=train_loader,
+    test_dataset=test_dataset,
+    test_loader=test_loader,
+    run=run,
+)
+
+print(f"Run Status: {result.status}")
+print(f"Final Train Loss: {result.final_train_loss:.4f}")
+print(f"Test Accuracy: {result.summary_metrics.get('test_top1_accuracy', 0.0):.4f}")
 ```

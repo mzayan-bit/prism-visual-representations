@@ -14,9 +14,9 @@ prism-visual-representations/
 │   │       ├── core/          # Base enums, identifiers, errors, metadata
 │   │       ├── data/          # Samples, universes, materialization, ordering, batching
 │   │       ├── experiments/   # Experiment definitions, runs, harness, seeding, context
-│   │       ├── models/        # Vision model specifications and registries
-│   │       ├── training/      # Training configurations and optimizer policies
-│   │       ├── evaluation/    # Evaluation configurations and structured reports
+│   │       ├── models/        # Linear classifiers, initializations, vision model specs
+│   │       ├── training/      # Training engine, losses, SGD optimizer, results
+│   │       ├── evaluation/    # Evaluation engine, metrics, and structured reports
 │   │       ├── representations/# CKA, linear probing, singular value spectra
 │   │       ├── robustness/    # Corruptions, distribution shifts, OOD tests
 │   │       ├── explainability/# Saliency, attention rollout, Grad-CAM
@@ -52,83 +52,65 @@ prism-visual-representations/
 
 ---
 
-## Executable Dataset Pipeline & Deterministic Batching
+## Trainable Baseline & Training Engine Architecture
 
-Phase 5 introduces the executable dataset layer that turns controlled sample identities into machine-learning-ready examples, deterministic batches, and auditable runtime context.
+Phase 6 introduces the first end-to-end learning loop: a CS231N-style Linear Softmax Classifier optimized via SGD on deterministic batches.
 
 ```
 ExperimentDefinition
         │
         ▼
-Controlled Dataset References (Canonical Manifest, Partition Manifest, Subset Manifest)
+Runtime Preparation (ExperimentExecutionHarness.prepare)
         │
         ▼
-Dataset Materializer (Exact Sample Resolution & Integrity Validation)
+Materialized Dataset & Deterministic Batches (DataPreparer)
         │
         ▼
-Executable Preprocessing (Deterministic resize, crop, and normalization transforms)
+LinearSoftmaxClassifier (scores = xW + b)
+        │
+        ├── 1. Flatten Input: [B, C, H, W] -> [B, D]
+        ├── 2. Forward Pass: Z = XW + b -> Raw Logits [B, num_classes]
         │
         ▼
-MaterializedDataset (In-memory indexed dataset preserving sample IDs)
+SoftmaxCrossEntropyLoss (Numerically Stabilized)
+        │
+        ├── 3. Loss = - (1/B) * sum(log(P_yi)) + (1/2) * lambda * ||W||^2
+        ├── 4. Analytic Gradient: dZ = (P - 1(y==c)) / B
         │
         ▼
-Deterministic Ordering (Sequential / Fixed Shuffle / Epoch-Aware Shuffle)
-        │ ── SHA-256 Ordering Fingerprint
-        ▼
-Deterministic Batch Loader (Batches preserving payload, labels, and sample_id traceability)
+Backward Pass & Optimization (SGDOptimizer)
+        │
+        ├── 5. Parameter Gradients: dW = X^T @ dZ + lambda * W, db = sum(dZ)
+        ├── 6. Parameter Update: W <- W - lr * (mu * v_W + dW)
         │
         ▼
-DataRuntimeContext (Auditable metadata context bound to execution)
+Evaluation Engine & Metrics Logging
+        │
+        ├── 7. MetricRecords logged into ExperimentRun
+        ├── 8. EvaluationReport on Test Partition
+        │
+        ▼
+TrainingResult & Completed Run Lifecycle
 ```
 
-### 1. `MaterializedSample` & `MaterializedDataset` (`prism.data.materialized`)
-- **`MaterializedSample`**: Immutable runtime payload containing data (array/tensor), target label, source coordinates, and unique `sample_id`.
-- **`MaterializedDataset`**: In-memory indexed dataset providing deterministic random access, slicing, and transform pipeline binding without mutating original manifests.
+### 1. `LinearSoftmaxClassifier` (`prism.models.linear`)
+- Multiclass linear model computing $Z = XW + b$.
+- Flattens multidimensional image inputs into $[B, D]$ feature vectors.
+- Initializes parameters deterministically via `initialize_linear_parameters`.
 
-### 2. `DatasetMaterializer` (`prism.data.materializer`)
-- Resolves requested sample IDs against provider adapters (`SyntheticVisionAdapter`, `CIFAR10Adapter`, `CIFAR100Adapter`).
-- Enforces strict validation: source index, source split, and target labels must match manifest identities.
+### 2. `SoftmaxCrossEntropyLoss` (`prism.training.loss`)
+- Numerically stabilized cross-entropy loss consuming raw logits and target class indices.
+- Computes exact analytic gradients $dZ$ for backpropagation without double-softmaxing.
 
-### 3. Deterministic Data Ordering (`prism.data.ordering`)
-- **`OrderingStrategy`**:
-  - `SEQUENTIAL`: Canonical manifest order (ideal for validation and test evaluation).
-  - `FIXED_SHUFFLE`: Deterministic shuffle using a fixed base seed.
-  - `EPOCH_AWARE_SHUFFLE`: Deterministic shuffle using combined `(seed, epoch)` arithmetic.
-- **`compute_ordering_fingerprint(...)`**: Deterministic SHA-256 digest capturing exact sample sequence, strategy, seed, and epoch.
+### 3. `SGDOptimizer` (`prism.training.optimizers`)
+- Stochastic Gradient Descent optimizer supporting momentum ($\mu$) and L2 weight decay ($\lambda$).
+- Factory function `create_optimizer` binding from declarative `OptimizerSpecification`.
 
-### 4. Batch Traceability (`prism.data.batching`)
-- **`MaterializedBatch`**: Preserves batch index, batch size, inputs, targets, and the exact list of `sample_ids` contained in every batch.
-- **`DeterministicBatchLoader`**: Pure Python / CPU-safe batch iterator with explicit `drop_last` behavior.
-
-### 5. `DataPreparer` & `DataRuntimeContext` (`prism.data.preparer`, `prism.data.context`)
-- Bridges `PreparedExecution` with physical data materialization.
-- Produces immutable `DataRuntimeContext` storing canonical fingerprint, partition fingerprint, subset fingerprint, ordering fingerprint, batch size, and adapter metadata.
-
----
-
-## Reproducibility Runtime & Experiment Harness
-
-The PRISM Reproducibility Runtime bridges immutable experiment definitions and physical execution by preparing, probing, and auditing the runtime environment before any ML workload starts.
-
-```
-ExperimentDefinition (Immutable Scientific Intent)
-        │
-        ├── Validate Task & Model Compatibility
-        │
-        ▼
-ExperimentExecutionHarness.prepare(experiment)
-        │
-        ├── 1. Compute SHA-256 Configuration Fingerprint
-        ├── 2. Inspect Git Provenance (commit, branch, dirty tracking)
-        ├── 3. Probe Hardware & Compute Backends (CPU, CUDA, Apple Silicon MPS)
-        ├── 4. Capture Environment Snapshot (Python version, OS, allowlisted packages)
-        ├── 5. Initialize Multi-Backend RNG (Python, NumPy, PyTorch CPU/CUDA/MPS)
-        └── 6. Bind Provenance & Environment to ExperimentRun (PLANNED)
-        │
-        ▼
-PreparedExecution / RuntimeContext
-(Immutable audit trail ready for future training engines)
-```
+### 4. `TrainingEngine` & `EvaluationEngine` (`prism.training.engine`, `prism.evaluation.engine`)
+- Manages complete `ExperimentRun` lifecycle (`PLANNED` -> `RUNNING` -> `COMPLETED` / `FAILED`).
+- Enforces epoch-aware batch ordering per training epoch.
+- Evaluates test and validation splits without gradient computation or weight modification.
+- Returns immutable `TrainingResult` summary.
 
 ---
 
@@ -141,13 +123,13 @@ Defines system-wide primitives (`enums`, `identifiers`, `errors`, `metadata`).
 Manifests, sample records, canonical universes, partition generators, nested subsets, dataset materialization, deterministic ordering, and batch loading.
 
 ### `prism.models`
-Framework-neutral model descriptions (`ModelSpecification`) across CNNs, Transformers, and Self-Supervised backbones.
+Declarative model specifications (`ModelSpecification`), base vision model contract (`BaseVisionModel`), deterministic parameter initializations, and linear classifier baselines.
 
 ### `prism.training`
-Validated optimization configurations (`TrainingConfiguration`, `OptimizerSpecification`, `SchedulerSpecification`, `GradientClipping`).
+Training configurations (`TrainingConfiguration`), numerical losses (`SoftmaxCrossEntropyLoss`), optimizers (`SGDOptimizer`), training engine (`TrainingEngine`), and execution results (`TrainingResult`).
 
 ### `prism.evaluation`
-Standardized evaluation protocols (`EvaluationConfiguration`, `MetricSpecification`, `EvaluationReport`).
+Standardized evaluation protocols (`EvaluationConfiguration`, `MetricSpecification`), evaluation engine (`EvaluationEngine`), and structured reports (`EvaluationReport`).
 
 ### `prism.artifacts`
 Artifact tracking contracts (`ArtifactReference`) storing logical keys, storage URIs, checksums, and generating run IDs.

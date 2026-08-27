@@ -1,6 +1,7 @@
 """Numerically stable softmax cross-entropy loss and classification metrics."""
 
 import math
+from collections.abc import Sequence
 
 from prism.core.errors import NumericalInstabilityError, ValidationError
 
@@ -11,7 +12,7 @@ class SoftmaxCrossEntropyLoss:
     def __call__(
         self,
         logits: list[list[float]],
-        targets: list[int | str | None],
+        targets: Sequence[int | str | None],
         weight_decay: float = 0.0,
         weights: list[list[float]] | None = None,
     ) -> tuple[float, list[list[float]]]:
@@ -21,7 +22,7 @@ class SoftmaxCrossEntropyLoss:
         ----------
         logits : list[list[float]]
             Raw model logits of shape [B, C].
-        targets : list[int | str | None]
+        targets : Sequence[int | str | None]
             Ground-truth integer category labels of length B.
         weight_decay : float
             L2 regularization coefficient lambda >= 0.0.
@@ -119,7 +120,7 @@ class SoftmaxCrossEntropyLoss:
 
 def compute_accuracy(
     logits: list[list[float]],
-    targets: list[int | str | None],
+    targets: Sequence[int | str | None],
 ) -> float:
     """Compute Top-1 classification accuracy for predictions against ground truth."""
     if not logits or not targets:
