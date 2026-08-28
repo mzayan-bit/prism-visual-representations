@@ -66,7 +66,16 @@ When studying learning rate control strategies (Constant, Step, Exponential, Cos
 - **Controlled Schedule Comparisons**: Schedule comparisons must be formally defined via `create_scheduler_comparison()`, holding dataset, architecture, initialization, batch size, and total training budgets strictly invariant.
 - **Scientific Humility**: PRISM documentation and findings must not claim that any particular schedule guarantees superior performance across all datasets or architectures; empirical effects on convergence rate, final loss, and representation geometry must be evaluated objectively.
 
-### 5. Strict Reproducibility & Deep Learning Invariants
+### 6. Vision Transformer & Self-Attention Standards
+When investigating patch representations and self-attention operations:
+- **Explicit Patch Geometry**: Images must be partitioned into non-overlapping patches using a documented, row-major spatial sequence. Analytical backward passes must reconstruct original spatial image dimensions exactly without coordinate distortion.
+- **Global Contextual Dependency**: Self-attention maps pairs of tokens globally across sequence positions ($L \times L$) unlike localized sliding convolutional receptive fields.
+- **Multi-Head Subspace Diversity**: Multiple attention heads project inputs into independent subspaces ($D_{\text{head}} = D_{\text{embed}} / H$), enabling the model to jointly attend to information from different representation subspaces at different positions.
+- **Shared Class Token Discipline**: The learnable class token $[1, 1, D_{\text{embed}}]$ is shared across all batch items. Parameter updates must aggregate gradients across the entire batch dimension.
+- **Exact Analytical Gradient Routing**: Upstream gradients must propagate analytically through softmax derivatives and all three projection paths ($Q, K, V$), accumulating exactly into the input gradient $dX = dX_Q + dX_K + dX_V$.
+- **Attention Distribution Audits**: Attention weight matrices must be monitored using `summarize_attention_weights` (`AttentionTensorSummary`), validating row normalization ($\sum_j A_{ij} = 1$) and tracking Shannon entropy without corrupting or mutating forward state.
+
+### 7. Strict Reproducibility & Deep Learning Invariants
 Every experimental result generated in PRISM must be fully reproducible and explicitly audited prior to execution:
 - **Configuration Fingerprinting**: Semantic SHA-256 digests (`compute_fingerprint()`) calculated over model, data, partition, subset, scheduler, and optimizer specifications.
 - **Deterministic Parameter Initialization**: Model parameters must be deterministically initialized (e.g. Xavier for linear layers, He/Kaiming for ReLU hidden layers and Conv2D kernels, $\gamma=1, \beta=0$ for normalization) using configured seeds without dependence on accidental global RNG state.

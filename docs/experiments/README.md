@@ -240,3 +240,48 @@ comparison = create_scheduler_comparison(
 
 print(f"Comparison Fingerprint: {comparison.compute_fingerprint()}")
 ```
+
+---
+
+## Vision Transformer Foundations & Attention Analysis
+
+```python
+from prism.models.patches import (
+    PatchExtractor,
+    PatchEmbedding,
+    ClassToken,
+    PositionalEmbedding,
+)
+from prism.models.attention import MultiHeadSelfAttention
+from prism.representations.attention import summarize_attention_weights
+
+# 1. Extract 4x4 non-overlapping patches from 32x32 image (64 patches of dim 48)
+patch_ext = PatchExtractor(patch_size=4)
+patches = patch_ext.forward(image_batch)  # [N, 64, 48]
+
+# 2. Linear projection to embedding dimension (48 -> 128)
+patch_emb = PatchEmbedding(in_features=48, embed_dim=128, seed=42)
+tokens = patch_emb.forward(patches)  # [N, 64, 128]
+
+# 3. Prepend learnable classification token [1, 1, 128] -> 65 tokens
+cls_token = ClassToken(embed_dim=128, seed=42)
+tokens_with_cls = cls_token.forward(tokens)  # [N, 65, 128]
+
+# 4. Add learnable 1D position embeddings
+pos_emb = PositionalEmbedding(num_positions=65, embed_dim=128, seed=42)
+embedded_tokens = pos_emb.forward(tokens_with_cls)  # [N, 65, 128]
+
+# 5. Multi-Head Self-Attention (128 dim, 4 heads -> 32 dim per head)
+mhsa = MultiHeadSelfAttention(embed_dim=128, num_heads=4, seed=42)
+contextualized_tokens = mhsa.forward(embedded_tokens)  # [N, 65, 128]
+
+# 6. Audit attention distributions across heads
+attn_summary = summarize_attention_weights(mhsa.last_attention_weights)
+print(f"Mean Attention Entropy: {attn_summary.mean_entropy:.4f} nats")
+print(f"Row Normalized: {attn_summary.is_row_normalized}")
+for head in attn_summary.head_summaries:
+    print(
+        f"Head {head.head_index}: entropy={head.entropy:.4f}, min={head.min_value:.4f}, max={head.max_value:.4f}"
+    )
+```
+

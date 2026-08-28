@@ -20,10 +20,10 @@ Baselines                  Residual Learning                Self-Supervision
 ## Project Status
 
 > [!NOTE]
-> **Active Development**: PRISM has completed **Phase 11: Learning Rate Scheduling & Reproducible Optimization Control**.
-> The platform supports explicit, reproducible learning rate schedulers (`ConstantLRScheduler`, `StepLRScheduler`, `ExponentialLRScheduler`, `CosineAnnealingLRScheduler`, `LinearWarmupScheduler`, `WarmupScheduler`), serializable snapshot contracts (`SchedulerState`), declarative configuration schemas (`SchedulerSpecification`), deterministic training engine integration with step and epoch level scheduling, and auditable controlled comparisons (`create_scheduler_comparison`).
+> **Active Development**: PRISM is implementing **Phase 12: Vision Transformers (ViT) & Attention Geometry**.
+> The platform has established foundational Vision Transformer operations: spatial patch extraction with analytical 2D backward reconstruction (`PatchExtractor`), linear patch embedding (`PatchEmbedding`), shared class token injection with batch gradient accumulation (`ClassToken`), learnable 1D positional embeddings (`PositionalEmbedding`), numerically stable scaled dot-product attention (`ScaledDotProductAttention`), and multi-head self-attention with complete analytical backpropagation through projections (`MultiHeadSelfAttention`). Attention weight distributions are monitored through statistical contracts (`AttentionTensorSummary`, `AttentionHeadSummary`).
 >
-> Vision Transformers (ViT), self-attention geometry, and self-supervised learning paradigms will be introduced in subsequent planned phases.
+> Full Vision Transformer model integration, transformer encoder blocks, and observatory UI interfaces will be completed in subsequent prompts.
 
 ---
 
@@ -42,7 +42,7 @@ Baselines                  Residual Learning                Self-Supervision
 | **Phase 9** | Normalization, Stable Optimization & Feature Distribution Tracking | :white_check_mark: Completed |
 | **Phase 10** | Residual Learning, Skip Connections, Plain-vs-ResNet & Gradient Flow | :white_check_mark: Completed |
 | **Phase 11** | Learning Rate Scheduling & Reproducible Optimization Control | :white_check_mark: Completed |
-| **Phase 12** | Vision Transformers (ViT) & Attention Geometry | :hourglass_flowing_sand: Planned |
+| **Phase 12** | Vision Transformers (ViT) & Attention Geometry | :hourglass_flowing_sand: In Progress |
 | **Phase 13** | Self-Supervised Learning & Representation Analysis (CKA, Probes) | :hourglass_flowing_sand: Planned |
 | **Phase 14** | Robustness Under Corruptions & Distribution Shifts | :hourglass_flowing_sand: Planned |
 | **Phase 15** | Comparative Explainability (Attributions, Rollout, Grad-CAM) | :hourglass_flowing_sand: Planned |
