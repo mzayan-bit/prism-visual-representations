@@ -1,4 +1,4 @@
-"""Model architectures, spatial layers, CNNs, and parameter initializations."""
+"""Model architectures, spatial layers, CNNs, and normalization."""
 
 from prism.models.activations import (
     BaseActivation,
@@ -16,6 +16,12 @@ from prism.models.initialization import (
 )
 from prism.models.linear import LinearSoftmaxClassifier
 from prism.models.mlp import MultiLayerPerceptron
+from prism.models.normalization import (
+    BaseNormalization,
+    BatchNorm1D,
+    BatchNorm2D,
+    get_normalization,
+)
 from prism.models.pooling import AvgPool2D, MaxPool2D
 from prism.models.spatial import (
     compute_conv2d_output_shape,
@@ -28,7 +34,10 @@ from prism.models.specifications import ModelSpecification
 __all__ = [
     "AvgPool2D",
     "BaseActivation",
+    "BaseNormalization",
     "BaseVisionModel",
+    "BatchNorm1D",
+    "BatchNorm2D",
     "Conv2D",
     "ConvolutionalNeuralNetwork",
     "GELUActivation",
@@ -43,6 +52,7 @@ __all__ = [
     "compute_receptive_field",
     "ensure_4d_tensor",
     "get_activation",
+    "get_normalization",
     "initialize_conv2d_parameters",
     "initialize_linear_parameters",
     "initialize_mlp_parameters",
