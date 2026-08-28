@@ -11,8 +11,8 @@ PRISM is an open-source, research-oriented computer vision platform engineered t
     ┌───────────────────────────────┼───────────────────────────────┐
     ▼                               ▼                               ▼
 Linear & Shallow           Deep Convolutions &              Transformers &
-Baselines                  Normalization                    Self-Supervision
-(Softmax, Linear)          (MLP, Conv2D, BatchNorm, CNN)   (ViT, Self-Attn, SSL)
+Baselines                  Residual Learning                Self-Supervision
+(Softmax, Linear)          (MLP, CNN, ResNet, GradFlow)     (ViT, Self-Attn, SSL)
 ```
 
 ---
@@ -20,8 +20,8 @@ Baselines                  Normalization                    Self-Supervision
 ## Project Status
 
 > [!NOTE]
-> **Active Development**: PRISM has completed **Phase 9: Normalization, Stable CNN Optimization, Feature Distribution Tracking, and Controlled Normalization Comparisons**.
-> The platform supports vector and spatial batch normalization layers (`BatchNorm1D`, `BatchNorm2D`), strict train/eval mode semantics with exponential moving average running statistics tracking, clean separation between trainable affine parameters ($\gamma, \beta$) and non-trainable state (`running_mean`, `running_var`), normalization-augmented CNN and MLP models, statistical feature distribution summaries (`FeatureDistributionSummary`, `compute_distribution_summary`), representation stability comparison utilities (`compare_distribution_summaries`), and auditable controlled comparisons (`create_normalization_comparison`).
+> **Active Development**: PRISM has completed **Phase 10: Residual Learning, Explicit Skip Connections, Residual Blocks, Deep Plain-vs-Residual CNN Comparisons, and Gradient-Flow Research Infrastructure**.
+> The platform supports explicit residual skip connections (`ResidualAdd`, `IdentityShortcut`, `ProjectionShortcut`, `ResidualBlock`), composable multi-stage residual vision models (`ResidualNeuralNetwork` / `SimpleResNet`), depth-wise gradient flow summaries (`ParameterGradientSummary`, `ModelGradientFlowSummary`), gradient flow comparison utilities (`compare_gradient_flow_summaries`), and auditable controlled comparisons (`create_residual_comparison`).
 >
 > Vision Transformers (ViT), self-attention geometry, and self-supervised learning paradigms will be introduced in subsequent planned phases.
 
@@ -40,11 +40,12 @@ Baselines                  Normalization                    Self-Supervision
 | **Phase 7** | Deep Learning Baselines (MLPs, Optimization & Regularization) | :white_check_mark: Completed |
 | **Phase 8** | Convolutional Architectures (CNNs & Spatial Representations) | :white_check_mark: Completed |
 | **Phase 9** | Normalization, Stable Optimization & Feature Distribution Tracking | :white_check_mark: Completed |
-| **Phase 10** | Vision Transformers (ViT) & Attention Geometry | :hourglass_flowing_sand: Planned |
-| **Phase 11** | Self-Supervised Learning & Representation Analysis (CKA, Probes) | :hourglass_flowing_sand: Planned |
-| **Phase 12** | Robustness Under Corruptions & Distribution Shifts | :hourglass_flowing_sand: Planned |
-| **Phase 13** | Comparative Explainability (Attributions, Rollout, Grad-CAM) | :hourglass_flowing_sand: Planned |
-| **Phase 14** | Downstream Dense Transfer (Detection & Segmentation) | :hourglass_flowing_sand: Planned |
+| **Phase 10** | Residual Learning, Skip Connections, Plain-vs-ResNet & Gradient Flow | :white_check_mark: Completed |
+| **Phase 11** | Vision Transformers (ViT) & Attention Geometry | :hourglass_flowing_sand: Planned |
+| **Phase 12** | Self-Supervised Learning & Representation Analysis (CKA, Probes) | :hourglass_flowing_sand: Planned |
+| **Phase 13** | Robustness Under Corruptions & Distribution Shifts | :hourglass_flowing_sand: Planned |
+| **Phase 14** | Comparative Explainability (Attributions, Rollout, Grad-CAM) | :hourglass_flowing_sand: Planned |
+| **Phase 15** | Downstream Dense Transfer (Detection & Segmentation) | :hourglass_flowing_sand: Planned |
 
 ---
 
@@ -60,6 +61,8 @@ Optimization, Schedulers & Regularization
 Convolutional Architectures & Spatial Feature Maps (CNNs)
        ↓
 Batch Normalization & Representation Distribution Stability
+       ↓
+Residual Learning, Explicit Skip Connections & Gradient Flow
        ↓
 Vision Transformers & Attention Geometry
        ↓
@@ -94,8 +97,8 @@ prism-visual-representations/
 │   │       ├── core/          # Base enums, identifiers, errors, metadata
 │   │       ├── data/          # Samples, universes, materialization, ordering, batching
 │   │       ├── experiments/   # Definitions, runs, harness, seeding, comparisons
-│   │       ├── models/        # Linear, MLP, CNN models, conv2d, pooling, normalization
-│   │       ├── training/      # Training engine, losses, SGD, LR schedulers, results
+│   │       ├── models/        # Linear, MLP, CNN, ResNet, residual blocks, conv2d, pooling, norm
+│   │       ├── training/      # Training engine, losses, SGD, schedulers, gradient flow
 │   │       ├── evaluation/    # Evaluation engine, metrics, and structured reports
 │   │       ├── representations/# Representation descriptors, feature batches, summaries
 │   │       ├── robustness/    # Corruptions, distribution shifts, OOD tests
@@ -105,39 +108,37 @@ prism-visual-representations/
 │   └── tests/                 # Backend unit, smoke, and integration test suites
 │
 ├── frontend/                  # Next.js / TypeScript research observatory
+│   ├── app/                   # App Router pages and layout
+│   └── ...
+│
 ├── configs/                   # Declarative YAML configurations
-├── experiments/               # Research artifacts and analyses
 ├── docs/                      # Technical and methodology documentation
-├── data/                      # Local data stores (git-ignored raw data)
+├── experiments/               # Research artifacts and analyses
 ├── artifacts/                 # Generated run outputs (checkpoints, metrics, figures)
 └── tests/                     # Top-level smoke, unit, and integration test suites
 ```
 
 ---
 
-## Quickstart & Verification
+## Getting Started
 
-Ensure you have [uv](https://docs.astral.sh/uv/) and [Node.js](https://nodejs.org/) installed:
+### Prerequisites
+- Python 3.11+
+- [uv](https://github.com/astral-sh/uv) (recommended)
+- Node.js 18+ & pnpm (for frontend observatory)
+
+### Installation & Quality Validation
 
 ```bash
-# Clone the repository
-git clone https://github.com/mzayan-bit/prism-visual-representations.git
-cd prism-visual-representations
+# Sync environment dependencies
+uv sync
 
-# Run the complete test suite
-make test
+# Run static quality checks, typing, and test suites
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy
+uv run pytest
 
-# Run backend and frontend linting and type checks
+# Alternatively, run via top-level Makefile
 make check
 ```
-
-To run only the end-to-end smoke test suite:
-```bash
-uv run pytest tests/smoke/
-```
-
----
-
-## License
-
-PRISM is released under the [MIT License](LICENSE).

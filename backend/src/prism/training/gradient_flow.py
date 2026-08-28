@@ -56,9 +56,7 @@ class ParameterGradientSummary(BaseModel):
     depth_index: int = Field(description="Relative depth ordering index")
     norm_l2: float = Field(description="L2 Frobenius norm of the gradient tensor")
     mean: float = Field(description="Mean scalar gradient value")
-    std_dev: float = Field(
-        description="Standard deviation of scalar gradient values"
-    )
+    std_dev: float = Field(description="Standard deviation of scalar gradient values")
     min_value: float = Field(description="Minimum gradient value")
     max_value: float = Field(description="Maximum gradient value")
     zero_fraction: float = Field(
@@ -77,9 +75,7 @@ class ModelGradientFlowSummary(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     model_id: str = Field(description="Model identifier")
-    total_parameters: int = Field(
-        description="Number of parameter tensors discovered"
-    )
+    total_parameters: int = Field(description="Number of parameter tensors discovered")
     total_gradients: int = Field(
         description="Number of gradient tensors with computed values"
     )
@@ -96,9 +92,7 @@ class ModelGradientFlowSummary(BaseModel):
         description="True if all gradients across all parameters are finite"
     )
 
-    def get_summary(
-        self, parameter_name: str
-    ) -> ParameterGradientSummary | None:
+    def get_summary(self, parameter_name: str) -> ParameterGradientSummary | None:
         """Find gradient summary for a specific parameter name."""
         for s in self.parameter_summaries:
             if s.parameter_name == parameter_name:
@@ -273,9 +267,7 @@ def compute_gradient_flow_summary(
         )
         param_summaries.append(summary)
 
-    global_norm = (
-        math.sqrt(max(0.0, global_sum_sq)) if all_finite else float("nan")
-    )
+    global_norm = math.sqrt(max(0.0, global_sum_sq)) if all_finite else float("nan")
 
     return ModelGradientFlowSummary(
         model_id=model.model_id,

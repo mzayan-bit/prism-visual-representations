@@ -35,6 +35,7 @@ DataPreparer.prepare(prepared_execution, ...)
 TrainingEngine.train(...)
         │
         ├── Execute Deterministic Epoch Loops (Forward -> Loss -> Backward -> SGD)
+        ├── Route Analytical Gradients through Residual Skip Branches (dF + dS)
         ├── Update BatchNorm Running Statistics during training
         ├── Step Learning Rate Scheduler (Constant / Step / Cosine Annealing)
         ├── Record Real-time MetricRecords (Loss, Accuracy, Learning Rate) into ExperimentRun
@@ -45,12 +46,12 @@ TrainingEngine.train(...)
 TrainingResult (Consolidated execution metrics and evaluation summaries)
         │
         ▼
-extract_representations & compute_distribution_summary (Feature statistics & stability)
+compute_gradient_flow_summary & extract_representations (Gradient tracking & feature analysis)
 ```
 
 ---
 
-## Defining, Preparing, and Training a Normalized CNN Experiment
+## Defining, Preparing, and Training a Residual CNN Experiment
 
 ```python
 from prism.core.enums import (
@@ -63,7 +64,7 @@ from prism.core.enums import (
 from prism.data.adapters import CIFAR10Adapter
 from prism.data.manifests import ControlledDataReference, DatasetManifest
 from prism.data.preparer import DataPreparer
-from prism.models.cnn import ConvolutionalNeuralNetwork
+from prism.models.resnet import ResidualNeuralNetwork
 from prism.models.specifications import ModelSpecification
 from prism.training.configuration import (
     TrainingConfiguration,
@@ -71,34 +72,30 @@ from prism.training.configuration import (
     SchedulerSpecification,
 )
 from prism.training.engine import TrainingEngine
+from prism.training.gradient_flow import (
+    compute_gradient_flow_summary,
+    compare_gradient_flow_summaries,
+)
 from prism.evaluation.configuration import EvaluationConfiguration, MetricSpecification
 from prism.experiments.definitions import ExperimentDefinition
 from prism.experiments.reproducibility import ReproducibilityConfiguration
 from prism.experiments.harness import ExperimentExecutionHarness
-from prism.experiments.comparisons import create_normalization_comparison
-from prism.representations.contracts import (
-    RepresentationDescriptor,
-    RepresentationBatch,
-)
-from prism.representations.summaries import (
-    compute_distribution_summary,
-    compare_distribution_summaries,
-)
+from prism.experiments.comparisons import create_residual_comparison
 
-# 1. Obtain standardized CIFAR-10 manifests & 10% nested subset
+# 1. Obtain standardized CIFAR-10 manifests & 25% nested subset
 adapter = CIFAR10Adapter()
 canonical = adapter.get_canonical_manifest()
 partition = adapter.get_default_partition(seed=42)
 subsets = adapter.get_nested_subsets(seed=42)
 
-subset_10pct = subsets[0.10]
+subset_25pct = subsets[0.25]
 controlled_ref = ControlledDataReference(
     canonical_manifest_fingerprint=canonical.compute_fingerprint(),
     partition_manifest_fingerprint=partition.compute_fingerprint(),
-    subset_manifest_fingerprint=subset_10pct.compute_fingerprint(),
+    subset_manifest_fingerprint=subset_25pct.compute_fingerprint(),
     partition_id=partition.partition_id,
-    subset_id=subset_10pct.subset_id,
-    budget_ratio=0.10,
+    subset_id=subset_25pct.subset_id,
+    budget_ratio=0.25,
 )
 
 dataset = DatasetManifest(
@@ -106,28 +103,26 @@ dataset = DatasetManifest(
     controlled_data=controlled_ref,
 )
 
-# 2. Declare Model Architecture (Normalized 2-Block Spatial CNN)
+# 2. Declare Model Architecture (Multi-Stage ResNet with BatchNorm)
 model = ModelSpecification(
-    model_id="model-cifar10-cnn-bn",
-    name="CIFAR-10 2-Block ConvNet with BatchNorm",
-    family=ModelFamily.CNN,
-    architecture="cnn",
+    model_id="model-cifar10-resnet-bn",
+    name="CIFAR-10 ResNet with Skip Connections",
+    family=ModelFamily.RESNET,
+    architecture="resnet",
     compatible_tasks=[TaskType.CLASSIFICATION],
     input_shape=(3, 32, 32),
     num_classes=10,
     hyperparameters={
-        "conv_channels": [32, 64],
-        "kernel_sizes": 3,
-        "strides": 1,
-        "paddings": 1,
-        "pool_sizes": 2,
-        "pool_strides": 2,
+        "stem_channels": 16,
+        "stage_widths": [16, 32, 64],
+        "blocks_per_stage": [2, 2, 2],
+        "strides": [1, 2, 2],
         "activation": "relu",
         "normalization": "batch_norm",
         "norm_eps": 1e-5,
         "norm_momentum": 0.1,
         "norm_affine": True,
-        "dropout": 0.1,
+        "dropout": 0.0,
     },
 )
 
@@ -152,8 +147,8 @@ evaluation = EvaluationConfiguration(
 
 # 4. Construct Immutable Experiment Definition
 experiment = ExperimentDefinition(
-    experiment_id="exp-cifar10-cnn-bn-10pct",
-    name="CIFAR-10 Normalized CNN 10% Low-Data Baseline",
+    experiment_id="exp-cifar10-resnet-25pct",
+    name="CIFAR-10 Residual CNN 25% Data Efficiency",
     task_type=TaskType.CLASSIFICATION,
     dataset=dataset,
     model=model,
@@ -172,7 +167,7 @@ train_dataset, train_loader, _ = preparer.prepare(
     adapter=adapter,
     canonical_manifest=canonical,
     partition_manifest=partition,
-    subset_manifest=subset_10pct,
+    subset_manifest=subset_25pct,
     batch_size=64,
     ordering_strategy=OrderingStrategy.EPOCH_AWARE_SHUFFLE,
     seed=42,
@@ -202,20 +197,21 @@ result = engine.train(
     run=run,
 )
 
-# 8. Extract Feature Representations and Compute Distribution Summaries
-cnn_model = ConvolutionalNeuralNetwork(spec=model, seed=42)
+# 8. Compute Gradient Flow Summaries across Model Depth
+res_model = ResidualNeuralNetwork(spec=model, seed=42)
 test_batch = [test_dataset[i].data for i in range(10)]
+_ = res_model.forward(test_batch)
+res_model.backward(
+    [
+        [1.0 / 10 if j == test_dataset[i].target else 0.0 for j in range(10)]
+        for i in range(10)
+    ]
+)
 
-pre_norm_map = cnn_model.extract_representations(test_batch, layer="conv_0_pre_norm")
-post_norm_map = cnn_model.extract_representations(test_batch, layer="conv_0_post_norm")
-
-summary_pre = compute_distribution_summary(pre_norm_map)
-summary_post = compute_distribution_summary(post_norm_map)
-stability = compare_distribution_summaries(summary_pre, summary_post)
-
-print(f"Run Status: {result.status}")
-print(f"Final Train Loss: {result.final_train_loss:.4f}")
-print(f"Pre-Norm Mean: {summary_pre.mean:.4f}, Std: {summary_pre.std_dev:.4f}")
-print(f"Post-Norm Mean: {summary_post.mean:.4f}, Std: {summary_post.std_dev:.4f}")
-print(f"Mean Shift Delta: {stability['mean_shift']:.4f}")
+grad_summary = compute_gradient_flow_summary(res_model)
+print(f"Global Gradient L2 Norm: {grad_summary.global_grad_norm_l2:.6f}")
+for param_s in grad_summary.parameter_summaries[:5]:
+    print(
+        f"Layer {param_s.parameter_name} ({param_s.logical_stage}): Norm={param_s.norm_l2:.6f}"
+    )
 ```

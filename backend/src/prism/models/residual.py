@@ -165,13 +165,9 @@ class ProjectionShortcut:
         seed: int = 42,
     ) -> None:
         if in_channels <= 0:
-            raise ValidationError(
-                f"in_channels must be positive, got {in_channels}."
-            )
+            raise ValidationError(f"in_channels must be positive, got {in_channels}.")
         if out_channels <= 0:
-            raise ValidationError(
-                f"out_channels must be positive, got {out_channels}."
-            )
+            raise ValidationError(f"out_channels must be positive, got {out_channels}.")
 
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -233,9 +229,7 @@ class ProjectionShortcut:
         self, d_out: list[list[list[list[float]]]]
     ) -> list[list[list[list[float]]]]:
         """Compute backward gradients through shortcut norm and 1x1 convolution."""
-        d_conv_out = (
-            self.norm.backward(d_out) if self.norm is not None else d_out
-        )
+        d_conv_out = self.norm.backward(d_out) if self.norm is not None else d_out
         return self.conv.backward(d_conv_out)
 
     def zero_grad(self) -> None:
@@ -275,9 +269,7 @@ class ProjectionShortcut:
             grads["grad_proj_conv_bias"] = list(self.conv.grad_bias_weights)
         if self.norm is not None:
             for k, v in self.norm.get_gradients().items():
-                grads[f"grad_proj_norm_{k.replace('grad_', '')}"] = (
-                    copy.deepcopy(v)
-                )
+                grads[f"grad_proj_norm_{k.replace('grad_', '')}"] = copy.deepcopy(v)
         return grads
 
     def get_state(self) -> dict[str, Any]:
@@ -291,17 +283,11 @@ class ProjectionShortcut:
         if self.norm is not None:
             norm_s = {}
             if "proj_norm_running_mean" in state:
-                norm_s["running_mean"] = copy.deepcopy(
-                    state["proj_norm_running_mean"]
-                )
+                norm_s["running_mean"] = copy.deepcopy(state["proj_norm_running_mean"])
             if "proj_norm_running_var" in state:
-                norm_s["running_var"] = copy.deepcopy(
-                    state["proj_norm_running_var"]
-                )
+                norm_s["running_var"] = copy.deepcopy(state["proj_norm_running_var"])
             if "proj_norm_num_batches_tracked" in state:
-                norm_s["num_batches_tracked"] = state[
-                    "proj_norm_num_batches_tracked"
-                ]
+                norm_s["num_batches_tracked"] = state["proj_norm_num_batches_tracked"]
             self.norm.set_state(norm_s)
 
 
@@ -321,13 +307,9 @@ class ResidualBlock:
         seed: int = 42,
     ) -> None:
         if in_channels <= 0:
-            raise ValidationError(
-                f"in_channels must be positive, got {in_channels}."
-            )
+            raise ValidationError(f"in_channels must be positive, got {in_channels}.")
         if out_channels <= 0:
-            raise ValidationError(
-                f"out_channels must be positive, got {out_channels}."
-            )
+            raise ValidationError(f"out_channels must be positive, got {out_channels}.")
         if stride <= 0:
             raise ValidationError(f"stride must be positive, got {stride}.")
 
@@ -447,17 +429,13 @@ class ResidualBlock:
         # 1. Main Path: Conv1 -> Norm1 -> Act1 -> Conv2 -> Norm2
         conv1_out = self.conv1.forward(x_4d)
         norm1_out = (
-            self.norm1.forward(conv1_out)
-            if self.norm1 is not None
-            else conv1_out
+            self.norm1.forward(conv1_out) if self.norm1 is not None else conv1_out
         )
         act1_out = self.act1.forward(norm1_out)
 
         conv2_out = self.conv2.forward(act1_out)
         norm2_out = (
-            self.norm2.forward(conv2_out)
-            if self.norm2 is not None
-            else conv2_out
+            self.norm2.forward(conv2_out) if self.norm2 is not None else conv2_out
         )
 
         # 2. Shortcut Path
@@ -490,9 +468,7 @@ class ResidualBlock:
             or self._cached_norm1_out is None
             or self._cached_add_out is None
         ):
-            raise ValidationError(
-                "Cannot perform backward pass before forward pass."
-            )
+            raise ValidationError("Cannot perform backward pass before forward pass.")
 
         # 1. Final Activation Backward: d_add = dL/dZ
         d_add_res = self.act2.backward(self._cached_add_out, d_out)
@@ -502,18 +478,12 @@ class ResidualBlock:
         d_main, d_shortcut = self.residual_add.backward(d_add)
 
         # 3. Main Path Backward: Norm2 -> Conv2 -> Act1 -> Norm1 -> Conv1
-        d_conv2_out = (
-            self.norm2.backward(d_main) if self.norm2 is not None else d_main
-        )
+        d_conv2_out = self.norm2.backward(d_main) if self.norm2 is not None else d_main
         d_act1_out = self.conv2.backward(d_conv2_out)
-        d_norm1_out_res = self.act1.backward(
-            self._cached_norm1_out, d_act1_out
-        )
+        d_norm1_out_res = self.act1.backward(self._cached_norm1_out, d_act1_out)
         d_norm1_out = ensure_4d_tensor(d_norm1_out_res)
         d_conv1_out = (
-            self.norm1.backward(d_norm1_out)
-            if self.norm1 is not None
-            else d_norm1_out
+            self.norm1.backward(d_norm1_out) if self.norm1 is not None else d_norm1_out
         )
         d_x_main = self.conv1.backward(d_conv1_out)
 
@@ -581,9 +551,7 @@ class ResidualBlock:
 
         return params
 
-    def set_parameters(
-        self, params: dict[str, Any], prefix: str = ""
-    ) -> None:
+    def set_parameters(self, params: dict[str, Any], prefix: str = "") -> None:
         p_str = f"{prefix}_" if prefix else ""
 
         # Conv1
@@ -629,33 +597,21 @@ class ResidualBlock:
         grads: dict[str, Any] = {}
         p_str = f"{prefix}_" if prefix else ""
 
-        grads[f"grad_{p_str}conv1_weights"] = copy.deepcopy(
-            self.conv1.grad_weights
-        )
+        grads[f"grad_{p_str}conv1_weights"] = copy.deepcopy(self.conv1.grad_weights)
         if self.conv1.use_bias:
-            grads[f"grad_{p_str}conv1_bias"] = list(
-                self.conv1.grad_bias_weights
-            )
+            grads[f"grad_{p_str}conv1_bias"] = list(self.conv1.grad_bias_weights)
 
         if self.norm1 is not None:
             for k, v in self.norm1.get_gradients().items():
-                grads[f"grad_{p_str}norm1_{k.replace('grad_', '')}"] = (
-                    copy.deepcopy(v)
-                )
+                grads[f"grad_{p_str}norm1_{k.replace('grad_', '')}"] = copy.deepcopy(v)
 
-        grads[f"grad_{p_str}conv2_weights"] = copy.deepcopy(
-            self.conv2.grad_weights
-        )
+        grads[f"grad_{p_str}conv2_weights"] = copy.deepcopy(self.conv2.grad_weights)
         if self.conv2.use_bias:
-            grads[f"grad_{p_str}conv2_bias"] = list(
-                self.conv2.grad_bias_weights
-            )
+            grads[f"grad_{p_str}conv2_bias"] = list(self.conv2.grad_bias_weights)
 
         if self.norm2 is not None:
             for k, v in self.norm2.get_gradients().items():
-                grads[f"grad_{p_str}norm2_{k.replace('grad_', '')}"] = (
-                    copy.deepcopy(v)
-                )
+                grads[f"grad_{p_str}norm2_{k.replace('grad_', '')}"] = copy.deepcopy(v)
 
         for k, v in self.shortcut.get_gradients().items():
             grads[f"grad_{p_str}{k.replace('grad_', '')}"] = copy.deepcopy(v)
@@ -689,13 +645,9 @@ class ResidualBlock:
                     state[f"{p_str}norm1_running_mean"]
                 )
             if f"{p_str}norm1_running_var" in state:
-                n1_s["running_var"] = copy.deepcopy(
-                    state[f"{p_str}norm1_running_var"]
-                )
+                n1_s["running_var"] = copy.deepcopy(state[f"{p_str}norm1_running_var"])
             if f"{p_str}norm1_num_batches_tracked" in state:
-                n1_s["num_batches_tracked"] = state[
-                    f"{p_str}norm1_num_batches_tracked"
-                ]
+                n1_s["num_batches_tracked"] = state[f"{p_str}norm1_num_batches_tracked"]
             self.norm1.set_state(n1_s)
 
         if self.norm2 is not None:
@@ -705,13 +657,9 @@ class ResidualBlock:
                     state[f"{p_str}norm2_running_mean"]
                 )
             if f"{p_str}norm2_running_var" in state:
-                n2_s["running_var"] = copy.deepcopy(
-                    state[f"{p_str}norm2_running_var"]
-                )
+                n2_s["running_var"] = copy.deepcopy(state[f"{p_str}norm2_running_var"])
             if f"{p_str}norm2_num_batches_tracked" in state:
-                n2_s["num_batches_tracked"] = state[
-                    f"{p_str}norm2_num_batches_tracked"
-                ]
+                n2_s["num_batches_tracked"] = state[f"{p_str}norm2_num_batches_tracked"]
             self.norm2.set_state(n2_s)
 
         sc_s = {}

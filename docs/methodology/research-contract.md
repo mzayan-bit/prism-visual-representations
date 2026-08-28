@@ -9,7 +9,7 @@ To maintain scientific integrity and prevent invalid comparisons, all contributi
 ---
 
 ### 1. Fair Comparison & Controlled Data Identity
-Different learning paradigms (e.g. Linear Models, MLPs, CNNs, Vision Transformers, Self-Supervised Learning) must be compared under strictly controlled and explicitly documented conditions:
+Different learning paradigms (e.g. Linear Models, MLPs, CNNs, ResNets, Vision Transformers, Self-Supervised Learning) must be compared under strictly controlled and explicitly documented conditions:
 - **Input Consistency**: Evaluated models must receive identical input dimensions, color space normalizations, and test split partitions.
 - **Canonical Sample Universes**: Datasets must declare deterministic sample identities (`SampleRecord`) and ordered universes (`CanonicalSampleManifest`).
 - **Fixed Benchmark Partitions**: Benchmark partitions (`PartitionManifest`) must derive validation splits deterministically while keeping official benchmark test splits strictly isolated.
@@ -44,7 +44,19 @@ When studying the effect of normalization layers (`BatchNorm1D`, `BatchNorm2D`):
 - **Small-Batch Limitations**: Acknowledge that batch normalization variance estimates become noisy at small batch sizes ($N < 4$) and degenerate at $N=1$.
 - **Distribution Auditing**: Feature distributions must be measurable via `FeatureDistributionSummary` (mean, variance, min/max, zero fraction, channel stats) without requiring full activation dumps.
 
-### 4. Strict Reproducibility & Deep Learning Invariants
+### 4. Residual Learning & Gradient Flow Standards
+When evaluating Residual Neural Networks (`ResidualNeuralNetwork`) against Plain Deep CNNs:
+- **Explicit Addition Formulation**: The residual connection computes $y = \text{activation}(F(x) + S(x))$ with explicit shape validation. No implicit cropping or shape coercion.
+- **Dual-Branch Analytical Backpropagation**: Upstream gradient $dZ$ routes identically to both main path ($dF = dZ$) and shortcut path ($dS = dZ$). Total input gradient is the exact sum $dX = dX_{\text{main}} + dX_{\text{shortcut}}$.
+- **Identity vs Projection Shortcut Disciplines**:
+  - Identity shortcuts ($S(x) = x$) are strictly parameter-free when spatial and channel dimensions match.
+  - Projection shortcuts ($S(x) = \text{Norm}(\text{Conv2D}(x, 1\times 1, \text{stride}=s))$) are used exclusively when spatial resolution downsamples or channel width expands.
+- **Gradient Flow Auditing**:
+  - Gradient flow is monitored across depth via `ParameterGradientSummary` and `ModelGradientFlowSummary` recording L2 norm, mean, std dev, min/max, zero fraction, and finiteness.
+  - Research claims regarding gradient flow must distinguish gradient norm magnitudes from convergence quality. High gradient norms do not inherently guarantee optimal representations.
+- **Plain vs Residual Controlled Comparisons**: Comparisons must strictly match total block depths, stage widths, dataset manifests, RNG seeds, and training hyperparameters via `create_residual_comparison()`.
+
+### 5. Strict Reproducibility & Deep Learning Invariants
 Every experimental result generated in PRISM must be fully reproducible and explicitly audited prior to execution:
 - **Configuration Fingerprinting**: Semantic SHA-256 digests (`compute_fingerprint()`) calculated over model, data, partition, subset, scheduler, and optimizer specifications.
 - **Deterministic Parameter Initialization**: Model parameters must be deterministically initialized (e.g. Xavier for linear layers, He/Kaiming for ReLU hidden layers and Conv2D kernels, $\gamma=1, \beta=0$ for normalization) using configured seeds without dependence on accidental global RNG state.
@@ -52,28 +64,28 @@ Every experimental result generated in PRISM must be fully reproducible and expl
 - **Deterministic Dropout Masking**: Stochastic dropout masks during training must be deterministically derived from explicit experiment seed, layer index, and step counters. In evaluation mode, dropout must be strictly disabled (identity).
 - **Controlled Learning Rate Schedules**: Learning rate decay (Step, Cosine Annealing, Warmup) must be deterministic and logged into metric telemetry.
 - **Explicit Weight Decay Semantics**: Regularization must be applied through a single documented pathway (e.g. optimizer step) without duplicate loss penalties.
-- **Representation Extraction**: Intermediate hidden representations (`"input"`, `"conv_0_post_norm"`, `"final_spatial"`, `"final_hidden"`) must be extracted without parameter mutation or stochastic dropout noise.
+- **Representation Extraction**: Intermediate hidden representations (`"input"`, `"stem"`, `"stage_0_block_0_post_add"`, `"final_spatial"`, `"final_hidden"`) must be extracted without parameter mutation or stochastic dropout noise.
 - **Code Revision Provenance**: Active Git commit SHA, branch, and working tree cleanliness (`-uno` tracked modifications) captured via `inspect_git_provenance()`.
 - **Hardware & Environment**: Python runtime version, host OS, primary compute backend, and installed versions of allowlisted dependencies (`pydantic`, `torch`, `torchvision`, etc.).
 
-### 5. No Silent Comparisons
+### 6. No Silent Comparisons
 PRISM strictly prohibits unrecorded or implicit divergences between experimental conditions. The following are non-negotiable prohibitions:
 - **No Hidden Split Alterations**: Test sets and validation sets are immutable once benchmark manifests are registered.
 - **No Uncontrolled Preprocessing**: Data pipelines must execute through deterministic abstractions in `prism.data`.
 - **No Selective Tuning**: Hyperparameter search budgets must be balanced across compared paradigms.
 - **No In-Place Evaluation Modifications**: Evaluation routines must never mutate model parameters or gradient buffers.
 
-### 6. Controlled Comparison Contracts
+### 7. Controlled Comparison Contracts
 All experimental comparisons must be formally defined via `ControlledComparison`, explicitly documenting:
 - The baseline and candidate experiment identifiers.
-- The isolated varied factor(s) (e.g. `{"normalization": {"baseline": "none", "candidate": "batch_norm"}}`).
+- The isolated varied factor(s) (e.g. `{"architecture": {"baseline": "plain_cnn", "candidate": "residual_cnn"}}`).
 - The fixed invariant factors (dataset fingerprint, partition fingerprint, seed, optimization schedule).
 
-### 7. Experiment Traceability
+### 8. Experiment Traceability
 Every figure, table, metric entry, or embedding projection generated by PRISM must be traceable backwards through the provenance chain:
 
 ```
-Artifact (Figure / Metric / Summary)
+Artifact (Figure / Metric / Summary / GradFlow)
   ↳ Experiment Run ID
     ↳ PreparedExecution Runtime Context & DataRuntimeContext
       ↳ Complete Configuration File (YAML)
@@ -82,7 +94,7 @@ Artifact (Figure / Metric / Summary)
 
 ---
 
-### 8. Honest Research
+### 9. Honest Research
 - **Zero Synthetic Results**: Synthetic, fabricated, or mocked results must never be committed as experimental findings.
 - **Explicit Labeling**: All artifacts and documentation must explicitly distinguish their status:
   - **Planned**: Conceptually defined experiments with pending implementation.

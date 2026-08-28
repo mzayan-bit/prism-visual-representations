@@ -61,9 +61,7 @@ class ResidualNeuralNetwork(BaseVisionModel):
             raise ValidationError("stage_widths cannot be empty for ResNet.")
         for idx, w in enumerate(self.stage_widths):
             if w <= 0:
-                raise ValidationError(
-                    f"stage_widths[{idx}] must be positive, got {w}."
-                )
+                raise ValidationError(f"stage_widths[{idx}] must be positive, got {w}.")
 
         num_stages = len(self.stage_widths)
         raw_blocks = hp.get("blocks_per_stage", [2] * num_stages)
@@ -96,9 +94,7 @@ class ResidualNeuralNetwork(BaseVisionModel):
         else:
             raise ValidationError("Invalid strides format.")
 
-        self.stem_channels: int = int(
-            hp.get("stem_channels", self.stage_widths[0])
-        )
+        self.stem_channels: int = int(hp.get("stem_channels", self.stage_widths[0]))
         self.stem_kernel_size: int = int(hp.get("stem_kernel_size", 3))
         self.stem_stride: int = int(hp.get("stem_stride", 1))
         self.stem_padding: int = int(hp.get("stem_padding", 1))
@@ -116,9 +112,7 @@ class ResidualNeuralNetwork(BaseVisionModel):
                 f"Dropout rate must be in [0.0, 1.0), got {self.dropout_rate}."
             )
 
-        self.classifier_hidden_dims: list[int] = hp.get(
-            "classifier_hidden_dims", []
-        )
+        self.classifier_hidden_dims: list[int] = hp.get("classifier_hidden_dims", [])
 
         # 3. Construct Stem
         self.stage_rf_tracking: list[tuple[int, int]] = []
@@ -182,9 +176,7 @@ class ResidualNeuralNetwork(BaseVisionModel):
             stage_blocks: list[ResidualBlock] = []
 
             for b_idx in range(num_b):
-                block_seed = (
-                    seed * 10007 + s_idx * 101 + b_idx * 31
-                ) & 0x7FFFFFFF
+                block_seed = (seed * 10007 + s_idx * 101 + b_idx * 31) & 0x7FFFFFFF
                 b_stride = s_stride if b_idx == 0 else 1
                 b_in = cur_c if b_idx == 0 else out_c
 
@@ -286,9 +278,7 @@ class ResidualNeuralNetwork(BaseVisionModel):
         rf, _ = compute_receptive_field(self.stage_rf_tracking)
         return rf
 
-    def _flatten_spatial(
-        self, x: list[list[list[list[float]]]]
-    ) -> list[list[float]]:
+    def _flatten_spatial(self, x: list[list[list[list[float]]]]) -> list[list[float]]:
         n_samples = len(x)
         c_channels = len(x[0])
         h_len = len(x[0][0])
@@ -325,9 +315,7 @@ class ResidualNeuralNetwork(BaseVisionModel):
             out_4d.append(sample_4d)
         return out_4d
 
-    def _convert_input_to_4d(
-        self, inputs: Any
-    ) -> list[list[list[list[float]]]]:
+    def _convert_input_to_4d(self, inputs: Any) -> list[list[list[list[float]]]]:
         if not isinstance(inputs, (list, tuple)) or not inputs:
             raise ValidationError("Input batch cannot be empty.")
 
@@ -461,9 +449,7 @@ class ResidualNeuralNetwork(BaseVisionModel):
                 p_keep = 1.0 - self.dropout_rate
                 scale = 1.0 / p_keep
                 drop_seed = (
-                    (self.seed * 1000003)
-                    ^ (l_idx * 10007)
-                    ^ (self._step_counter * 31)
+                    (self.seed * 1000003) ^ (l_idx * 10007) ^ (self._step_counter * 31)
                 ) & 0x7FFFFFFF
                 rng = random.Random(drop_seed)
 
@@ -499,9 +485,7 @@ class ResidualNeuralNetwork(BaseVisionModel):
             or not self._cached_stage_states
             or not self._cached_fc_states
         ):
-            raise ValidationError(
-                "Cannot perform backward pass before forward pass."
-            )
+            raise ValidationError("Cannot perform backward pass before forward pass.")
 
         n_samples = len(d_logits)
         num_fc = len(self.fc_weights)
@@ -524,10 +508,7 @@ class ResidualNeuralNetwork(BaseVisionModel):
                 mask = fc_state["dropout_mask"]
                 if mask is not None:
                     d_a = [
-                        [
-                            d_a[n][j] * mask[n][j]
-                            for j in range(len(d_a[0]))
-                        ]
+                        [d_a[n][j] * mask[n][j] for j in range(len(d_a[0]))]
                         for n in range(len(d_a))
                     ]
                 act = get_activation(self.activation_name)
@@ -538,9 +519,7 @@ class ResidualNeuralNetwork(BaseVisionModel):
                     dz_val = d_z[n][j]
                     self.grad_fc_biases[l_idx][j] += dz_val
                     for i in range(in_dim):
-                        self.grad_fc_weights[l_idx][i][j] += (
-                            dz_val * h_in[n][i]
-                        )
+                        self.grad_fc_weights[l_idx][i][j] += dz_val * h_in[n][i]
 
             d_h_prev: list[list[float]] = []
             for n in range(n_samples):
@@ -582,9 +561,7 @@ class ResidualNeuralNetwork(BaseVisionModel):
         )
         _ = self.stem_conv.backward(d_stem_conv)
 
-    def extract_representations(
-        self, inputs: Any, layer: str = "final_hidden"
-    ) -> Any:
+    def extract_representations(self, inputs: Any, layer: str = "final_hidden") -> Any:
         """Extract intermediate activations or spatial maps in evaluation mode."""
         layer_norm = layer.strip().lower()
         was_training = self.is_training
@@ -742,18 +719,12 @@ class ResidualNeuralNetwork(BaseVisionModel):
         grads: dict[str, Any] = {}
 
         # Stem
-        grads["grad_stem_conv_weights"] = copy.deepcopy(
-            self.stem_conv.grad_weights
-        )
+        grads["grad_stem_conv_weights"] = copy.deepcopy(self.stem_conv.grad_weights)
         if self.stem_conv.use_bias:
-            grads["grad_stem_conv_bias"] = list(
-                self.stem_conv.grad_bias_weights
-            )
+            grads["grad_stem_conv_bias"] = list(self.stem_conv.grad_bias_weights)
         if self.stem_norm is not None:
             for k, v in self.stem_norm.get_gradients().items():
-                grads[f"grad_stem_norm_{k.replace('grad_', '')}"] = (
-                    copy.deepcopy(v)
-                )
+                grads[f"grad_stem_norm_{k.replace('grad_', '')}"] = copy.deepcopy(v)
 
         # Stages & Blocks
         for s_idx, stage in enumerate(self.stages):
@@ -797,17 +768,11 @@ class ResidualNeuralNetwork(BaseVisionModel):
         if self.stem_norm is not None:
             stem_s = {}
             if "stem_norm_running_mean" in state:
-                stem_s["running_mean"] = copy.deepcopy(
-                    state["stem_norm_running_mean"]
-                )
+                stem_s["running_mean"] = copy.deepcopy(state["stem_norm_running_mean"])
             if "stem_norm_running_var" in state:
-                stem_s["running_var"] = copy.deepcopy(
-                    state["stem_norm_running_var"]
-                )
+                stem_s["running_var"] = copy.deepcopy(state["stem_norm_running_var"])
             if "stem_norm_num_batches_tracked" in state:
-                stem_s["num_batches_tracked"] = state[
-                    "stem_norm_num_batches_tracked"
-                ]
+                stem_s["num_batches_tracked"] = state["stem_norm_num_batches_tracked"]
             self.stem_norm.set_state(stem_s)
 
         # Stages & Blocks
