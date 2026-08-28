@@ -553,99 +553,122 @@ def create_scheduler(
             base_lr=base_lr,
             total_epochs=total_epochs,
             total_steps=total_steps,
+            step_unit=spec.step_unit if spec else "epoch",
         )
 
     sched_type = spec.type.lower()
-    warmup_epochs = spec.warmup_epochs
+    step_unit = spec.step_unit
     min_lr = spec.min_lr
+    w_start = spec.warmup_start_lr if spec.warmup_start_lr > 0.0 else min_lr
+
+    # Determine warmup duration and horizon matching step_unit
+    if step_unit == "step":
+        w_duration = spec.warmup_steps or spec.warmup_epochs
+        horizon = total_steps or (total_epochs * 100)
+    else:
+        w_duration = spec.warmup_epochs or spec.warmup_steps
+        horizon = total_epochs
 
     # 1. Linear Warmup Standalone
     if sched_type in ("linear", "linear_warmup", "warmup"):
-        w_steps = spec.warmup_epochs or (spec.step_size or 5)
+        w_steps = w_duration or (spec.step_size or 5)
         return LinearWarmupScheduler(
             target_lr=base_lr,
             warmup_steps=w_steps,
-            warmup_start_lr=min_lr,
+            warmup_start_lr=w_start,
             total_epochs=total_epochs,
             total_steps=total_steps,
+            step_unit=step_unit,
         )
 
     # 2. Step Decay
     if sched_type == "step":
         step_size = spec.step_size or 30
         gamma = spec.gamma if spec.gamma is not None else 0.1
-        if warmup_epochs > 0:
-            inner_epochs = max(1, total_epochs - warmup_epochs)
+        if w_duration > 0:
+            inner_horizon = max(1, horizon - w_duration)
             step_sched = StepLRScheduler(
                 base_lr=base_lr,
-                total_epochs=inner_epochs,
+                total_epochs=inner_horizon if step_unit == "epoch" else total_epochs,
+                total_steps=inner_horizon if step_unit == "step" else total_steps,
                 step_size=step_size,
                 gamma=gamma,
                 min_lr=min_lr,
+                step_unit=step_unit,
             )
             return WarmupScheduler(
                 after_scheduler=step_sched,
-                warmup_steps=warmup_epochs,
-                warmup_start_lr=min_lr,
-                step_unit="epoch",
+                warmup_steps=w_duration,
+                warmup_start_lr=w_start,
+                step_unit=step_unit,
             )
         return StepLRScheduler(
             base_lr=base_lr,
             total_epochs=total_epochs,
+            total_steps=total_steps,
             step_size=step_size,
             gamma=gamma,
             warmup_epochs=0,
             min_lr=min_lr,
+            step_unit=step_unit,
         )
 
     # 3. Exponential Decay
     if sched_type in ("exponential", "exp"):
         gamma = spec.gamma if spec.gamma is not None else 0.95
-        decay_steps = spec.step_size or 1
-        if warmup_epochs > 0:
-            inner_epochs = max(1, total_epochs - warmup_epochs)
+        decay_steps = spec.decay_steps or spec.step_size or 1
+        if w_duration > 0:
+            inner_horizon = max(1, horizon - w_duration)
             exp_sched = ExponentialLRScheduler(
                 base_lr=base_lr,
                 gamma=gamma,
                 decay_steps=decay_steps,
-                total_epochs=inner_epochs,
+                total_epochs=inner_horizon if step_unit == "epoch" else total_epochs,
+                total_steps=inner_horizon if step_unit == "step" else total_steps,
                 min_lr=min_lr,
+                step_unit=step_unit,
             )
             return WarmupScheduler(
                 after_scheduler=exp_sched,
-                warmup_steps=warmup_epochs,
-                warmup_start_lr=min_lr,
-                step_unit="epoch",
+                warmup_steps=w_duration,
+                warmup_start_lr=w_start,
+                step_unit=step_unit,
             )
         return ExponentialLRScheduler(
             base_lr=base_lr,
             gamma=gamma,
             decay_steps=decay_steps,
             total_epochs=total_epochs,
+            total_steps=total_steps,
             min_lr=min_lr,
+            step_unit=step_unit,
         )
 
     # 4. Cosine Decay
     if sched_type in ("cosine", "cosine_annealing"):
-        if warmup_epochs > 0:
-            inner_epochs = max(1, total_epochs - warmup_epochs)
+        if w_duration > 0:
+            inner_horizon = max(1, horizon - w_duration)
             cos_sched = CosineAnnealingLRScheduler(
                 base_lr=base_lr,
-                total_epochs=inner_epochs,
+                total_epochs=inner_horizon if step_unit == "epoch" else total_epochs,
+                total_steps=inner_horizon if step_unit == "step" else total_steps,
                 min_lr=min_lr,
                 warmup_epochs=0,
+                step_unit=step_unit,
             )
             return WarmupScheduler(
                 after_scheduler=cos_sched,
-                warmup_steps=warmup_epochs,
-                warmup_start_lr=min_lr,
-                step_unit="epoch",
+                warmup_steps=w_duration,
+                warmup_start_lr=w_start,
+                step_unit=step_unit,
             )
         return CosineAnnealingLRScheduler(
             base_lr=base_lr,
             total_epochs=total_epochs,
+            total_steps=total_steps,
             min_lr=min_lr,
             warmup_epochs=0,
+            step_unit=step_unit,
         )
 
     raise ConfigurationError(

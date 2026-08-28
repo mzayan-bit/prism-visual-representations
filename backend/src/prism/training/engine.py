@@ -110,10 +110,12 @@ class TrainingEngine:
             model=model_inst,
         )
 
+        total_steps_est = experiment.training.epochs * max(1, len(train_loader))
         scheduler = create_scheduler(
             spec=experiment.training.scheduler,
             base_lr=experiment.training.optimizer.lr,
             total_epochs=experiment.training.epochs,
+            total_steps=total_steps_est,
         )
 
         # 3. Transition to RUNNING
@@ -132,23 +134,23 @@ class TrainingEngine:
             for epoch in range(epochs):
                 train_loader.set_epoch(epoch)
 
-                # Update learning rate via scheduler
-                current_lr = scheduler.step(epoch)
-                optimizer.lr = current_lr
+                # Update learning rate via scheduler if stepping per epoch
+                if scheduler.step_unit == "epoch":
+                    current_lr = scheduler.step(epoch)
+                    optimizer.lr = current_lr
+
+                    run_inst.add_metric(
+                        MetricRecord(
+                            metric_name="learning_rate",
+                            value=current_lr,
+                            split="train",
+                            epoch=epoch,
+                            step=total_batches,
+                        )
+                    )
 
                 # Ensure model is in training mode for dropout / stochastic behavior
                 model_inst.train()
-
-                # Record learning rate metric for the current epoch
-                run_inst.add_metric(
-                    MetricRecord(
-                        metric_name="learning_rate",
-                        value=current_lr,
-                        split="train",
-                        epoch=epoch,
-                        step=total_batches,
-                    )
-                )
 
                 epoch_loss = 0.0
                 epoch_samples = 0
@@ -156,6 +158,21 @@ class TrainingEngine:
                 epoch_targets: list[Any] = []
 
                 for batch in train_loader:
+                    # Update learning rate via scheduler if stepping per batch step
+                    if scheduler.step_unit == "step":
+                        current_lr = scheduler.step(epoch)
+                        optimizer.lr = current_lr
+
+                        run_inst.add_metric(
+                            MetricRecord(
+                                metric_name="learning_rate",
+                                value=current_lr,
+                                split="train",
+                                epoch=epoch,
+                                step=total_batches,
+                            )
+                        )
+
                     logits = model_inst.forward(batch.data)
 
                     # Optimizer directly applies weight decay during step()

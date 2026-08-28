@@ -52,10 +52,16 @@ class SchedulerSpecification(BaseModel):
 
     type: str = Field(
         default="none",
-        description="LR schedule (e.g. 'cosine', 'step', 'linear', 'none')",
+        description="LR schedule (e.g. 'cosine', 'step', 'exponential', 'linear')",
     )
     warmup_epochs: int = Field(
         default=0, ge=0, description="Linear warmup duration in epochs"
+    )
+    warmup_steps: int = Field(
+        default=0, ge=0, description="Linear warmup duration in discrete steps"
+    )
+    warmup_start_lr: float = Field(
+        default=0.0, ge=0.0, description="Initial learning rate at start of warmup"
     )
     min_lr: float = Field(
         default=0.0, ge=0.0, description="Minimum learning rate floor"
@@ -63,7 +69,7 @@ class SchedulerSpecification(BaseModel):
     step_size: int | None = Field(
         default=None,
         ge=1,
-        description="Decay period in epochs for step scheduler",
+        description="Decay period in epochs/steps for step scheduler",
     )
     gamma: float | None = Field(
         default=None,
@@ -71,7 +77,31 @@ class SchedulerSpecification(BaseModel):
         le=1.0,
         description="Multiplicative factor of learning rate decay",
     )
+    decay_steps: int | None = Field(
+        default=None,
+        ge=1,
+        description="Decay timescale for exponential scheduler",
+    )
+    step_unit: str = Field(
+        default="epoch",
+        description="Progress stepping unit ('epoch' or 'step')",
+    )
     extra_kwargs: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("type")
+    @classmethod
+    def validate_type(cls, v: str) -> str:
+        if not v or not v.strip():
+            return "none"
+        return v.strip().lower()
+
+    @field_validator("step_unit")
+    @classmethod
+    def validate_step_unit(cls, v: str) -> str:
+        unit = v.strip().lower()
+        if unit not in ("epoch", "step"):
+            raise ValueError(f"step_unit must be 'epoch' or 'step', got '{v}'.")
+        return unit
 
 
 class GradientClipping(BaseModel):

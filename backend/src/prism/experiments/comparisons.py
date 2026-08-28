@@ -232,3 +232,53 @@ def create_residual_comparison(
         subset_fingerprint=subset_fingerprint,
         seed=seed,
     )
+
+
+def create_scheduler_comparison(
+    comparison_id: str,
+    name: str,
+    baseline_experiment_id: str,
+    candidate_experiment_id: str,
+    baseline_scheduler_type: str,
+    candidate_scheduler_type: str,
+    dataset_fingerprint: str,
+    baseline_scheduler_params: dict[str, Any] | None = None,
+    candidate_scheduler_params: dict[str, Any] | None = None,
+    seed: int = 42,
+    fixed_factors: dict[str, Any] | None = None,
+    partition_fingerprint: str | None = None,
+    subset_fingerprint: str | None = None,
+    description: str = "Controlled comparison isolating learning rate scheduling.",
+) -> ControlledComparison:
+    """Helper creating a ControlledComparison between learning rate schedules."""
+    varied = {
+        "scheduler_type": {
+            "baseline": baseline_scheduler_type,
+            "candidate": candidate_scheduler_type,
+        },
+        "scheduler_params": {
+            "baseline": baseline_scheduler_params or {},
+            "candidate": candidate_scheduler_params or {},
+        },
+    }
+
+    base_fixed: dict[str, Any] = {
+        "dataset_fingerprint": dataset_fingerprint,
+        "seed": seed,
+    }
+    if fixed_factors:
+        base_fixed.update(fixed_factors)
+
+    return ControlledComparison(
+        comparison_id=comparison_id,
+        name=name,
+        description=description,
+        baseline_experiment_id=baseline_experiment_id,
+        candidate_experiment_id=candidate_experiment_id,
+        varied_factors=varied,
+        fixed_factors=base_fixed,
+        dataset_fingerprint=dataset_fingerprint,
+        partition_fingerprint=partition_fingerprint,
+        subset_fingerprint=subset_fingerprint,
+        seed=seed,
+    )
