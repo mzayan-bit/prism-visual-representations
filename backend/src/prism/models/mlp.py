@@ -1,5 +1,6 @@
-"""Multi-Layer Perceptron (MLP) vision baseline model."""
+"""Multi-Layer Perceptron (MLP) vision baseline model with optional normalization."""
 
+import copy
 import random
 from collections.abc import Sequence
 from typing import Any
@@ -9,11 +10,12 @@ from prism.models.activations import BaseActivation, get_activation
 from prism.models.base import BaseVisionModel
 from prism.models.initialization import initialize_mlp_parameters
 from prism.models.linear import _flatten_single_input
+from prism.models.normalization import BaseNormalization, get_normalization
 from prism.models.specifications import ModelSpecification
 
 
 class MultiLayerPerceptron(BaseVisionModel):
-    """Deep Multi-Layer Perceptron with non-linear activations and optional dropout."""
+    """Deep MLP with activations, dropout, and optional normalization."""
 
     def __init__(
         self,
@@ -40,7 +42,9 @@ class MultiLayerPerceptron(BaseVisionModel):
         self.hidden_dims: list[int] = [int(h) for h in raw_hidden]
         for idx, h in enumerate(self.hidden_dims):
             if h <= 0:
-                raise ValidationError(f"hidden_dims[{idx}] must be positive, got {h}.")
+                raise ValidationError(
+                    f"hidden_dims[{idx}] must be positive, got {h}."
+                )
 
         self.num_classes_val: int = spec.num_classes
         act_name = str(spec.hyperparameters.get("activation", "relu"))
@@ -54,6 +58,18 @@ class MultiLayerPerceptron(BaseVisionModel):
         self.dropout: float = dropout_p
         self.seed: int = seed
 
+        # Normalization Hyperparameters
+        self.normalization_name: str = str(
+            spec.hyperparameters.get("normalization", "none")
+        ).lower()
+        self.norm_eps: float = float(spec.hyperparameters.get("norm_eps", 1e-5))
+        self.norm_momentum: float = float(
+            spec.hyperparameters.get("norm_momentum", 0.1)
+        )
+        self.norm_affine: bool = bool(
+            spec.hyperparameters.get("norm_affine", True)
+        )
+
         # 2. Parameter Initialization
         self.layer_weights, self.layer_biases = initialize_mlp_parameters(
             in_features=self.in_features,
@@ -64,15 +80,46 @@ class MultiLayerPerceptron(BaseVisionModel):
         )
 
         self.num_layers = len(self.layer_weights)  # hidden layers + 1 output layer
+
+        # 3. Normalization Layers for Hidden Stages
+        self.norm_layers: list[BaseNormalization | None] = []
+        for h_dim in self.hidden_dims:
+            norm = get_normalization(
+                self.normalization_name,
+                num_features=h_dim,
+                is_spatial=False,
+                eps=self.norm_eps,
+                momentum=self.norm_momentum,
+                affine=self.norm_affine,
+            )
+            self.norm_layers.append(norm)
+
         self.zero_grad()
 
         # Cached tensors for backpropagation
         self._cached_h: list[list[list[float]]] = []
         self._cached_z: list[list[list[float]]] = []
+        self._cached_norm_out: list[list[list[float]] | None] = []
         self._cached_masks: list[list[list[float]] | None] = []
 
         # Internal step counter for reproducible dropout seeding
         self._step_counter: int = 0
+
+    def train(self, mode: bool = True) -> "MultiLayerPerceptron":
+        """Set training mode across MLP and normalization layers."""
+        super().train(mode)
+        for norm in self.norm_layers:
+            if norm is not None:
+                norm.train(mode)
+        return self
+
+    def eval(self) -> "MultiLayerPerceptron":
+        """Set evaluation mode across MLP and normalization layers."""
+        super().eval()
+        for norm in self.norm_layers:
+            if norm is not None:
+                norm.eval()
+        return self
 
     def _prepare_inputs(self, inputs: Any) -> list[list[float]]:
         """Flatten and validate batch of inputs into shape [B, in_features]."""
@@ -123,19 +170,36 @@ class MultiLayerPerceptron(BaseVisionModel):
         h_current = self._prepare_inputs(inputs)
         batch_size = len(h_current)
 
+        if self.is_training:
+            self._step_counter += 1
+
         self._cached_h = [h_current]
         self._cached_z = []
+        self._cached_norm_out = []
         self._cached_masks = []
 
-        # Forward through hidden layers
-        for l_idx in range(self.num_layers - 1):
+        # Forward through hidden layers: Linear -> (Norm) -> Act -> (Dropout)
+        num_hidden = self.num_layers - 1
+        for l_idx in range(num_hidden):
             w = self.layer_weights[l_idx]
             b = self.layer_biases[l_idx]
+            norm = self.norm_layers[l_idx]
 
             z = self._matmul_add_bias(h_current, w, b)
             self._cached_z.append(z)
 
-            a = self.activation.forward(z)
+            # Optional Normalization
+            if norm is not None:
+                norm_out = norm.forward(z)
+                act_in = norm_out
+            else:
+                norm_out = None
+                act_in = z
+
+            self._cached_norm_out.append(norm_out)
+
+            # Activation
+            a = self.activation.forward(act_in)
 
             # Apply dropout in training mode
             if self.is_training and self.dropout > 0.0:
@@ -143,9 +207,10 @@ class MultiLayerPerceptron(BaseVisionModel):
                 inv_p_keep = 1.0 / p_keep
                 fan_out = len(b)
 
-                # Deterministic dropout seed derived from model seed, layer, and step
                 layer_seed = (
-                    (self.seed * 1000003) ^ (l_idx * 10007) ^ (self._step_counter * 31)
+                    (self.seed * 1000003)
+                    ^ (l_idx * 10007)
+                    ^ (self._step_counter * 31)
                 ) & 0x7FFFFFFF
                 rng = random.Random(layer_seed)
 
@@ -167,10 +232,7 @@ class MultiLayerPerceptron(BaseVisionModel):
 
             self._cached_h.append(h_current)
 
-        if self.is_training:
-            self._step_counter += 1
-
-        # Output layer (raw logits, no activation or dropout)
+        # Output Layer: raw unnormalized logits
         w_out = self.layer_weights[-1]
         b_out = self.layer_biases[-1]
         logits = self._matmul_add_bias(h_current, w_out, b_out)
@@ -178,46 +240,73 @@ class MultiLayerPerceptron(BaseVisionModel):
 
         return logits
 
-    def extract_representations(self, inputs: Any, layer: str = "final_hidden") -> Any:
+    def extract_representations(
+        self, inputs: Any, layer: str = "final_hidden"
+    ) -> Any:
         """Extract intermediate activations without modifying model state."""
         norm_layer = layer.lower().strip()
-        h_current = self._prepare_inputs(inputs)
+        was_training = self.is_training
+        self.eval()
 
-        if norm_layer in ("input_flat", "input"):
-            return h_current
+        try:
+            h_current = self._prepare_inputs(inputs)
 
-        num_hidden = self.num_layers - 1
-        for l_idx in range(num_hidden):
-            w = self.layer_weights[l_idx]
-            b = self.layer_biases[l_idx]
-            z = self._matmul_add_bias(h_current, w, b)
-            a = self.activation.forward(z)
-
-            # In eval mode (or during representation extraction), dropout is identity
-            h_current = a
-
-            if norm_layer == f"hidden_{l_idx}":
+            if norm_layer in ("input_flat", "input"):
                 return h_current
 
-        if norm_layer in ("final_hidden", f"hidden_{num_hidden - 1}"):
-            return h_current
+            num_hidden = self.num_layers - 1
+            for l_idx in range(num_hidden):
+                w = self.layer_weights[l_idx]
+                b = self.layer_biases[l_idx]
+                norm = self.norm_layers[l_idx]
 
-        if norm_layer == "logits":
-            w_out = self.layer_weights[-1]
-            b_out = self.layer_biases[-1]
-            return self._matmul_add_bias(h_current, w_out, b_out)
+                z = self._matmul_add_bias(h_current, w, b)
+                if norm_layer == f"hidden_{l_idx}_pre_norm":
+                    return z
 
-        valid = ["input_flat", "final_hidden", "logits"] + [
-            f"hidden_{i}" for i in range(num_hidden)
-        ]
-        raise ValidationError(
-            f"Unknown layer '{layer}' for MultiLayerPerceptron. Supported: {valid}"
-        )
+                if norm is not None:
+                    norm_out = norm.forward(z)
+                    act_in = norm_out
+                else:
+                    norm_out = None
+                    act_in = z
+
+                if norm_layer == f"hidden_{l_idx}_post_norm":
+                    return norm_out if norm_out is not None else z
+
+                a = self.activation.forward(act_in)
+                h_current = a
+
+                if norm_layer == f"hidden_{l_idx}":
+                    return h_current
+
+            if norm_layer in ("final_hidden", f"hidden_{num_hidden - 1}"):
+                return h_current
+
+            if norm_layer == "logits":
+                w_out = self.layer_weights[-1]
+                b_out = self.layer_biases[-1]
+                return self._matmul_add_bias(h_current, w_out, b_out)
+
+            valid = (
+                ["input_flat", "final_hidden", "logits"]
+                + [f"hidden_{i}" for i in range(num_hidden)]
+                + [f"hidden_{i}_pre_norm" for i in range(num_hidden)]
+                + [f"hidden_{i}_post_norm" for i in range(num_hidden)]
+            )
+            raise ValidationError(
+                f"Unknown layer '{layer}' for MultiLayerPerceptron. Supported: {valid}"
+            )
+        finally:
+            if was_training:
+                self.train()
 
     def backward(self, d_logits: list[list[float]]) -> None:
         """Propagate gradients backward through output layer and all hidden layers."""
         if not self._cached_h or not self._cached_z:
-            raise ValidationError("Cannot perform backward pass before forward pass.")
+            raise ValidationError(
+                "Cannot perform backward pass before forward pass."
+            )
 
         batch_size = len(d_logits)
         cached_bs = len(self._cached_h[0])
@@ -232,118 +321,182 @@ class MultiLayerPerceptron(BaseVisionModel):
         fan_in_out = len(w_out)
         fan_out = len(self.layer_biases[-1])
 
-        # grad_weights_out = H_final^T @ d_logits [fan_in, num_classes]
         for d in range(fan_in_out):
             for c in range(fan_out):
                 val = 0.0
                 for i in range(batch_size):
                     val += h_final[i][d] * d_logits[i][c]
-                self.grad_layer_weights[-1][d][c] += val
+                self.grad_weights[-1][d][c] += val
 
         for c in range(fan_out):
             val_b = 0.0
             for i in range(batch_size):
                 val_b += d_logits[i][c]
-            self.grad_layer_biases[-1][c] += val_b
+            self.grad_biases[-1][c] += val_b
 
-        # Compute dH_final = d_logits @ W_out^T [B, fan_in_out]
-        dh_current: list[list[float]] = []
+        # dH_final = d_logits @ W_out.T
+        d_h_current: list[list[float]] = []
         for i in range(batch_size):
             row_dh: list[float] = []
             for d in range(fan_in_out):
-                val_dh = 0.0
+                sum_val = 0.0
                 for c in range(fan_out):
-                    val_dh += d_logits[i][c] * w_out[d][c]
-                row_dh.append(val_dh)
-            dh_current.append(row_dh)
+                    sum_val += d_logits[i][c] * w_out[d][c]
+                row_dh.append(sum_val)
+            d_h_current.append(row_dh)
 
-        # 2. Propagate backward through hidden layers
+        # 2. Hidden layers backward (reversed)
         num_hidden = self.num_layers - 1
-        for l_idx in range(num_hidden - 1, -1, -1):
-            w = self.layer_weights[l_idx]
+        for l_idx in reversed(range(num_hidden)):
+            norm = self.norm_layers[l_idx]
             z = self._cached_z[l_idx]
-            h_prev = self._cached_h[l_idx]
+            norm_out = self._cached_norm_out[l_idx]
             mask = self._cached_masks[l_idx]
+            h_in = self._cached_h[l_idx]
+            w = self.layer_weights[l_idx]
 
             fan_in = len(w)
-            fan_out_l = len(w[0])
+            fan_out_h = len(self.layer_biases[l_idx])
 
-            # Apply dropout mask to gradient if active
+            # Backward through dropout mask
             if mask is not None:
-                da = [
-                    [dh_current[i][j] * mask[i][j] for j in range(fan_out_l)]
+                d_a = [
+                    [
+                        d_h_current[i][j] * mask[i][j]
+                        for j in range(fan_out_h)
+                    ]
                     for i in range(batch_size)
                 ]
             else:
-                da = dh_current
+                d_a = d_h_current
 
-            # Backprop through activation: dz = activation.backward(z, da)
-            dz = self.activation.backward(z, da)
+            # Backward through activation
+            act_in = norm_out if norm is not None else z
+            d_act_in = self.activation.backward(act_in, d_a)
 
-            # Layer parameter gradients
+            # Backward through normalization
+            d_z = norm.backward(d_act_in) if norm is not None else d_act_in
+
+            # Accumulate weight and bias gradients
             for d in range(fan_in):
-                for c in range(fan_out_l):
-                    grad_w = 0.0
+                for c in range(fan_out_h):
+                    val_w = 0.0
                     for i in range(batch_size):
-                        grad_w += h_prev[i][d] * dz[i][c]
-                    self.grad_layer_weights[l_idx][d][c] += grad_w
+                        val_w += h_in[i][d] * d_z[i][c]
+                    self.grad_weights[l_idx][d][c] += val_w
 
-            for c in range(fan_out_l):
-                grad_b = 0.0
+            for c in range(fan_out_h):
+                val_bh = 0.0
                 for i in range(batch_size):
-                    grad_b += dz[i][c]
-                self.grad_layer_biases[l_idx][c] += grad_b
+                    val_bh += d_z[i][c]
+                self.grad_biases[l_idx][c] += val_bh
 
-            # Upstream gradient for previous hidden layer: dh_prev = dz @ W^T
-            if l_idx > 0:
-                dh_prev_mat: list[list[float]] = []
-                for i in range(batch_size):
-                    row_dh_prev: list[float] = []
-                    for d in range(fan_in):
-                        val_prev = 0.0
-                        for c in range(fan_out_l):
-                            val_prev += dz[i][c] * w[d][c]
-                        row_dh_prev.append(val_prev)
-                    dh_prev_mat.append(row_dh_prev)
-                dh_current = dh_prev_mat
+            # dH_prev = dZ @ W.T
+            d_h_prev: list[list[float]] = []
+            for i in range(batch_size):
+                row_prev: list[float] = []
+                for d in range(fan_in):
+                    sum_h = 0.0
+                    for c in range(fan_out_h):
+                        sum_h += d_z[i][c] * w[d][c]
+                    row_prev.append(sum_h)
+                d_h_prev.append(row_prev)
+
+            d_h_current = d_h_prev
 
     def zero_grad(self) -> None:
-        """Clear all stored parameter gradients across all layers."""
-        self.grad_layer_weights = [
-            [[0.0 for _ in range(len(w))] for w in self.layer_weights[layer_i]]
-            for layer_i in range(self.num_layers)
+        """Reset parameter gradients."""
+        self.grad_weights: list[list[list[float]]] = [
+            [[0.0 for _ in range(len(w[0]))] for _ in range(len(w))]
+            for w in self.layer_weights
         ]
-        self.grad_layer_biases = [
+        self.grad_biases: list[list[float]] = [
             [0.0 for _ in range(len(b))] for b in self.layer_biases
         ]
+        for norm in self.norm_layers:
+            if norm is not None:
+                norm.zero_grad()
 
     def get_parameters(self) -> dict[str, Any]:
-        """Return parameters dictionary mapping layer names to weight and bias lists."""
+        """Return trainable parameters mapping."""
         params: dict[str, Any] = {}
-        for l_idx in range(self.num_layers):
-            tag = "out" if l_idx == self.num_layers - 1 else str(l_idx)
-            params[f"weights_{tag}"] = [row[:] for row in self.layer_weights[l_idx]]
-            params[f"bias_{tag}"] = self.layer_biases[l_idx][:]
+        for idx, (w, b) in enumerate(
+            zip(self.layer_weights, self.layer_biases, strict=True)
+        ):
+            is_out = idx == (self.num_layers - 1)
+            suffix = "out" if is_out else str(idx)
+            params[f"weights_{suffix}"] = copy.deepcopy(w)
+            params[f"bias_{suffix}"] = list(b)
+
+        for idx, norm in enumerate(self.norm_layers):
+            if norm is not None:
+                for k, v in norm.get_parameters().items():
+                    params[f"norm_{idx}_{k}"] = copy.deepcopy(v)
         return params
 
     def set_parameters(self, params: dict[str, Any]) -> None:
-        """Load parameters from dictionary mapping."""
-        for l_idx in range(self.num_layers):
-            tag = "out" if l_idx == self.num_layers - 1 else str(l_idx)
-            w_key = f"weights_{tag}"
-            b_key = f"bias_{tag}"
+        """Load trainable parameters."""
+        for idx in range(self.num_layers):
+            is_out = idx == (self.num_layers - 1)
+            suffix = "out" if is_out else str(idx)
+            w_key = f"weights_{suffix}"
+            b_key = f"bias_{suffix}"
             if w_key in params:
-                self.layer_weights[l_idx] = [row[:] for row in params[w_key]]
+                self.layer_weights[idx] = copy.deepcopy(params[w_key])
             if b_key in params:
-                self.layer_biases[l_idx] = list(params[b_key])
+                self.layer_biases[idx] = list(params[b_key])
+
+        for idx, norm in enumerate(self.norm_layers):
+            if norm is not None:
+                norm_dict = {}
+                gamma_key = f"norm_{idx}_gamma"
+                beta_key = f"norm_{idx}_beta"
+                if gamma_key in params:
+                    norm_dict["gamma"] = copy.deepcopy(params[gamma_key])
+                if beta_key in params:
+                    norm_dict["beta"] = copy.deepcopy(params[beta_key])
+                norm.set_parameters(norm_dict)
 
     def get_gradients(self) -> dict[str, Any]:
-        """Return computed gradients mapping layer names to gradient lists."""
+        """Return computed gradients mapping."""
         grads: dict[str, Any] = {}
-        for l_idx in range(self.num_layers):
-            tag = "out" if l_idx == self.num_layers - 1 else str(l_idx)
-            grads[f"grad_weights_{tag}"] = [
-                row[:] for row in self.grad_layer_weights[l_idx]
-            ]
-            grads[f"grad_bias_{tag}"] = self.grad_layer_biases[l_idx][:]
+        for idx, (w, b) in enumerate(
+            zip(self.grad_weights, self.grad_biases, strict=True)
+        ):
+            is_out = idx == (self.num_layers - 1)
+            suffix = "out" if is_out else str(idx)
+            grads[f"grad_weights_{suffix}"] = copy.deepcopy(w)
+            grads[f"grad_bias_{suffix}"] = list(b)
+
+        for idx, norm in enumerate(self.norm_layers):
+            if norm is not None:
+                for k, v in norm.get_gradients().items():
+                    grads[f"grad_norm_{idx}_{k.replace('grad_', '')}"] = (
+                        copy.deepcopy(v)
+                    )
         return grads
+
+    def get_state(self) -> dict[str, Any]:
+        """Return non-trainable running state."""
+        state: dict[str, Any] = {}
+        for idx, norm in enumerate(self.norm_layers):
+            if norm is not None:
+                for k, v in norm.get_state().items():
+                    state[f"norm_{idx}_{k}"] = copy.deepcopy(v)
+        return state
+
+    def set_state(self, state: dict[str, Any]) -> None:
+        """Load non-trainable running state."""
+        for idx, norm in enumerate(self.norm_layers):
+            if norm is not None:
+                n_state = {}
+                mean_key = f"norm_{idx}_running_mean"
+                var_key = f"norm_{idx}_running_var"
+                batch_key = f"norm_{idx}_num_batches_tracked"
+                if mean_key in state:
+                    n_state["running_mean"] = copy.deepcopy(state[mean_key])
+                if var_key in state:
+                    n_state["running_var"] = copy.deepcopy(state[var_key])
+                if batch_key in state:
+                    n_state["num_batches_tracked"] = state[batch_key]
+                norm.set_state(n_state)

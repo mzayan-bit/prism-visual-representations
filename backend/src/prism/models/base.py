@@ -59,12 +59,12 @@ class BaseVisionModel(ABC):
 
     @abstractmethod
     def get_parameters(self) -> dict[str, Any]:
-        """Return a mapping of parameter names to their current values."""
+        """Return a mapping of trainable parameter names to their current values."""
         ...
 
     @abstractmethod
     def set_parameters(self, params: dict[str, Any]) -> None:
-        """Load parameter values from a mapping."""
+        """Load trainable parameter values from a mapping."""
         ...
 
     @abstractmethod
@@ -72,7 +72,17 @@ class BaseVisionModel(ABC):
         """Return a mapping of parameter names to their computed gradients."""
         ...
 
+    def get_state(self) -> dict[str, Any]:
+        """Return non-trainable model state (e.g. running statistics)."""
+        return {}
+
+    def set_state(self, state: dict[str, Any]) -> None:
+        """Load non-trainable model state."""
+        _ = state
+
     @abstractmethod
-    def extract_representations(self, inputs: Any, layer: str = "final_hidden") -> Any:
+    def extract_representations(
+        self, inputs: Any, layer: str = "final_hidden"
+    ) -> Any:
         """Extract intermediate representations, feature vectors, or spatial maps."""
         ...

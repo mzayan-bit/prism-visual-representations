@@ -1,4 +1,4 @@
-"""Convolutional Neural Network baseline model with spatial representations."""
+"""Convolutional Neural Network baseline with spatial normalization."""
 
 import copy
 import random
@@ -13,6 +13,7 @@ from prism.models.initialization import (
     initialize_linear_parameters,
     initialize_mlp_parameters,
 )
+from prism.models.normalization import BaseNormalization, get_normalization
 from prism.models.pooling import MaxPool2D
 from prism.models.spatial import (
     compute_conv2d_output_shape,
@@ -75,7 +76,15 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
                 f"Dropout probability must be in [0.0, 1.0), got {self.dropout_rate}."
             )
 
-        self.classifier_hidden_dims: list[int] = hp.get("classifier_hidden_dims", [])
+        # Normalization Hyperparameters
+        self.normalization_name: str = hp.get("normalization", "none").lower()
+        self.norm_eps: float = float(hp.get("norm_eps", 1e-5))
+        self.norm_momentum: float = float(hp.get("norm_momentum", 0.1))
+        self.norm_affine: bool = bool(hp.get("norm_affine", True))
+
+        self.classifier_hidden_dims: list[int] = hp.get(
+            "classifier_hidden_dims", []
+        )
 
         raw_kernel_sizes = hp.get("kernel_sizes", 3)
         raw_strides = hp.get("strides", 1)
@@ -98,8 +107,9 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
         pool_sizes = _to_list(raw_pool_sizes, num_blocks)
         pool_strides = _to_list(raw_pool_strides, num_blocks)
 
-        # 3. Construct Convolutional Blocks and Track Shapes
+        # 3. Construct Convolutional, Normalization, Activation & Pooling Blocks
         self.conv_layers: list[Conv2D] = []
+        self.norm_layers: list[BaseNormalization | None] = []
         self.activations: list[BaseActivation] = []
         self.pool_layers: list[MaxPool2D | None] = []
         self.stage_rf_tracking: list[tuple[int, int]] = []
@@ -128,6 +138,19 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
                 activation=self.activation_name,
             )
             self.conv_layers.append(conv)
+
+            # Optional Normalization
+            norm = get_normalization(
+                self.normalization_name,
+                num_features=out_c,
+                is_spatial=True,
+                eps=self.norm_eps,
+                momentum=self.norm_momentum,
+                affine=self.norm_affine,
+            )
+            self.norm_layers.append(norm)
+
+            # Activation
             self.activations.append(get_activation(self.activation_name))
 
             k_h, k_w = normalize_spatial_pair(k_s, "kernel_size")
@@ -154,7 +177,9 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
                 ps_h, ps_w = normalize_spatial_pair(
                     p_stride if p_stride is not None else p_size, "pool_stride"
                 )
-                self.stage_rf_tracking.append((max(pk_h, pk_w), max(ps_h, ps_w)))
+                self.stage_rf_tracking.append(
+                    (max(pk_h, pk_w), max(ps_h, ps_w))
+                )
 
                 cur_h, cur_w = compute_pool2d_output_shape(
                     input_height=cur_h,
@@ -208,13 +233,31 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
         self._cached_flat: list[list[float]] | None = None
         self._cached_fc_states: list[dict[str, Any]] = []
 
+    def train(self, mode: bool = True) -> "ConvolutionalNeuralNetwork":
+        """Set training mode across model and normalization layers."""
+        super().train(mode)
+        for norm in self.norm_layers:
+            if norm is not None:
+                norm.train(mode)
+        return self
+
+    def eval(self) -> "ConvolutionalNeuralNetwork":
+        """Set evaluation mode across model and normalization layers."""
+        super().eval()
+        for norm in self.norm_layers:
+            if norm is not None:
+                norm.eval()
+        return self
+
     @property
     def receptive_field(self) -> int:
         """Effective receptive field size across all conv and pooling stages."""
         rf, _ = compute_receptive_field(self.stage_rf_tracking)
         return rf
 
-    def _flatten_spatial(self, x: list[list[list[list[float]]]]) -> list[list[float]]:
+    def _flatten_spatial(
+        self, x: list[list[list[list[float]]]]
+    ) -> list[list[float]]:
         """Flatten 4D spatial feature tensor [N, C, H, W] to 2D vector matrix [N, D]."""
         n_samples = len(x)
         c_channels = len(x[0])
@@ -253,7 +296,9 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
             out_4d.append(sample_4d)
         return out_4d
 
-    def _convert_input_to_4d(self, inputs: Any) -> list[list[list[list[float]]]]:
+    def _convert_input_to_4d(
+        self, inputs: Any
+    ) -> list[list[list[list[float]]]]:
         """Safely convert arbitrary input batches (nested 4D or flattened 2D) to 4D."""
         if not isinstance(inputs, (list, tuple)) or not inputs:
             raise ValidationError("Input batch cannot be empty.")
@@ -272,7 +317,6 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
                     return ensure_4d_tensor(inputs)
             else:
                 # 2D matrix: [N, D] flattened samples
-                # Reshape each sample to [C, H, W]
                 n_samples = len(inputs)
                 expected_dim = self.in_channels * self.in_height * self.in_width
                 out_4d: list[list[list[list[float]]]] = []
@@ -308,19 +352,28 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
         cur_tensor = x_4d
         num_blocks = len(self.conv_layers)
 
-        # Pass through convolutional blocks
+        # Pass through convolutional blocks: Conv -> (Norm) -> Act -> (Pool)
         for b_idx in range(num_blocks):
             conv = self.conv_layers[b_idx]
+            norm = self.norm_layers[b_idx]
             act = self.activations[b_idx]
             pool = self.pool_layers[b_idx]
 
             # 1. Conv2D
             conv_out = conv.forward(cur_tensor)
 
-            # 2. Activation
-            act_out = act.forward(conv_out)
+            # 2. Optional Normalization
+            if norm is not None:
+                norm_out = norm.forward(conv_out)
+                act_in = norm_out
+            else:
+                norm_out = None
+                act_in = conv_out
 
-            # 3. Optional Pooling
+            # 3. Activation
+            act_out = act.forward(act_in)
+
+            # 4. Optional Pooling
             if pool is not None:
                 pool_out = pool.forward(act_out)
                 block_out = pool_out
@@ -331,6 +384,7 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
             self._cached_block_states.append(
                 {
                     "conv_pre": conv_out,
+                    "conv_post_norm": norm_out if norm is not None else conv_out,
                     "conv_post": act_out,
                     "pool_post": pool_out,
                     "block_out": block_out,
@@ -388,7 +442,9 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
                 p_keep = 1.0 - self.dropout_rate
                 scale = 1.0 / p_keep
                 drop_seed = (
-                    (self.seed * 1000003) ^ (l_idx * 10007) ^ (self._step_counter * 31)
+                    (self.seed * 1000003)
+                    ^ (l_idx * 10007)
+                    ^ (self._step_counter * 31)
                 ) & 0x7FFFFFFF
                 rng = random.Random(drop_seed)
 
@@ -424,7 +480,9 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
             or not self._cached_block_states
             or not self._cached_fc_states
         ):
-            raise ValidationError("Cannot perform backward pass before forward pass.")
+            raise ValidationError(
+                "Cannot perform backward pass before forward pass."
+            )
 
         n_samples = len(d_logits)
         num_fc = len(self.fc_weights)
@@ -445,11 +503,13 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
                 d_z = d_out
             else:
                 d_a = d_out
-                # Apply cached dropout mask
                 mask = fc_state["dropout_mask"]
                 if mask is not None:
                     d_a = [
-                        [d_a[n][j] * mask[n][j] for j in range(len(d_a[0]))]
+                        [
+                            d_a[n][j] * mask[n][j]
+                            for j in range(len(d_a[0]))
+                        ]
                         for n in range(len(d_a))
                     ]
                 act = get_activation(self.activation_name)
@@ -461,7 +521,9 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
                     dz_val = d_z[n][j]
                     self.grad_fc_biases[l_idx][j] += dz_val
                     for i in range(in_dim):
-                        self.grad_fc_weights[l_idx][i][j] += dz_val * h_in[n][i]
+                        self.grad_fc_weights[l_idx][i][j] += (
+                            dz_val * h_in[n][i]
+                        )
 
             # Compute dH_in for previous FC layer
             d_h_prev: list[list[float]] = []
@@ -476,7 +538,7 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
 
             d_out = d_h_prev
 
-        # d_out is now gradient w.r.t flattened final spatial representation: [N, D]
+        # d_out is gradient w.r.t flattened final spatial representation: [N, D]
         # Reshape to 4D tensor [N, C_last, H_last, W_last]
         c_last, h_last, w_last = self.final_spatial_shape
         d_spatial = self._unflatten_spatial(d_out, c_last, h_last, w_last)
@@ -487,25 +549,40 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
 
         for b_idx in reversed(range(num_blocks)):
             conv = self.conv_layers[b_idx]
+            norm = self.norm_layers[b_idx]
             act = self.activations[b_idx]
             pool = self.pool_layers[b_idx]
             block_state = self._cached_block_states[b_idx]
 
             # Backward Pool
-            d_act = pool.backward(cur_d_spatial) if pool is not None else cur_d_spatial
+            d_act = (
+                pool.backward(cur_d_spatial)
+                if pool is not None
+                else cur_d_spatial
+            )
 
             # Backward Activation
-            d_conv = act.backward(block_state["conv_pre"], d_act)
+            act_in = (
+                block_state["conv_post_norm"]
+                if norm is not None
+                else block_state["conv_pre"]
+            )
+            d_act_in = act.backward(act_in, d_act)
+
+            # Backward Normalization
+            d_conv = norm.backward(d_act_in) if norm is not None else d_act_in
 
             # Backward Conv2D
             d_prev_block = conv.backward(d_conv)
             cur_d_spatial = d_prev_block
 
-    def extract_representations(self, inputs: Any, layer: str = "final_hidden") -> Any:
+    def extract_representations(
+        self, inputs: Any, layer: str = "final_hidden"
+    ) -> Any:
         """Extract intermediate features or spatial feature maps in evaluation mode."""
         layer_norm = layer.strip().lower()
 
-        # Temporarily switch to eval mode to prevent dropout and gradient updates
+        # Temporarily switch to eval mode to prevent dropout and running stats update
         was_training = self.is_training
         self.eval()
 
@@ -526,9 +603,15 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
             for b_idx in range(len(self.conv_layers)):
                 b_state = self._cached_block_states[b_idx]
 
-                if layer_norm == f"conv_{b_idx}_pre":
+                if layer_norm in (f"conv_{b_idx}_pre", f"conv_{b_idx}_pre_norm"):
                     return b_state["conv_pre"]
-                if layer_norm in (f"conv_{b_idx}", f"conv_{b_idx}_post"):
+                if layer_norm in (f"conv_{b_idx}_post_norm", f"norm_{b_idx}"):
+                    return b_state["conv_post_norm"]
+                if layer_norm in (
+                    f"conv_{b_idx}",
+                    f"conv_{b_idx}_post",
+                    f"conv_{b_idx}_post_activation",
+                ):
                     return b_state["conv_post"]
                 if layer_norm in (f"pool_{b_idx}", f"block_{b_idx}"):
                     return b_state["block_out"]
@@ -555,6 +638,7 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
             valid_layers = (
                 ["input", "input_flat", "final_spatial", "final_hidden", "logits"]
                 + [f"conv_{i}_pre" for i in range(len(self.conv_layers))]
+                + [f"conv_{i}_post_norm" for i in range(len(self.conv_layers))]
                 + [f"conv_{i}" for i in range(len(self.conv_layers))]
                 + [f"pool_{i}" for i in range(len(self.conv_layers))]
             )
@@ -567,12 +651,19 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
                 self.train()
 
     def zero_grad(self) -> None:
-        """Clear all gradients in conv layers and classifier head."""
+        """Clear all gradients in conv layers, norm layers, and classifier head."""
         for conv in self.conv_layers:
             conv.zero_grad()
 
+        for norm in self.norm_layers:
+            if norm is not None:
+                norm.zero_grad()
+
         self.grad_fc_weights: list[list[list[float]]] = [
-            [[0.0 for _ in range(len(w[0]))] for _ in range(len(w))]
+            [
+                [0.0 for _ in range(len(w[0]))]
+                for _ in range(len(w))
+            ]
             for w in self.fc_weights
         ]
         self.grad_fc_biases: list[list[float]] = [
@@ -580,12 +671,18 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
         ]
 
     def get_parameters(self) -> dict[str, Any]:
-        """Return parameters dictionary for optimizer."""
+        """Return trainable parameters dictionary for optimizer."""
         params: dict[str, Any] = {}
         for b_idx, conv in enumerate(self.conv_layers):
             params[f"conv_{b_idx}_weights"] = copy.deepcopy(conv.weights)
             if conv.use_bias:
                 params[f"conv_{b_idx}_bias"] = list(conv.bias_weights)
+
+        for b_idx, norm in enumerate(self.norm_layers):
+            if norm is not None:
+                norm_params = norm.get_parameters()
+                for k, v in norm_params.items():
+                    params[f"norm_{b_idx}_{k}"] = copy.deepcopy(v)
 
         for l_idx, (w, b) in enumerate(
             zip(self.fc_weights, self.fc_biases, strict=True)
@@ -599,7 +696,7 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
         return params
 
     def set_parameters(self, params: dict[str, Any]) -> None:
-        """Set parameters from dictionary."""
+        """Set trainable parameters from dictionary."""
         for b_idx, conv in enumerate(self.conv_layers):
             w_key = f"conv_{b_idx}_weights"
             b_key = f"conv_{b_idx}_bias"
@@ -607,6 +704,17 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
                 conv.weights = copy.deepcopy(params[w_key])
             if b_key in params and conv.use_bias:
                 conv.bias_weights = list(params[b_key])
+
+        for b_idx, norm in enumerate(self.norm_layers):
+            if norm is not None:
+                norm_dict = {}
+                gamma_key = f"norm_{b_idx}_gamma"
+                beta_key = f"norm_{b_idx}_beta"
+                if gamma_key in params:
+                    norm_dict["gamma"] = copy.deepcopy(params[gamma_key])
+                if beta_key in params:
+                    norm_dict["beta"] = copy.deepcopy(params[beta_key])
+                norm.set_parameters(norm_dict)
 
         for l_idx in range(len(self.fc_weights)):
             if len(self.fc_weights) == 1:
@@ -622,12 +730,24 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
                 self.fc_biases[l_idx] = list(params[b_key])
 
     def get_gradients(self) -> dict[str, Any]:
-        """Return computed gradients dictionary."""
+        """Return computed trainable gradients dictionary."""
         grads: dict[str, Any] = {}
         for b_idx, conv in enumerate(self.conv_layers):
-            grads[f"grad_conv_{b_idx}_weights"] = copy.deepcopy(conv.grad_weights)
+            grads[f"grad_conv_{b_idx}_weights"] = copy.deepcopy(
+                conv.grad_weights
+            )
             if conv.use_bias:
-                grads[f"grad_conv_{b_idx}_bias"] = list(conv.grad_bias_weights)
+                grads[f"grad_conv_{b_idx}_bias"] = list(
+                    conv.grad_bias_weights
+                )
+
+        for b_idx, norm in enumerate(self.norm_layers):
+            if norm is not None:
+                norm_grads = norm.get_gradients()
+                for k, v in norm_grads.items():
+                    grads[f"grad_norm_{b_idx}_{k.replace('grad_', '')}"] = (
+                        copy.deepcopy(v)
+                    )
 
         for l_idx, (w, b) in enumerate(
             zip(self.grad_fc_weights, self.grad_fc_biases, strict=True)
@@ -639,6 +759,32 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
                 grads[f"grad_fc_{l_idx}_weights"] = copy.deepcopy(w)
                 grads[f"grad_fc_{l_idx}_bias"] = list(b)
         return grads
+
+    def get_state(self) -> dict[str, Any]:
+        """Return non-trainable model state (running statistics)."""
+        state: dict[str, Any] = {}
+        for b_idx, norm in enumerate(self.norm_layers):
+            if norm is not None:
+                n_state = norm.get_state()
+                for k, v in n_state.items():
+                    state[f"norm_{b_idx}_{k}"] = copy.deepcopy(v)
+        return state
+
+    def set_state(self, state: dict[str, Any]) -> None:
+        """Load non-trainable model state."""
+        for b_idx, norm in enumerate(self.norm_layers):
+            if norm is not None:
+                n_state: dict[str, Any] = {}
+                mean_key = f"norm_{b_idx}_running_mean"
+                var_key = f"norm_{b_idx}_running_var"
+                batch_key = f"norm_{b_idx}_num_batches_tracked"
+                if mean_key in state:
+                    n_state["running_mean"] = copy.deepcopy(state[mean_key])
+                if var_key in state:
+                    n_state["running_var"] = copy.deepcopy(state[var_key])
+                if batch_key in state:
+                    n_state["num_batches_tracked"] = state[batch_key]
+                norm.set_state(n_state)
 
 
 # Friendly Alias

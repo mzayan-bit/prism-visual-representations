@@ -1,6 +1,9 @@
 """Experiment specification, deterministic execution, and run tracking."""
 
-from prism.experiments.comparisons import ControlledComparison
+from prism.experiments.comparisons import (
+    ControlledComparison,
+    create_normalization_comparison,
+)
 from prism.experiments.context import PreparedExecution, RuntimeContext
 from prism.experiments.definitions import ExperimentDefinition
 from prism.experiments.environment import (
@@ -47,6 +50,7 @@ __all__ = [
     "SeedInitializationResult",
     "capture_environment",
     "compute_configuration_fingerprint",
+    "create_normalization_comparison",
     "initialize_seeds",
     "inspect_git_provenance",
     "is_valid_transition",
