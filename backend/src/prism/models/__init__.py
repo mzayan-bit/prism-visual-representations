@@ -6,6 +6,13 @@ from prism.models.activations import (
     ReLUActivation,
     get_activation,
 )
+from prism.models.attention import (
+    MultiHeadSelfAttention,
+    ScaledDotProductAttention,
+    ensure_4d_attention_tensor,
+    softmax_1d,
+    softmax_backward_1d,
+)
 from prism.models.base import BaseVisionModel
 from prism.models.cnn import ConvolutionalNeuralNetwork, SimpleCNN
 from prism.models.convolution import Conv2D
@@ -60,6 +67,7 @@ __all__ = [
     "LinearSoftmaxClassifier",
     "MaxPool2D",
     "ModelSpecification",
+    "MultiHeadSelfAttention",
     "MultiLayerPerceptron",
     "PatchEmbedding",
     "PatchExtractor",
@@ -69,16 +77,20 @@ __all__ = [
     "ResidualAdd",
     "ResidualBlock",
     "ResidualNeuralNetwork",
+    "ScaledDotProductAttention",
     "SimpleCNN",
     "SimpleResNet",
     "compute_conv2d_output_shape",
     "compute_pool2d_output_shape",
     "compute_receptive_field",
     "ensure_3d_tensor",
+    "ensure_4d_attention_tensor",
     "ensure_4d_tensor",
     "get_activation",
     "get_normalization",
     "initialize_conv2d_parameters",
     "initialize_linear_parameters",
     "initialize_mlp_parameters",
+    "softmax_1d",
+    "softmax_backward_1d",
 ]
