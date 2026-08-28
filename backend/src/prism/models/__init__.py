@@ -1,4 +1,4 @@
-"""Model architectures, spatial layers, CNNs, normalization, and residual blocks."""
+"""Model architectures, spatial layers, CNNs, normalization, and residual models."""
 
 from prism.models.activations import (
     BaseActivation,
@@ -29,6 +29,7 @@ from prism.models.residual import (
     ResidualAdd,
     ResidualBlock,
 )
+from prism.models.resnet import ResidualNeuralNetwork, SimpleResNet
 from prism.models.spatial import (
     compute_conv2d_output_shape,
     compute_pool2d_output_shape,
@@ -56,7 +57,9 @@ __all__ = [
     "ReLUActivation",
     "ResidualAdd",
     "ResidualBlock",
+    "ResidualNeuralNetwork",
     "SimpleCNN",
+    "SimpleResNet",
     "compute_conv2d_output_shape",
     "compute_pool2d_output_shape",
     "compute_receptive_field",

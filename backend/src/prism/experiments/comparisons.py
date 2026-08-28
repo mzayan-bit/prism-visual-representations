@@ -77,7 +77,9 @@ class ControlledComparison(BaseModel):
             "subset_fingerprint": self.subset_fingerprint,
             "seed": self.seed,
         }
-        encoded = json.dumps(payload, sort_keys=True, ensure_ascii=True).encode("utf-8")
+        encoded = json.dumps(
+            payload, sort_keys=True, ensure_ascii=True
+        ).encode("utf-8")
         return hashlib.sha256(encoded).hexdigest()
 
     def to_dict(self) -> dict[str, Any]:
@@ -153,6 +155,67 @@ def create_normalization_comparison(
 
     base_fixed: dict[str, Any] = {
         "dataset_fingerprint": dataset_fingerprint,
+        "seed": seed,
+    }
+    if fixed_factors:
+        base_fixed.update(fixed_factors)
+
+    return ControlledComparison(
+        comparison_id=comparison_id,
+        name=name,
+        description=description,
+        baseline_experiment_id=baseline_experiment_id,
+        candidate_experiment_id=candidate_experiment_id,
+        varied_factors=varied,
+        fixed_factors=base_fixed,
+        dataset_fingerprint=dataset_fingerprint,
+        partition_fingerprint=partition_fingerprint,
+        subset_fingerprint=subset_fingerprint,
+        seed=seed,
+    )
+
+
+def create_residual_comparison(
+    comparison_id: str,
+    name: str,
+    baseline_experiment_id: str,
+    candidate_experiment_id: str,
+    dataset_fingerprint: str,
+    seed: int = 42,
+    stage_widths: list[int] | None = None,
+    blocks_per_stage: list[int] | None = None,
+    normalization: str = "batch_norm",
+    shortcut_type: str = "identity_or_projection",
+    fixed_factors: dict[str, Any] | None = None,
+    partition_fingerprint: str | None = None,
+    subset_fingerprint: str | None = None,
+    description: str = "Controlled comparison isolating residual skip connections.",
+) -> ControlledComparison:
+    """Helper creating ControlledComparison between Plain and Residual CNNs."""
+    varied = {
+        "model_family": {
+            "baseline": "cnn",
+            "candidate": "resnet",
+        },
+        "architecture": {
+            "baseline": "plain_cnn",
+            "candidate": "residual_cnn",
+        },
+        "has_skip_connections": {
+            "baseline": False,
+            "candidate": True,
+        },
+        "shortcut_type": {
+            "baseline": "none",
+            "candidate": shortcut_type,
+        },
+    }
+
+    base_fixed: dict[str, Any] = {
+        "dataset_fingerprint": dataset_fingerprint,
+        "stage_widths": stage_widths or [16, 32, 64],
+        "blocks_per_stage": blocks_per_stage or [2, 2, 2],
+        "normalization": normalization,
         "seed": seed,
     }
     if fixed_factors:
