@@ -42,9 +42,7 @@ class MultiLayerPerceptron(BaseVisionModel):
         self.hidden_dims: list[int] = [int(h) for h in raw_hidden]
         for idx, h in enumerate(self.hidden_dims):
             if h <= 0:
-                raise ValidationError(
-                    f"hidden_dims[{idx}] must be positive, got {h}."
-                )
+                raise ValidationError(f"hidden_dims[{idx}] must be positive, got {h}.")
 
         self.num_classes_val: int = spec.num_classes
         act_name = str(spec.hyperparameters.get("activation", "relu"))
@@ -66,9 +64,7 @@ class MultiLayerPerceptron(BaseVisionModel):
         self.norm_momentum: float = float(
             spec.hyperparameters.get("norm_momentum", 0.1)
         )
-        self.norm_affine: bool = bool(
-            spec.hyperparameters.get("norm_affine", True)
-        )
+        self.norm_affine: bool = bool(spec.hyperparameters.get("norm_affine", True))
 
         # 2. Parameter Initialization
         self.layer_weights, self.layer_biases = initialize_mlp_parameters(
@@ -208,9 +204,7 @@ class MultiLayerPerceptron(BaseVisionModel):
                 fan_out = len(b)
 
                 layer_seed = (
-                    (self.seed * 1000003)
-                    ^ (l_idx * 10007)
-                    ^ (self._step_counter * 31)
+                    (self.seed * 1000003) ^ (l_idx * 10007) ^ (self._step_counter * 31)
                 ) & 0x7FFFFFFF
                 rng = random.Random(layer_seed)
 
@@ -240,9 +234,7 @@ class MultiLayerPerceptron(BaseVisionModel):
 
         return logits
 
-    def extract_representations(
-        self, inputs: Any, layer: str = "final_hidden"
-    ) -> Any:
+    def extract_representations(self, inputs: Any, layer: str = "final_hidden") -> Any:
         """Extract intermediate activations without modifying model state."""
         norm_layer = layer.lower().strip()
         was_training = self.is_training
@@ -304,9 +296,7 @@ class MultiLayerPerceptron(BaseVisionModel):
     def backward(self, d_logits: list[list[float]]) -> None:
         """Propagate gradients backward through output layer and all hidden layers."""
         if not self._cached_h or not self._cached_z:
-            raise ValidationError(
-                "Cannot perform backward pass before forward pass."
-            )
+            raise ValidationError("Cannot perform backward pass before forward pass.")
 
         batch_size = len(d_logits)
         cached_bs = len(self._cached_h[0])
@@ -361,10 +351,7 @@ class MultiLayerPerceptron(BaseVisionModel):
             # Backward through dropout mask
             if mask is not None:
                 d_a = [
-                    [
-                        d_h_current[i][j] * mask[i][j]
-                        for j in range(fan_out_h)
-                    ]
+                    [d_h_current[i][j] * mask[i][j] for j in range(fan_out_h)]
                     for i in range(batch_size)
                 ]
             else:
@@ -471,8 +458,8 @@ class MultiLayerPerceptron(BaseVisionModel):
         for idx, norm in enumerate(self.norm_layers):
             if norm is not None:
                 for k, v in norm.get_gradients().items():
-                    grads[f"grad_norm_{idx}_{k.replace('grad_', '')}"] = (
-                        copy.deepcopy(v)
+                    grads[f"grad_norm_{idx}_{k.replace('grad_', '')}"] = copy.deepcopy(
+                        v
                     )
         return grads
 

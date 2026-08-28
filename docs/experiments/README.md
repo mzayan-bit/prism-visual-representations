@@ -35,6 +35,7 @@ DataPreparer.prepare(prepared_execution, ...)
 TrainingEngine.train(...)
         │
         ├── Execute Deterministic Epoch Loops (Forward -> Loss -> Backward -> SGD)
+        ├── Update BatchNorm Running Statistics during training
         ├── Step Learning Rate Scheduler (Constant / Step / Cosine Annealing)
         ├── Record Real-time MetricRecords (Loss, Accuracy, Learning Rate) into ExperimentRun
         ├── Evaluate Test Partition via EvaluationEngine in Evaluation Mode
@@ -44,12 +45,12 @@ TrainingEngine.train(...)
 TrainingResult (Consolidated execution metrics and evaluation summaries)
         │
         ▼
-extract_representations(...) (Extract intermediate spatial feature maps & vector embeddings)
+extract_representations & compute_distribution_summary (Feature statistics & stability)
 ```
 
 ---
 
-## Defining, Preparing, and Training a Convolutional Neural Network (CNN) Experiment
+## Defining, Preparing, and Training a Normalized CNN Experiment
 
 ```python
 from prism.core.enums import (
@@ -74,9 +75,14 @@ from prism.evaluation.configuration import EvaluationConfiguration, MetricSpecif
 from prism.experiments.definitions import ExperimentDefinition
 from prism.experiments.reproducibility import ReproducibilityConfiguration
 from prism.experiments.harness import ExperimentExecutionHarness
+from prism.experiments.comparisons import create_normalization_comparison
 from prism.representations.contracts import (
     RepresentationDescriptor,
     RepresentationBatch,
+)
+from prism.representations.summaries import (
+    compute_distribution_summary,
+    compare_distribution_summaries,
 )
 
 # 1. Obtain standardized CIFAR-10 manifests & 10% nested subset
@@ -85,7 +91,6 @@ canonical = adapter.get_canonical_manifest()
 partition = adapter.get_default_partition(seed=42)
 subsets = adapter.get_nested_subsets(seed=42)
 
-# Bind 10% data-budget subset
 subset_10pct = subsets[0.10]
 controlled_ref = ControlledDataReference(
     canonical_manifest_fingerprint=canonical.compute_fingerprint(),
@@ -101,10 +106,10 @@ dataset = DatasetManifest(
     controlled_data=controlled_ref,
 )
 
-# 2. Declare Model Architecture (2-Block Spatial CNN)
+# 2. Declare Model Architecture (Normalized 2-Block Spatial CNN)
 model = ModelSpecification(
-    model_id="model-cifar10-cnn",
-    name="CIFAR-10 2-Block ConvNet",
+    model_id="model-cifar10-cnn-bn",
+    name="CIFAR-10 2-Block ConvNet with BatchNorm",
     family=ModelFamily.CNN,
     architecture="cnn",
     compatible_tasks=[TaskType.CLASSIFICATION],
@@ -118,6 +123,10 @@ model = ModelSpecification(
         "pool_sizes": 2,
         "pool_strides": 2,
         "activation": "relu",
+        "normalization": "batch_norm",
+        "norm_eps": 1e-5,
+        "norm_momentum": 0.1,
+        "norm_affine": True,
         "dropout": 0.1,
     },
 )
@@ -143,8 +152,8 @@ evaluation = EvaluationConfiguration(
 
 # 4. Construct Immutable Experiment Definition
 experiment = ExperimentDefinition(
-    experiment_id="exp-cifar10-cnn-10pct",
-    name="CIFAR-10 CNN 10% Low-Data Baseline",
+    experiment_id="exp-cifar10-cnn-bn-10pct",
+    name="CIFAR-10 Normalized CNN 10% Low-Data Baseline",
     task_type=TaskType.CLASSIFICATION,
     dataset=dataset,
     model=model,
@@ -193,22 +202,20 @@ result = engine.train(
     run=run,
 )
 
-# 8. Extract Spatial Feature Maps and Final Vector Representations
+# 8. Extract Feature Representations and Compute Distribution Summaries
 cnn_model = ConvolutionalNeuralNetwork(spec=model, seed=42)
 test_batch = [test_dataset[i].data for i in range(10)]
 
-# Extract intermediate spatial feature maps: [10, 64, 8, 8]
-spatial_maps = cnn_model.extract_representations(test_batch, layer="final_spatial")
+pre_norm_map = cnn_model.extract_representations(test_batch, layer="conv_0_pre_norm")
+post_norm_map = cnn_model.extract_representations(test_batch, layer="conv_0_post_norm")
 
-# Extract final flattened vector representations: [10, 4096]
-vector_reps = cnn_model.extract_representations(test_batch, layer="final_hidden")
+summary_pre = compute_distribution_summary(pre_norm_map)
+summary_post = compute_distribution_summary(post_norm_map)
+stability = compare_distribution_summaries(summary_pre, summary_post)
 
 print(f"Run Status: {result.status}")
 print(f"Final Train Loss: {result.final_train_loss:.4f}")
-print(f"Test Accuracy: {result.summary_metrics.get('test_top1_accuracy', 0.0):.4f}")
-print(
-    f"Final Spatial Feature Map Shape: {len(spatial_maps)}x{len(spatial_maps[0])}x{len(spatial_maps[0][0])}x{len(spatial_maps[0][0][0])}"
-)
-print(f"Final Vector Representation Shape: {len(vector_reps)}x{len(vector_reps[0])}")
-print(f"Receptive Field: {cnn_model.receptive_field} pixels")
+print(f"Pre-Norm Mean: {summary_pre.mean:.4f}, Std: {summary_pre.std_dev:.4f}")
+print(f"Post-Norm Mean: {summary_post.mean:.4f}, Std: {summary_post.std_dev:.4f}")
+print(f"Mean Shift Delta: {stability['mean_shift']:.4f}")
 ```

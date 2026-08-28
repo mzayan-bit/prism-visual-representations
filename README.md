@@ -1,27 +1,27 @@
-# PRISM
+# PRISM — Probing the Evolution of Visual Representations
 
-### Probing the Evolution of Visual Representations
+PRISM is an open-source, research-oriented computer vision platform engineered to systematically study how visual representations are acquired, structured, generalized, and transferred across different learning paradigms.
 
-PRISM is an open-source, research-oriented computer vision platform designed to systematically investigate how different learning paradigms acquire, structure, and transfer visual representations.
-
-> **Project Philosophy**  
-> *One visual problem. Multiple learning paradigms. A deeper understanding of how machines learn to see.*
-
----
-
-## Central Research Question
-
-> **“How do different learning paradigms learn visual representations, generalize with limited supervision, fail under distribution shifts, and transfer to downstream vision tasks?”**
-
-Rather than serving as another generic computer vision dashboard, model zoo, or pipeline orchestrator, PRISM is built around **fair, reproducible, and controlled scientific experiments**. Every model comparison is conducted under strictly matched dataset splits, identical preprocessing pipelines, and explicit compute budget allocations.
+```
+       ┌────────────────────────────────────────────────────────┐
+       │                         PRISM                          │
+       │    Probing the Evolution of Visual Representations     │
+       └────────────────────────────────────────────────────────┘
+                                    │
+    ┌───────────────────────────────┼───────────────────────────────┐
+    ▼                               ▼                               ▼
+Linear & Shallow           Deep Convolutions &              Transformers &
+Baselines                  Normalization                    Self-Supervision
+(Softmax, Linear)          (MLP, Conv2D, BatchNorm, CNN)   (ViT, Self-Attn, SSL)
+```
 
 ---
 
 ## Project Status
 
 > [!NOTE]
-> **Active Development**: PRISM has completed **Phase 8: CNN Foundations, Convolutional Feature Learning, Spatial Representations, Pooling & Controlled CNN Comparisons**.
-> The platform now supports spatially structured vision architectures: multi-channel 2D convolutions (`Conv2D`), analytical backpropagation w.r.t weights and inputs, deterministic He/Kaiming initialization (`initialize_conv2d_parameters`), spatial pooling (`MaxPool2D`, `AvgPool2D`), composable CNN models (`ConvolutionalNeuralNetwork` / `SimpleCNN`), receptive field tracking, intermediate spatial feature map extraction (`RepresentationDescriptor`, `RepresentationBatch`), and controlled scientific comparisons across Linear, MLP, and CNN paradigms (`ControlledComparison`).
+> **Active Development**: PRISM has completed **Phase 9: Normalization, Stable CNN Optimization, Feature Distribution Tracking, and Controlled Normalization Comparisons**.
+> The platform supports vector and spatial batch normalization layers (`BatchNorm1D`, `BatchNorm2D`), strict train/eval mode semantics with exponential moving average running statistics tracking, clean separation between trainable affine parameters ($\gamma, \beta$) and non-trainable state (`running_mean`, `running_var`), normalization-augmented CNN and MLP models, statistical feature distribution summaries (`FeatureDistributionSummary`, `compute_distribution_summary`), representation stability comparison utilities (`compare_distribution_summaries`), and auditable controlled comparisons (`create_normalization_comparison`).
 >
 > Vision Transformers (ViT), self-attention geometry, and self-supervised learning paradigms will be introduced in subsequent planned phases.
 
@@ -39,11 +39,12 @@ Rather than serving as another generic computer vision dashboard, model zoo, or 
 | **Phase 6** | Linear Classifiers & Pixel Baselines | :white_check_mark: Completed |
 | **Phase 7** | Deep Learning Baselines (MLPs, Optimization & Regularization) | :white_check_mark: Completed |
 | **Phase 8** | Convolutional Architectures (CNNs & Spatial Representations) | :white_check_mark: Completed |
-| **Phase 9** | Vision Transformers (ViT) & Attention Geometry | :hourglass_flowing_sand: Planned |
-| **Phase 10** | Self-Supervised Learning & Representation Analysis (CKA, Probes) | :hourglass_flowing_sand: Planned |
-| **Phase 11** | Robustness Under Corruptions & Distribution Shifts | :hourglass_flowing_sand: Planned |
-| **Phase 12** | Comparative Explainability (Attributions, Rollout, Grad-CAM) | :hourglass_flowing_sand: Planned |
-| **Phase 13** | Downstream Dense Transfer (Detection & Segmentation) | :hourglass_flowing_sand: Planned |
+| **Phase 9** | Normalization, Stable Optimization & Feature Distribution Tracking | :white_check_mark: Completed |
+| **Phase 10** | Vision Transformers (ViT) & Attention Geometry | :hourglass_flowing_sand: Planned |
+| **Phase 11** | Self-Supervised Learning & Representation Analysis (CKA, Probes) | :hourglass_flowing_sand: Planned |
+| **Phase 12** | Robustness Under Corruptions & Distribution Shifts | :hourglass_flowing_sand: Planned |
+| **Phase 13** | Comparative Explainability (Attributions, Rollout, Grad-CAM) | :hourglass_flowing_sand: Planned |
+| **Phase 14** | Downstream Dense Transfer (Detection & Segmentation) | :hourglass_flowing_sand: Planned |
 
 ---
 
@@ -57,6 +58,8 @@ Neural Networks & Backpropagation (MLPs)
 Optimization, Schedulers & Regularization
        ↓
 Convolutional Architectures & Spatial Feature Maps (CNNs)
+       ↓
+Batch Normalization & Representation Distribution Stability
        ↓
 Vision Transformers & Attention Geometry
        ↓
@@ -83,18 +86,18 @@ PRISM is organized as a modular monorepo cleanly separating Python research comp
 
 ```
 prism-visual-representations/
-├── backend/                   # Python research engine and library package
+├── backend/                   # Python research engine and package
 │   ├── src/
-│   │   └── prism/             # Core library
+│   │   └── prism/             # Core library package
 │   │       ├── api/           # Future API serving layer
 │   │       ├── artifacts/     # Artifact contracts and references
-│   │       ├── core/          # Base domain contracts, enums, errors, identifiers
+│   │       ├── core/          # Base enums, identifiers, errors, metadata
 │   │       ├── data/          # Samples, universes, materialization, ordering, batching
-│   │       ├── experiments/   # Experiment definitions, runs, harness, comparisons
-│   │       ├── models/        # Linear classifiers, MLPs, CNNs, Conv2D, pooling
-│   │       ├── training/      # Training engine, losses, SGD, schedulers, results
+│   │       ├── experiments/   # Definitions, runs, harness, seeding, comparisons
+│   │       ├── models/        # Linear, MLP, CNN models, conv2d, pooling, normalization
+│   │       ├── training/      # Training engine, losses, SGD, LR schedulers, results
 │   │       ├── evaluation/    # Evaluation engine, metrics, and structured reports
-│   │       ├── representations/# Representation descriptors, feature batches, spatial maps
+│   │       ├── representations/# Representation descriptors, feature batches, summaries
 │   │       ├── robustness/    # Corruptions, distribution shifts, OOD tests
 │   │       ├── explainability/# Saliency, attention rollout, Grad-CAM
 │   │       ├── visualization/ # Projections (UMAP/t-SNE), figure generation
@@ -102,26 +105,9 @@ prism-visual-representations/
 │   └── tests/                 # Backend unit, smoke, and integration test suites
 │
 ├── frontend/                  # Next.js / TypeScript research observatory
-│   ├── app/                   # App Router pages and layout
-│   └── ...
-│
 ├── configs/                   # Declarative YAML configurations
-│   ├── base/                  # Runtime and environment defaults
-│   ├── datasets/              # Dataset and preprocessing configs
-│   ├── experiments/           # End-to-end experiment recipes
-│   ├── models/                # Architecture specifications
-│   └── training/              # Optimization schedules and budgets
-│
 ├── experiments/               # Research artifacts and analyses
-│   ├── notebooks/             # Exploratory Jupyter notebooks
-│   └── reports/               # Synthesized research findings
-│
 ├── docs/                      # Technical and methodology documentation
-│   ├── architecture/          # Architecture blueprints
-│   ├── methodology/           # Research contracts and fairness standards
-│   ├── experiments/           # Campaign notes
-│   └── development/           # Setup and developer guides
-│
 ├── data/                      # Local data stores (git-ignored raw data)
 ├── artifacts/                 # Generated run outputs (checkpoints, metrics, figures)
 └── tests/                     # Top-level smoke, unit, and integration test suites
@@ -129,71 +115,29 @@ prism-visual-representations/
 
 ---
 
-## Getting Started
+## Quickstart & Verification
 
-### Prerequisites
-- Python `>= 3.10`
-- [`uv`](https://astral.sh/uv) (recommended) or standard Python `venv`
-- Node.js `>= 18.0.0` (for frontend observatory)
+Ensure you have [uv](https://docs.astral.sh/uv/) and [Node.js](https://nodejs.org/) installed:
 
-### Backend Setup
 ```bash
 # Clone the repository
 git clone https://github.com/mzayan-bit/prism-visual-representations.git
 cd prism-visual-representations
 
-# Create a virtual environment using uv
-uv venv --python 3.11 .venv
-source .venv/bin/activate
+# Run the complete test suite
+make test
 
-# Install PRISM in editable mode with development dependencies
-uv pip install -e ".[dev]"
+# Run backend and frontend linting and type checks
+make check
 ```
 
-### Frontend Setup
+To run only the end-to-end smoke test suite:
 ```bash
-cd frontend
-npm run dev
+uv run pytest tests/smoke/
 ```
-The development landing page will be available at `http://localhost:3000`.
-
----
-
-## Development & Testing Commands
-
-The project includes a `Makefile` providing standard development workflows:
-
-| Command | Action |
-| --- | --- |
-| `make install` | Install backend package in editable mode with dev dependencies |
-| `make test` | Run pytest test suite across smoke, unit, and integration tests |
-| `make lint` | Run Ruff linter checks |
-| `make format` | Format code using Ruff |
-| `make typecheck` | Run static type checking with Mypy |
-| `make check` | Run all validation checks (lint, typecheck, test) |
-
-To run specific test categories directly via `pytest`:
-```bash
-# Run smoke tests
-pytest -m smoke
-
-# Run unit tests
-pytest -m unit
-```
-
----
-
-## Documentation Links
-
-- [Architecture Overview](docs/architecture/overview.md) — Detailed monorepo design, domain contracts, and subsystem specifications.
-- [Research Contract](docs/methodology/research-contract.md) — Core scientific principles, reproducibility standards, and data policies.
-- [Experiments Guide](docs/experiments/README.md) — Experiment definitions, run lifecycles, and evaluation reports.
-- [Getting Started Guide](docs/development/getting-started.md) — Comprehensive installation and development instructions.
-- [Repository Conventions](docs/development/repository-conventions.md) — Coding conventions, typing rules, and Git standards.
-- [Contributing Guidelines](CONTRIBUTING.md) — How to contribute to PRISM.
 
 ---
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+PRISM is released under the [MIT License](LICENSE).

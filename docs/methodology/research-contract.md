@@ -31,36 +31,49 @@ When evaluating Convolutional Neural Networks against non-spatial models (Linear
 - **Receptive Field Traceability**: Convolutional architectures must provide deterministic receptive field ($RF$) and effective stride ($J$) calculations per layer.
 - **Spatial Feature Map Extraction**: Intermediate spatial feature maps (`"conv_0"`, `"pool_0"`, `"final_spatial"`) must be extractable with preserved spatial dimensions $[N, C, H, W]$.
 
-### 3. Strict Reproducibility & Deep Learning Invariants
+### 3. Normalization, Optimization & Distribution Standards
+When studying the effect of normalization layers (`BatchNorm1D`, `BatchNorm2D`):
+- **Explicit Train vs Eval Semantics**:
+  - Training mode: Computes batch statistics ($\mu_B, \sigma_B^2$) and updates non-trainable running statistics via exponential moving average.
+  - Evaluation mode: Normalizes strictly using accumulated running statistics without updating running state or using test batch statistics.
+- **Trainable Parameters vs Model State**:
+  - Scale ($\gamma$) and shift ($\beta$) are learnable parameters updated solely by the optimizer.
+  - Running mean and running variance are non-trainable model state and must never receive optimizer gradients or weight decay penalties.
+- **Channel-Wise Spatial Statistics**: In convolutional feature maps $[N, C, H, W]$, statistics are computed channel-wise across all $M = N \times H \times W$ elements. Independent coordinate-wise normalization is prohibited.
+- **Avoid Oversimplified Explanations**: Research documentation must distinguish observed optimization effects (gradient smoothing, scaling robustness, loss landscape conditioning) from contested causal hypotheses like "internal covariate shift elimination".
+- **Small-Batch Limitations**: Acknowledge that batch normalization variance estimates become noisy at small batch sizes ($N < 4$) and degenerate at $N=1$.
+- **Distribution Auditing**: Feature distributions must be measurable via `FeatureDistributionSummary` (mean, variance, min/max, zero fraction, channel stats) without requiring full activation dumps.
+
+### 4. Strict Reproducibility & Deep Learning Invariants
 Every experimental result generated in PRISM must be fully reproducible and explicitly audited prior to execution:
 - **Configuration Fingerprinting**: Semantic SHA-256 digests (`compute_fingerprint()`) calculated over model, data, partition, subset, scheduler, and optimizer specifications.
-- **Deterministic Parameter Initialization**: Model parameters must be deterministically initialized (e.g. Xavier for linear layers, He/Kaiming for ReLU hidden layers and Conv2D kernels) using configured seeds without dependence on accidental global RNG state.
+- **Deterministic Parameter Initialization**: Model parameters must be deterministically initialized (e.g. Xavier for linear layers, He/Kaiming for ReLU hidden layers and Conv2D kernels, $\gamma=1, \beta=0$ for normalization) using configured seeds without dependence on accidental global RNG state.
 - **Multi-Backend RNG Seeding**: Explicit initialization of seeds across Python standard library `random`, `PYTHONHASHSEED`, `numpy.random`, and PyTorch CPU/CUDA/MPS RNGs.
 - **Deterministic Dropout Masking**: Stochastic dropout masks during training must be deterministically derived from explicit experiment seed, layer index, and step counters. In evaluation mode, dropout must be strictly disabled (identity).
 - **Controlled Learning Rate Schedules**: Learning rate decay (Step, Cosine Annealing, Warmup) must be deterministic and logged into metric telemetry.
 - **Explicit Weight Decay Semantics**: Regularization must be applied through a single documented pathway (e.g. optimizer step) without duplicate loss penalties.
-- **Representation Extraction**: Intermediate hidden representations (`"input"`, `"final_spatial"`, `"final_hidden"`) must be extracted without parameter mutation or stochastic dropout noise.
+- **Representation Extraction**: Intermediate hidden representations (`"input"`, `"conv_0_post_norm"`, `"final_spatial"`, `"final_hidden"`) must be extracted without parameter mutation or stochastic dropout noise.
 - **Code Revision Provenance**: Active Git commit SHA, branch, and working tree cleanliness (`-uno` tracked modifications) captured via `inspect_git_provenance()`.
 - **Hardware & Environment**: Python runtime version, host OS, primary compute backend, and installed versions of allowlisted dependencies (`pydantic`, `torch`, `torchvision`, etc.).
 
-### 4. No Silent Comparisons
+### 5. No Silent Comparisons
 PRISM strictly prohibits unrecorded or implicit divergences between experimental conditions. The following are non-negotiable prohibitions:
 - **No Hidden Split Alterations**: Test sets and validation sets are immutable once benchmark manifests are registered.
 - **No Uncontrolled Preprocessing**: Data pipelines must execute through deterministic abstractions in `prism.data`.
 - **No Selective Tuning**: Hyperparameter search budgets must be balanced across compared paradigms.
 - **No In-Place Evaluation Modifications**: Evaluation routines must never mutate model parameters or gradient buffers.
 
-### 5. Controlled Comparison Contracts
+### 6. Controlled Comparison Contracts
 All experimental comparisons must be formally defined via `ControlledComparison`, explicitly documenting:
 - The baseline and candidate experiment identifiers.
-- The isolated varied factor(s) (e.g. `{"model_family": {"baseline": "mlp", "candidate": "cnn"}}` or `{"conv_channels": {"baseline": [16, 32], "candidate": [32, 64]}}`).
+- The isolated varied factor(s) (e.g. `{"normalization": {"baseline": "none", "candidate": "batch_norm"}}`).
 - The fixed invariant factors (dataset fingerprint, partition fingerprint, seed, optimization schedule).
 
-### 6. Experiment Traceability
+### 7. Experiment Traceability
 Every figure, table, metric entry, or embedding projection generated by PRISM must be traceable backwards through the provenance chain:
 
 ```
-Artifact (Figure / Metric / Embedding)
+Artifact (Figure / Metric / Summary)
   ↳ Experiment Run ID
     ↳ PreparedExecution Runtime Context & DataRuntimeContext
       ↳ Complete Configuration File (YAML)
@@ -69,7 +82,7 @@ Artifact (Figure / Metric / Embedding)
 
 ---
 
-### 7. Honest Research
+### 8. Honest Research
 - **Zero Synthetic Results**: Synthetic, fabricated, or mocked results must never be committed as experimental findings.
 - **Explicit Labeling**: All artifacts and documentation must explicitly distinguish their status:
   - **Planned**: Conceptually defined experiments with pending implementation.

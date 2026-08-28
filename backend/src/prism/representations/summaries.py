@@ -55,22 +55,14 @@ class FeatureDistributionSummary(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     mean: float = Field(description="Sample mean across all elements")
-    variance: float = Field(
-        ge=0.0, description="Sample variance across all elements"
-    )
-    std_dev: float = Field(
-        ge=0.0, description="Standard deviation across all elements"
-    )
+    variance: float = Field(description="Sample variance across all elements")
+    std_dev: float = Field(description="Standard deviation across all elements")
     min_value: float = Field(description="Minimum value in feature tensor")
     max_value: float = Field(description="Maximum value in feature tensor")
     zero_fraction: float = Field(
-        ge=0.0,
-        le=1.0,
-        description="Fraction of entries approximately or strictly equal to 0.0",
+        description="Fraction of entries approximately or strictly equal to 0.0"
     )
-    is_finite: bool = Field(
-        description="True if all values are finite (no NaN or Inf)"
-    )
+    is_finite: bool = Field(description="True if all values are finite (no NaN or Inf)")
     sample_count: int = Field(
         ge=0, description="Total number of scalar entries summarized"
     )
@@ -251,7 +243,5 @@ def compare_distribution_summaries(
         "mean_shift": abs(summary_a.mean - summary_b.mean),
         "std_shift": abs(summary_a.std_dev - summary_b.std_dev),
         "range_delta": abs(range_a - range_b),
-        "zero_fraction_delta": abs(
-            summary_a.zero_fraction - summary_b.zero_fraction
-        ),
+        "zero_fraction_delta": abs(summary_a.zero_fraction - summary_b.zero_fraction),
     }

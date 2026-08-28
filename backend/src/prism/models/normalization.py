@@ -88,15 +88,11 @@ class BatchNorm1D(BaseNormalization):
     ) -> None:
         super().__init__()
         if num_features <= 0:
-            raise ValidationError(
-                f"num_features must be positive, got {num_features}."
-            )
+            raise ValidationError(f"num_features must be positive, got {num_features}.")
         if eps <= 0.0:
             raise ValidationError(f"eps must be positive, got {eps}.")
         if momentum < 0.0 or momentum > 1.0:
-            raise ValidationError(
-                f"momentum must be in [0.0, 1.0], got {momentum}."
-            )
+            raise ValidationError(f"momentum must be in [0.0, 1.0], got {momentum}.")
 
         self.num_features = num_features
         self.eps = eps
@@ -162,12 +158,12 @@ class BatchNorm1D(BaseNormalization):
 
             # Update running statistics using exponential moving average
             for d in range(self.num_features):
-                self.running_mean[d] = (
-                    1.0 - self.momentum
-                ) * self.running_mean[d] + self.momentum * mean[d]
-                self.running_var[d] = (
-                    1.0 - self.momentum
-                ) * self.running_var[d] + self.momentum * var[d]
+                self.running_mean[d] = (1.0 - self.momentum) * self.running_mean[
+                    d
+                ] + self.momentum * mean[d]
+                self.running_var[d] = (1.0 - self.momentum) * self.running_var[
+                    d
+                ] + self.momentum * var[d]
 
             self.num_batches_tracked += 1
 
@@ -200,9 +196,7 @@ class BatchNorm1D(BaseNormalization):
             for n in range(n_samples):
                 out_row = []
                 for d in range(self.num_features):
-                    x_hat_val = (
-                        x[n][d] - self.running_mean[d]
-                    ) * inv_std[d]
+                    x_hat_val = (x[n][d] - self.running_mean[d]) * inv_std[d]
                     if self.affine:
                         out_val = self.gamma[d] * x_hat_val + self.beta[d]
                     else:
@@ -340,9 +334,7 @@ class BatchNorm2D(BaseNormalization):
         if eps <= 0.0:
             raise ValidationError(f"eps must be positive, got {eps}.")
         if momentum < 0.0 or momentum > 1.0:
-            raise ValidationError(
-                f"momentum must be in [0.0, 1.0], got {momentum}."
-            )
+            raise ValidationError(f"momentum must be in [0.0, 1.0], got {momentum}.")
 
         self.num_features = num_features  # Number of channels C
         self.eps = eps
@@ -410,12 +402,12 @@ class BatchNorm2D(BaseNormalization):
 
             # 3. Update Running Statistics
             for c in range(self.num_features):
-                self.running_mean[c] = (
-                    1.0 - self.momentum
-                ) * self.running_mean[c] + self.momentum * mean[c]
-                self.running_var[c] = (
-                    1.0 - self.momentum
-                ) * self.running_var[c] + self.momentum * var[c]
+                self.running_mean[c] = (1.0 - self.momentum) * self.running_mean[
+                    c
+                ] + self.momentum * mean[c]
+                self.running_var[c] = (1.0 - self.momentum) * self.running_var[
+                    c
+                ] + self.momentum * var[c]
 
             self.num_batches_tracked += 1
 
@@ -531,9 +523,7 @@ class BatchNorm2D(BaseNormalization):
                     for w in range(w_len):
                         dout_val = d_out[n][c][h][w]
                         sum_dout[c] += dout_val
-                        sum_dout_xhat[c] += (
-                            dout_val * self._cached_x_hat[n][c][h][w]
-                        )
+                        sum_dout_xhat[c] += dout_val * self._cached_x_hat[n][c][h][w]
 
         dx: list[list[list[list[float]]]] = []
         for n in range(n_samples):
