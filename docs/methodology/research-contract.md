@@ -56,6 +56,16 @@ When evaluating Residual Neural Networks (`ResidualNeuralNetwork`) against Plain
   - Research claims regarding gradient flow must distinguish gradient norm magnitudes from convergence quality. High gradient norms do not inherently guarantee optimal representations.
 - **Plain vs Residual Controlled Comparisons**: Comparisons must strictly match total block depths, stage widths, dataset manifests, RNG seeds, and training hyperparameters via `create_residual_comparison()`.
 
+### 5. Learning Rate Scheduling & Optimization Control Standards
+When studying learning rate control strategies (Constant, Step, Exponential, Cosine, Linear Warmup, Composed Warmup):
+- **Schedule as an Experimental Variable**: The learning rate schedule must be treated as an explicit, auditable variable. Changing schedule strategies alters the experiment configuration fingerprint.
+- **Clean Ownership Boundary**: Schedulers strictly own learning rate progression over logical steps/epochs; Optimizers strictly own model parameters and update mechanics. Schedulers never mutate model parameters directly.
+- **Deterministic Mathematical Formulations**: Schedulers must adhere to mathematically unambiguous stepping and boundary conventions without off-by-one ambiguities or floating-point instability.
+- **Exact State Restoration**: Schedulers must support state snapshots (`SchedulerState`) enabling serialized models to continue along identical future learning rate trajectories upon restoration.
+- **Warmup Continuity**: Composed warmup schedules must ensure exact continuity at the warmup horizon without unintended jumps or discontinuities.
+- **Controlled Schedule Comparisons**: Schedule comparisons must be formally defined via `create_scheduler_comparison()`, holding dataset, architecture, initialization, batch size, and total training budgets strictly invariant.
+- **Scientific Humility**: PRISM documentation and findings must not claim that any particular schedule guarantees superior performance across all datasets or architectures; empirical effects on convergence rate, final loss, and representation geometry must be evaluated objectively.
+
 ### 5. Strict Reproducibility & Deep Learning Invariants
 Every experimental result generated in PRISM must be fully reproducible and explicitly audited prior to execution:
 - **Configuration Fingerprinting**: Semantic SHA-256 digests (`compute_fingerprint()`) calculated over model, data, partition, subset, scheduler, and optimizer specifications.

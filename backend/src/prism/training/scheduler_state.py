@@ -18,18 +18,12 @@ class SchedulerState(BaseModel):
     schedule_type: str = Field(
         description="Type identifier of the scheduler (e.g. 'constant', 'cosine')"
     )
-    initial_lr: float = Field(
-        gt=0.0, description="Initial base learning rate"
-    )
-    current_lr: float = Field(
-        ge=0.0, description="Current effective learning rate"
-    )
+    initial_lr: float = Field(gt=0.0, description="Initial base learning rate")
+    current_lr: float = Field(ge=0.0, description="Current effective learning rate")
     current_step: int = Field(
         ge=0, description="Total number of discrete steps advanced"
     )
-    current_epoch: int = Field(
-        ge=0, description="Current epoch index (0-indexed)"
-    )
+    current_epoch: int = Field(ge=0, description="Current epoch index (0-indexed)")
     total_steps: int | None = Field(
         default=None, description="Total planned training steps horizon"
     )

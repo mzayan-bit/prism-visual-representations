@@ -23,17 +23,11 @@ class BaseLRScheduler(ABC):
         step_unit: str = "epoch",
     ) -> None:
         if math.isnan(initial_lr) or math.isinf(initial_lr) or initial_lr <= 0.0:
-            raise ValidationError(
-                f"base_lr must be positive, got {initial_lr}."
-            )
+            raise ValidationError(f"base_lr must be positive, got {initial_lr}.")
         if total_epochs is not None and total_epochs <= 0:
-            raise ValidationError(
-                f"total_epochs must be positive, got {total_epochs}."
-            )
+            raise ValidationError(f"total_epochs must be positive, got {total_epochs}.")
         if total_steps is not None and total_steps <= 0:
-            raise ValidationError(
-                f"total_steps must be positive, got {total_steps}."
-            )
+            raise ValidationError(f"total_steps must be positive, got {total_steps}.")
         if math.isnan(min_lr) or math.isinf(min_lr) or min_lr < 0.0:
             raise ValidationError(
                 f"min_lr must be a non-negative finite float, got {min_lr}."
@@ -92,9 +86,7 @@ class BaseLRScheduler(ABC):
 
         lr = self.get_lr_at(self.current_step, epoch=self.current_epoch)
         if math.isnan(lr) or math.isinf(lr) or lr < 0.0:
-            raise ValidationError(
-                f"Scheduler emitted invalid learning rate: {lr}."
-            )
+            raise ValidationError(f"Scheduler emitted invalid learning rate: {lr}.")
 
         self._history.append(lr)
         self.current_step += 1
@@ -273,9 +265,7 @@ class ExponentialLRScheduler(BaseLRScheduler):
         if math.isnan(gamma) or math.isinf(gamma) or gamma <= 0.0 or gamma > 1.0:
             raise ValidationError(f"gamma must be in (0.0, 1.0], got {gamma}.")
         if decay_steps <= 0:
-            raise ValidationError(
-                f"decay_steps must be positive, got {decay_steps}."
-            )
+            raise ValidationError(f"decay_steps must be positive, got {decay_steps}.")
 
         self.gamma = gamma
         self.decay_steps = decay_steps
@@ -349,9 +339,8 @@ class CosineAnnealingLRScheduler(BaseLRScheduler):
 
         effective_step = idx - self.warmup_epochs if self.warmup_epochs > 0 else idx
         total_h = (
-            (self.total_steps if self.step_unit == "step" else self.total_epochs)
-            or 1
-        )
+            self.total_steps if self.step_unit == "step" else self.total_epochs
+        ) or 1
         horizon = max(1, total_h - self.warmup_epochs)
         clamped_step = min(effective_step, horizon)
 
@@ -385,9 +374,7 @@ class LinearWarmupScheduler(BaseLRScheduler):
         step_unit: str = "step",
     ) -> None:
         if warmup_steps <= 0:
-            raise ValidationError(
-                f"warmup_steps must be positive, got {warmup_steps}."
-            )
+            raise ValidationError(f"warmup_steps must be positive, got {warmup_steps}.")
         if (
             math.isnan(warmup_start_lr)
             or math.isinf(warmup_start_lr)
@@ -458,9 +445,7 @@ class WarmupScheduler(BaseLRScheduler):
         if after_scheduler is None:
             raise ValidationError("after_scheduler cannot be None.")
         if warmup_steps <= 0:
-            raise ValidationError(
-                f"warmup_steps must be positive, got {warmup_steps}."
-            )
+            raise ValidationError(f"warmup_steps must be positive, got {warmup_steps}.")
         if (
             math.isnan(warmup_start_lr)
             or math.isinf(warmup_start_lr)
@@ -493,15 +478,12 @@ class WarmupScheduler(BaseLRScheduler):
             progress = float(idx) / float(self.warmup_steps)
             return (
                 self.warmup_start_lr
-                + (self.after_scheduler.initial_lr - self.warmup_start_lr)
-                * progress
+                + (self.after_scheduler.initial_lr - self.warmup_start_lr) * progress
             )
 
         # Post-warmup: evaluate downstream scheduler at shifted progress offset
         downstream_idx = idx - self.warmup_steps
-        return self.after_scheduler.get_lr_at(
-            step=downstream_idx, epoch=downstream_idx
-        )
+        return self.after_scheduler.get_lr_at(step=downstream_idx, epoch=downstream_idx)
 
     def _get_schedule_type_name(self) -> str:
         return "composed_warmup"

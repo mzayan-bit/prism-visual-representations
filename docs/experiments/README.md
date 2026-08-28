@@ -215,3 +215,28 @@ for param_s in grad_summary.parameter_summaries[:5]:
         f"Layer {param_s.parameter_name} ({param_s.logical_stage}): Norm={param_s.norm_l2:.6f}"
     )
 ```
+
+---
+
+## Controlled Learning Rate Schedule Comparison
+
+```python
+from prism.experiments.comparisons import create_scheduler_comparison
+
+# Declaratively isolate learning rate schedule effect (Constant vs Cosine Annealing + Warmup)
+comparison = create_scheduler_comparison(
+    comparison_id="comp-lr-constant-vs-warmup-cosine",
+    name="Constant vs Warmup-Cosine Schedule on ResNet",
+    baseline_experiment_id="exp-cifar10-resnet-constant-lr",
+    candidate_experiment_id="exp-cifar10-resnet-warmup-cosine-lr",
+    baseline_scheduler_type="constant",
+    candidate_scheduler_type="cosine",
+    baseline_scheduler_params={"min_lr": 0.0},
+    candidate_scheduler_params={"warmup_epochs": 5, "min_lr": 0.001},
+    dataset_fingerprint=dataset.compute_fingerprint(),
+    seed=42,
+    description="Controlled study of warmup and cosine annealing on convergence speed and representation geometry.",
+)
+
+print(f"Comparison Fingerprint: {comparison.compute_fingerprint()}")
+```

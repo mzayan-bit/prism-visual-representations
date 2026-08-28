@@ -136,8 +136,18 @@ TrainingResult & Completed Run Lifecycle
 - `Conv2D`: Multi-channel 2D convolution layer operating on $[N, C_{\text{in}}, H_{\text{in}}, W_{\text{in}}]$ tensors with full analytical backpropagation.
 - `MaxPool2D` & `AvgPool2D`: Spatial pooling with exact argmax index tracking or uniform gradient routing.
 
-### 6. Controlled Comparisons (`prism.experiments.comparisons`)
-- `ControlledComparison` schema, `create_normalization_comparison`, and `create_residual_comparison` helpers isolating architectural factors (`model_family`, `architecture`, `has_skip_connections`, `shortcut_type`) while holding dataset, model width/depth, and optimization budgets invariant.
+### 6. Learning Rate Scheduling & Optimization Control (`prism.training.schedulers`)
+- `BaseLRScheduler`: Abstract base contract defining deterministic stepping, progress tracking (`current_step`, `current_epoch`, `history`), and full state restoration.
+- `ConstantLRScheduler`: Baseline schedule emitting invariant $\text{lr}(t) = \text{initial\_lr}$.
+- `StepLRScheduler`: Multi-step discrete decay: $\text{lr}(t) = \max(\text{min\_lr}, \text{initial\_lr} \cdot \gamma^k)$ where $k = t // \text{step\_size}$.
+- `ExponentialLRScheduler`: Continuous exponential decay: $\text{lr}(t) = \max(\text{min\_lr}, \text{initial\_lr} \cdot \gamma^{t / \text{decay\_steps}})$.
+- `CosineAnnealingLRScheduler`: Cosine annealing decay bounded in $[\text{min\_lr}, \text{initial\_lr}]$ over training horizon $T$: $\text{lr}(t) = \text{min\_lr} + 0.5 \cdot (\text{initial\_lr} - \text{min\_lr}) \cdot (1 + \cos(\pi \cdot \min(1, t / T)))$.
+- `LinearWarmupScheduler`: Linear warmup interpolating from $\text{warmup\_start\_lr}$ to $\text{target\_lr}$.
+- `WarmupScheduler`: Composed schedule combining linear warmup with an arbitrary downstream scheduler (Cosine, Step, Exponential, Constant) with zero boundary jump.
+- `SchedulerState`: Immutable Pydantic contract capturing full reproducible snapshot of scheduler state with JSON serialization.
+
+### 7. Controlled Comparisons (`prism.experiments.comparisons`)
+- `ControlledComparison` schema, `create_normalization_comparison`, `create_residual_comparison`, and `create_scheduler_comparison` helpers isolating experimental factors while holding invariant all strictly controlled dimensions.
 
 ---
 
