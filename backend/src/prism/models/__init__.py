@@ -22,6 +22,13 @@ from prism.models.normalization import (
     BatchNorm2D,
     get_normalization,
 )
+from prism.models.patches import (
+    ClassToken,
+    PatchEmbedding,
+    PatchExtractor,
+    PositionalEmbedding,
+    ensure_3d_tensor,
+)
 from prism.models.pooling import AvgPool2D, MaxPool2D
 from prism.models.residual import (
     IdentityShortcut,
@@ -45,6 +52,7 @@ __all__ = [
     "BaseVisionModel",
     "BatchNorm1D",
     "BatchNorm2D",
+    "ClassToken",
     "Conv2D",
     "ConvolutionalNeuralNetwork",
     "GELUActivation",
@@ -53,6 +61,9 @@ __all__ = [
     "MaxPool2D",
     "ModelSpecification",
     "MultiLayerPerceptron",
+    "PatchEmbedding",
+    "PatchExtractor",
+    "PositionalEmbedding",
     "ProjectionShortcut",
     "ReLUActivation",
     "ResidualAdd",
@@ -63,6 +74,7 @@ __all__ = [
     "compute_conv2d_output_shape",
     "compute_pool2d_output_shape",
     "compute_receptive_field",
+    "ensure_3d_tensor",
     "ensure_4d_tensor",
     "get_activation",
     "get_normalization",
