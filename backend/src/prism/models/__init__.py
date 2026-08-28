@@ -1,4 +1,4 @@
-"""Model architectures, spatial layers, CNNs, and normalization."""
+"""Model architectures, spatial layers, CNNs, normalization, and residual blocks."""
 
 from prism.models.activations import (
     BaseActivation,
@@ -23,6 +23,12 @@ from prism.models.normalization import (
     get_normalization,
 )
 from prism.models.pooling import AvgPool2D, MaxPool2D
+from prism.models.residual import (
+    IdentityShortcut,
+    ProjectionShortcut,
+    ResidualAdd,
+    ResidualBlock,
+)
 from prism.models.spatial import (
     compute_conv2d_output_shape,
     compute_pool2d_output_shape,
@@ -41,11 +47,15 @@ __all__ = [
     "Conv2D",
     "ConvolutionalNeuralNetwork",
     "GELUActivation",
+    "IdentityShortcut",
     "LinearSoftmaxClassifier",
     "MaxPool2D",
     "ModelSpecification",
     "MultiLayerPerceptron",
+    "ProjectionShortcut",
     "ReLUActivation",
+    "ResidualAdd",
+    "ResidualBlock",
     "SimpleCNN",
     "compute_conv2d_output_shape",
     "compute_pool2d_output_shape",
