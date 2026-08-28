@@ -1,4 +1,4 @@
-"""Training engine, loss functions, optimizers, and gradient flow tracking."""
+"""Training engine, loss functions, optimizers, and schedulers."""
 
 from prism.training.configuration import (
     GradientClipping,
@@ -20,11 +20,15 @@ from prism.training.optimizers import (
     create_optimizer,
 )
 from prism.training.results import TrainingResult
+from prism.training.scheduler_state import SchedulerState
 from prism.training.schedulers import (
     BaseLRScheduler,
     ConstantLRScheduler,
     CosineAnnealingLRScheduler,
+    ExponentialLRScheduler,
+    LinearWarmupScheduler,
     StepLRScheduler,
+    WarmupScheduler,
     create_scheduler,
 )
 
@@ -33,17 +37,21 @@ __all__ = [
     "BaseOptimizer",
     "ConstantLRScheduler",
     "CosineAnnealingLRScheduler",
+    "ExponentialLRScheduler",
     "GradientClipping",
+    "LinearWarmupScheduler",
     "ModelGradientFlowSummary",
     "OptimizerSpecification",
     "ParameterGradientSummary",
     "SGDOptimizer",
     "SchedulerSpecification",
+    "SchedulerState",
     "SoftmaxCrossEntropyLoss",
     "StepLRScheduler",
     "TrainingConfiguration",
     "TrainingEngine",
     "TrainingResult",
+    "WarmupScheduler",
     "compare_gradient_flow_summaries",
     "compute_accuracy",
     "compute_gradient_flow_summary",
