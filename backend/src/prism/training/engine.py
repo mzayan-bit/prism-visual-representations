@@ -286,6 +286,7 @@ class TrainingEngine:
                 final_train_loss=final_train_loss,
                 final_train_accuracy=final_train_accuracy,
                 evaluation_reports=evaluation_reports,
+                metric_records=list(run_inst.metric_records),
                 summary_metrics=summary_metrics,
                 duration_seconds=duration,
                 metadata={

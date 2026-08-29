@@ -17,6 +17,7 @@ from prism.core.errors import SerializationError
 from prism.core.identifiers import ensure_valid_identifier
 from prism.evaluation.reports import EvaluationReport
 from prism.experiments.hashing import compute_configuration_fingerprint
+from prism.experiments.metrics import MetricRecord
 
 
 class TrainingResult(BaseModel):
@@ -50,6 +51,10 @@ class TrainingResult(BaseModel):
     evaluation_reports: list[EvaluationReport] = Field(
         default_factory=list,
         description="Evaluation reports compiled during or after training",
+    )
+    metric_records: list[MetricRecord] = Field(
+        default_factory=list,
+        description="Chronological training and evaluation telemetry",
     )
     summary_metrics: dict[str, float] = Field(
         default_factory=dict,
