@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+from collections.abc import Sequence
 from enum import Enum
 from typing import Any
 
@@ -483,7 +484,7 @@ class RepresentationDataset(BaseModel):
         cls,
         raw_embeddings: list[Any],
         sample_ids: list[str],
-        labels: list[int | str],
+        labels: Sequence[int | str],
         experiment_id: str,
         model_id: str,
         layer_name: str,
@@ -501,37 +502,36 @@ class RepresentationDataset(BaseModel):
         )
         norm_vectors = normalize_vectors(vectors, policy=norm_policy)
 
+        labels_list: list[int | str] = list(labels)
+
         # Unique classes
-        unique_labels = sorted(set(labels), key=lambda x: str(x))
+        unique_labels = sorted(set(labels_list), key=lambda x: str(x))
         num_classes = len(unique_labels)
         if class_names is None or len(class_names) < num_classes:
             class_names = [f"class_{c}" for c in unique_labels]
-
-        spatial_enum = (
-            SpatialVectorizationPolicy(spatial_policy)
-            if isinstance(spatial_policy, str)
-            else spatial_policy
-        )
-        norm_enum = (
-            VectorNormalizationPolicy(norm_policy)
-            if isinstance(norm_policy, str)
-            else norm_policy
-        )
 
         return cls(
             experiment_id=experiment_id,
             model_id=model_id,
             layer_name=layer_name,
-            sample_ids=sample_ids,
-            labels=labels,
+            sample_ids=list(sample_ids),
+            labels=labels_list,
             vectors=norm_vectors,
             feature_dim=feat_dim,
             num_samples=len(sample_ids),
             num_classes=num_classes,
             class_names=class_names,
             source_split=source_split,
-            spatial_transformation=spatial_enum,
-            normalization_policy=norm_enum,
+            spatial_transformation=(
+                SpatialVectorizationPolicy(spatial_policy)
+                if isinstance(spatial_policy, str)
+                else spatial_policy
+            ),
+            normalization_policy=(
+                VectorNormalizationPolicy(norm_policy)
+                if isinstance(norm_policy, str)
+                else norm_policy
+            ),
             original_shape=orig_shape,
             metadata=metadata or {},
         )

@@ -208,7 +208,11 @@ class PrincipalComponentAnalysis:
             for idx in range(actual_k):
                 ev = evals[idx]
                 if ev < 1e-12:
-                    break
+                    # Zero eigenvalue component: zero feature vector
+                    raw_components.append([0.0] * d)
+                    var_components.append(0.0)
+                    continue
+
                 v_n = evecs[idx]  # vector of length N
                 # Projection to feature space: v_d = (1 / sqrt((N-1) * ev)) X_c^T v_n
                 scale = 1.0 / (math.sqrt(denom * ev))

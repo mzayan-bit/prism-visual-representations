@@ -173,6 +173,16 @@ TrainingResult & Completed Run Lifecycle
 ### 8. Controlled Comparisons (`prism.experiments.comparisons`)
 - `ControlledComparison` schema, `create_normalization_comparison`, `create_residual_comparison`, and `create_scheduler_comparison` helpers isolating experimental factors while holding invariant all strictly controlled dimensions.
 
+### 9. Representation Geometry & Observatory (`prism.representations`, `prism.api`)
+- `RepresentationDataset`: Aligned dataset abstraction coupling sample IDs, class labels, and vectorized feature representations with explicit spatial vectorization policies (`GLOBAL_AVERAGE_POOL`, `FLATTEN`) and vector normalization policies (`NONE`, `L2_NORMALIZE`, `STANDARDIZE`).
+- Distance & Similarity Primitives: Numerically stable implementations for Euclidean distance, squared Euclidean, cosine similarity, and cosine distance with zero-norm safe fallbacks.
+- Centroid & Compactness Analysis (`prism.representations.centroids`): Computes class mean vectors $\mu_c$, intra-class mean/std/max distances, dispersion radius 90%, pairwise centroid distance matrices, and the global separation-to-compactness ratio $\mathcal{S}/\mathcal{C}$.
+- Neighborhood Geometry & Failure Discovery (`prism.representations.neighborhood`): Exact in-memory $k$-nearest neighbors, label consistency calculations, and automated detection of candidate failure cases (cross-class nearest neighbors, low consistency points, samples closer to foreign centroids, centroid outliers).
+- Principal Component Analysis (`prism.representations.pca`): Pure Python, deterministic PCA solver utilizing symmetric Jacobi eigenvalue rotations with canonical sign orientation conventions for reproducible 2D/3D manifold projections.
+- Layer Evolution Profiles (`prism.representations.evolution`): Traces geometric evolution across network depth (`conv_0`, `conv_1`, `stage_0`, `encoder_0`, `cls_representation`).
+- Cross-Architecture Geometry Benchmarks (`prism.representations.comparison`): Comparative evaluation comparing CNN vs ResNet vs Vision Transformer geometries on identical data budgets and test splits, explicitly observing coordinate space independence.
+- PRISM Observatory UI (`frontend/app/`): Interactive Next.js research dashboard featuring live SVG PCA projections, neighborhood inspectors, candidate failure explorers, layer progression charts, and cross-architecture benchmark tables.
+
 ---
 
 ## Domain Subsystems
@@ -184,7 +194,7 @@ Defines system-wide primitives (`enums`, `identifiers`, `errors`, `metadata`).
 Manifests, sample records, canonical universes, partition generators, nested subsets, dataset materialization, deterministic ordering, and batch loading.
 
 ### `prism.models`
-Model specifications (`ModelSpecification`), base vision model contract (`BaseVisionModel`), linear classifiers, MLPs, CNNs, ResNets, Conv2D, pooling, batch normalization (`BatchNorm1D`, `BatchNorm2D`), residual blocks (`ResidualBlock`), and parameter initializations.
+Model specifications (`ModelSpecification`), base vision model contract (`BaseVisionModel`), linear classifiers, MLPs, CNNs, ResNets, Conv2D, pooling, batch normalization (`BatchNorm1D`, `BatchNorm2D`), residual blocks (`ResidualBlock`), Vision Transformers (`VisionTransformer`), and parameter initializations.
 
 ### `prism.training`
 Training configurations (`TrainingConfiguration`), numerical losses (`SoftmaxCrossEntropyLoss`), optimizers (`SGDOptimizer`), learning rate schedulers (`BaseLRScheduler`), gradient flow tracking (`ModelGradientFlowSummary`), training engine (`TrainingEngine`), and execution results (`TrainingResult`).
@@ -193,10 +203,13 @@ Training configurations (`TrainingConfiguration`), numerical losses (`SoftmaxCro
 Standardized evaluation protocols (`EvaluationConfiguration`, `MetricSpecification`), evaluation engine (`EvaluationEngine`), and structured reports (`EvaluationReport`).
 
 ### `prism.representations`
-Representation descriptors (`RepresentationDescriptor`, `RepresentationBatch`), feature distribution summaries (`FeatureDistributionSummary`), and stability comparison utilities.
+Representation datasets (`RepresentationDataset`), centroid reports (`CentroidGeometryReport`), neighborhood summaries (`NeighborhoodGeometrySummary`), PCA projections (`ProjectionResult`), layer evolution profiles (`LayerGeometryProfile`), and cross-architecture geometry comparisons (`CrossArchitectureGeometryReport`).
+
+### `prism.api`
+Research service layer (`GeometryService`) providing experiment metadata, geometric queries, and observatory dataset serving.
 
 ### `prism.experiments`
-Declarative experiment definitions (`ExperimentDefinition`), run lifecycle tracking (`ExperimentRun`), runtime harness (`ExperimentExecutionHarness`), and controlled comparison contracts (`ControlledComparison`).
+Declarative experiment definitions (`ExperimentDefinition`), run lifecycle tracking (`ExperimentRun`), runtime harness (`ExperimentExecutionHarness`), and controlled comparison suites (`ArchitectureComparisonSuite`).
 
 ### `prism.artifacts`
 Artifact tracking contracts (`ArtifactReference`) storing logical keys, storage URIs, checksums, and generating run IDs.

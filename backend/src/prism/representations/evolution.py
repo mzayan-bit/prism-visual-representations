@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from typing import Any
 
 from pydantic import (
@@ -123,7 +124,7 @@ def analyze_layer_geometry_profile(
     model: BaseVisionModel,
     inputs: Any,
     sample_ids: list[str],
-    labels: list[int | str],
+    labels: Sequence[int | str],
     layers: list[str],
     experiment_id: str = "exp-layer-profile",
     distance_metric: DistanceMetric | str = DistanceMetric.EUCLIDEAN,

@@ -317,3 +317,70 @@ for head in attn_summary.head_summaries:
         f"Head {head.head_index}: entropy={head.entropy:.4f}, min={head.min_value:.4f}, max={head.max_value:.4f}"
     )
 ```
+
+---
+
+## 7. Representation Geometry Analysis (`prism.representations`)
+
+Phase 14 provides programmatic APIs for evaluating the geometry of learned representations:
+
+```python
+from prism.representations import (
+    RepresentationDataset,
+    SpatialVectorizationPolicy,
+    VectorNormalizationPolicy,
+    DistanceMetric,
+    analyze_representation_geometry,
+    analyze_layer_geometry_profile,
+    compare_architecture_geometries,
+)
+
+# 1. Construct RepresentationDataset with spatial pooling and L2 normalization
+dataset = RepresentationDataset.from_raw_representations(
+    raw_embeddings=model.extract_representations(test_images, layer="final_hidden"),
+    sample_ids=test_sample_ids,
+    labels=test_labels,
+    experiment_id="exp-geom-demo",
+    model_id=model.model_id,
+    layer_name="final_hidden",
+    spatial_policy=SpatialVectorizationPolicy.GLOBAL_AVERAGE_POOL,
+    norm_policy=VectorNormalizationPolicy.NONE,
+)
+
+# 2. Complete Geometric Analysis (Centroids, k-NN Consistency, PCA 2D)
+report = analyze_representation_geometry(
+    dataset=dataset,
+    k=5,
+    metric=DistanceMetric.EUCLIDEAN,
+    n_pca_components=2,
+)
+
+print(
+    f"Intra-Class Compactness: {report.centroid_geometry.mean_intra_class_distance:.4f}"
+)
+print(
+    f"Inter-Class Separation: {report.centroid_geometry.mean_inter_class_centroid_distance:.4f}"
+)
+print(
+    f"Separation/Compactness Ratio: {report.centroid_geometry.separation_to_compactness_ratio:.2f}x"
+)
+print(f"5-NN Consistency: {report.neighborhood_geometry.mean_label_consistency:.2%}")
+print(f"Candidate Failures Flagged: {len(report.candidate_failures)}")
+
+# 3. Layer Evolution Profile across network depth
+profile = analyze_layer_geometry_profile(
+    model=model,
+    inputs=test_images,
+    sample_ids=test_sample_ids,
+    labels=test_labels,
+    layers=["conv_0", "conv_1", "final_hidden"],
+)
+
+# 4. Cross-Architecture Geometry Benchmark (CNN vs ResNet vs ViT)
+comparison = compare_architecture_geometries(
+    models={"cnn": cnn_model, "resnet": resnet_model, "vit": vit_model},
+    inputs=test_images,
+    sample_ids=test_sample_ids,
+    labels=test_labels,
+)
+```

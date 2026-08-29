@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+from collections.abc import Sequence
 from typing import Any
 
 from pydantic import (
@@ -148,7 +149,7 @@ def compare_architecture_geometries(
     models: dict[str, BaseVisionModel],
     inputs: Any,
     sample_ids: list[str],
-    labels: list[int | str],
+    labels: Sequence[int | str],
     comparison_id: str = "comp-arch-geometry",
     name: str = "Cross-Architecture Representation Geometry Comparison",
     dataset_fingerprint: str = "eval-dataset-fingerprint",

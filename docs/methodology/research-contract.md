@@ -135,6 +135,14 @@ Artifact (Figure / Metric / Summary / GradFlow)
   - **Validated**: Executed runs whose metrics and artifacts have been verified across multiple random seeds.
   - **Illustrative**: Synthetic or stylized diagrams created purely for didactic architectural explanations.
 
+### 10. Representation Geometry & Manifold Analysis Standards
+When evaluating representation geometry across layers and architectures:
+- **Coordinate Space Independence**: Distinct models and layers operate in independent feature spaces with unaligned bases. Projections (e.g. PCA) must never be overlaid as a single shared coordinate system. Comparisons must evaluate invariant scalar geometric properties (compactness, separation, $k$-NN consistency, spectrum decay) rather than direct point overlays.
+- **Vectorization Traceability**: Spatial feature tensors $[N, C, H, W]$ and sequence tokens $[N, S, D]$ must declare explicit vectorization policies (`GLOBAL_AVERAGE_POOL` or `FLATTEN`) and record original shapes in metadata.
+- **Deterministic PCA Projections**: Low-dimensional PCA projections must use deterministic solvers (e.g. Jacobi rotations with canonical sign orientation) ensuring identical coordinates across repeated runs on identical inputs.
+- **Statistical Significance in Compactness**: Flag estimation warnings when individual class sample counts ($n_c < 3$) are insufficient for stable intra-class variance estimation.
+- **Dimensionality Caveat Disclaimers**: 2D/3D visualizations capture only a subspace of total variance; reports must always display cumulative explained variance ratios.
+
 ---
 
 ## Data and Artifact Policy
