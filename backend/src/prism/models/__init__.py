@@ -27,6 +27,7 @@ from prism.models.normalization import (
     BaseNormalization,
     BatchNorm1D,
     BatchNorm2D,
+    LayerNorm,
     get_normalization,
 )
 from prism.models.patches import (
@@ -55,6 +56,10 @@ from prism.models.spatial import (
     ensure_4d_tensor,
 )
 from prism.models.specifications import ModelSpecification
+from prism.models.transformer import (
+    TransformerEncoderBlock,
+    TransformerFeedForward,
+)
 
 __all__ = [
     "AvgPool2D",
@@ -69,6 +74,7 @@ __all__ = [
     "GELUActivation",
     "IdentityShortcut",
     "ImagePatchExtractor",
+    "LayerNorm",
     "LearnablePositionalEmbedding",
     "LinearSoftmaxClassifier",
     "MaxPool2D",
@@ -87,6 +93,8 @@ __all__ = [
     "ScaledDotProductAttention",
     "SimpleCNN",
     "SimpleResNet",
+    "TransformerEncoderBlock",
+    "TransformerFeedForward",
     "compute_conv2d_output_shape",
     "compute_pool2d_output_shape",
     "compute_receptive_field",

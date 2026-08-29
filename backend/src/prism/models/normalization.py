@@ -599,6 +599,331 @@ class BatchNorm2D(BaseNormalization):
             self.num_batches_tracked = int(state["num_batches_tracked"])
 
 
+class LayerNorm(BaseNormalization):
+    """Layer Normalization over final embedding dimension [..., D].
+
+    Normalizes across features independently for each token/vector:
+        x_hat = (x - mean) / sqrt(var + eps)
+        y = gamma * x_hat + beta
+    """
+
+    def __init__(
+        self,
+        normalized_shape: int | tuple[int, ...],
+        eps: float = 1e-5,
+        affine: bool = True,
+    ) -> None:
+        super().__init__()
+        if isinstance(normalized_shape, int):
+            num_features = normalized_shape
+        elif isinstance(normalized_shape, (tuple, list)):
+            if not normalized_shape or any(d <= 0 for d in normalized_shape):
+                raise ValidationError(
+                    f"normalized_shape dimensions must all be positive, "
+                    f"got {normalized_shape}."
+                )
+            num_features = normalized_shape[-1]
+        else:
+            raise ValidationError(
+                f"normalized_shape must be int or tuple/list, "
+                f"got {type(normalized_shape)}."
+            )
+
+        if num_features <= 0:
+            raise ValidationError(f"num_features must be positive, got {num_features}.")
+        if eps <= 0.0:
+            raise ValidationError(f"eps must be positive, got {eps}.")
+
+        self.num_features = num_features
+        self.eps = eps
+        self.affine = affine
+
+        # Trainable affine parameters
+        if affine:
+            self.gamma: list[float] = [1.0] * self.num_features
+            self.beta: list[float] = [0.0] * self.num_features
+            self.grad_gamma: list[float] = [0.0] * self.num_features
+            self.grad_beta: list[float] = [0.0] * self.num_features
+        else:
+            self.gamma = []
+            self.beta = []
+            self.grad_gamma = []
+            self.grad_beta = []
+
+        # Intermediate cache for analytical backpropagation
+        self._cached_x_hat: Any = None
+        self._cached_inv_std: Any = None
+        self._cached_is_3d: bool = False
+
+    def forward(self, x: Any) -> Any:
+        """Apply LayerNorm independently across final dimension D."""
+        if x is None or not isinstance(x, (list, tuple)) or not x:
+            raise ValidationError("Input tensor cannot be None or empty.")
+
+        # Determine 2D [N, D] vs 3D [N, T, D]
+        first_elem = x[0]
+        if not isinstance(first_elem, (list, tuple)) or not first_elem:
+            raise ValidationError("Input must be at least 2D [N, D].")
+
+        if isinstance(first_elem[0], (list, tuple)):
+            # 3D: [N, T, D]
+            self._cached_is_3d = True
+            n_samples = len(x)
+            seq_len = len(first_elem)
+            d = self.num_features
+
+            out_3d: list[list[list[float]]] = []
+            x_hat_3d: list[list[list[float]]] = []
+            inv_std_2d: list[list[float]] = []
+
+            for n in range(n_samples):
+                sample = x[n]
+                if len(sample) != seq_len:
+                    raise ValidationError(
+                        f"Inconsistent sequence length at batch {n}: "
+                        f"{len(sample)} vs {seq_len}."
+                    )
+                sample_out: list[list[float]] = []
+                sample_x_hat: list[list[float]] = []
+                sample_inv_std: list[float] = []
+
+                for t in range(seq_len):
+                    vec = sample[t]
+                    if len(vec) != d:
+                        raise ValidationError(
+                            f"Feature dimension ({len(vec)}) at ({n}, {t}) "
+                            f"does not match LayerNorm ({d})."
+                        )
+                    # Check finite and compute mean
+                    mean_val = 0.0
+                    for val in vec:
+                        if (
+                            not isinstance(val, (int, float))
+                            or math.isnan(val)
+                            or math.isinf(val)
+                        ):
+                            raise ValidationError(
+                                f"Non-finite scalar in LayerNorm input: {val}"
+                            )
+                        mean_val += float(val)
+                    mean_val /= float(d)
+
+                    # Compute variance
+                    var_val = 0.0
+                    for val in vec:
+                        diff = float(val) - mean_val
+                        var_val += diff * diff
+                    var_val /= float(d)
+
+                    inv_std = 1.0 / math.sqrt(var_val + self.eps)
+                    sample_inv_std.append(inv_std)
+
+                    vec_x_hat: list[float] = []
+                    vec_out: list[float] = []
+                    for j in range(d):
+                        x_hat_j = (float(vec[j]) - mean_val) * inv_std
+                        vec_x_hat.append(x_hat_j)
+                        if self.affine:
+                            vec_out.append(self.gamma[j] * x_hat_j + self.beta[j])
+                        else:
+                            vec_out.append(x_hat_j)
+
+                    sample_x_hat.append(vec_x_hat)
+                    sample_out.append(vec_out)
+
+                x_hat_3d.append(sample_x_hat)
+                inv_std_2d.append(sample_inv_std)
+                out_3d.append(sample_out)
+
+            self._cached_x_hat = x_hat_3d
+            self._cached_inv_std = inv_std_2d
+            return out_3d
+        else:
+            # 2D: [N, D]
+            self._cached_is_3d = False
+            n_samples = len(x)
+            d = self.num_features
+
+            out_2d: list[list[float]] = []
+            x_hat_2d: list[list[float]] = []
+            inv_std_1d: list[float] = []
+
+            for n in range(n_samples):
+                vec = x[n]
+                if len(vec) != d:
+                    raise ValidationError(
+                        f"Feature dimension ({len(vec)}) at batch {n} "
+                        f"does not match LayerNorm ({d})."
+                    )
+                mean_val = 0.0
+                for val in vec:
+                    if (
+                        not isinstance(val, (int, float))
+                        or math.isnan(val)
+                        or math.isinf(val)
+                    ):
+                        raise ValidationError(
+                            f"Non-finite scalar in LayerNorm input: {val}"
+                        )
+                    mean_val += float(val)
+                mean_val /= float(d)
+
+                var_val = 0.0
+                for val in vec:
+                    diff = float(val) - mean_val
+                    var_val += diff * diff
+                var_val /= float(d)
+
+                inv_std = 1.0 / math.sqrt(var_val + self.eps)
+                inv_std_1d.append(inv_std)
+
+                vec_x_hat = []
+                vec_out = []
+                for j in range(d):
+                    x_hat_j = (float(vec[j]) - mean_val) * inv_std
+                    vec_x_hat.append(x_hat_j)
+                    if self.affine:
+                        vec_out.append(self.gamma[j] * x_hat_j + self.beta[j])
+                    else:
+                        vec_out.append(x_hat_j)
+
+                x_hat_2d.append(vec_x_hat)
+                out_2d.append(vec_out)
+
+            self._cached_x_hat = x_hat_2d
+            self._cached_inv_std = inv_std_1d
+            return out_2d
+
+    def backward(self, d_out: Any) -> Any:
+        """Compute analytic LayerNorm gradient w.r.t input."""
+        if self._cached_x_hat is None or self._cached_inv_std is None:
+            raise ValidationError("Cannot run backward before forward pass.")
+
+        d = self.num_features
+        inv_d = 1.0 / float(d)
+
+        if self._cached_is_3d:
+            # 3D: [N, T, D]
+            n_samples = len(d_out)
+            seq_len = len(d_out[0])
+            dx_3d: list[list[list[float]]] = []
+
+            for n in range(n_samples):
+                sample_dout = d_out[n]
+                sample_x_hat = self._cached_x_hat[n]
+                sample_inv_std = self._cached_inv_std[n]
+                sample_dx: list[list[float]] = []
+
+                for t in range(seq_len):
+                    dout_vec = sample_dout[t]
+                    x_hat_vec = sample_x_hat[t]
+                    inv_std = sample_inv_std[t]
+
+                    # Parameter gradients & d_xhat
+                    d_xhat_vec: list[float] = [0.0] * d
+                    sum_d_xhat = 0.0
+                    sum_d_xhat_xhat = 0.0
+
+                    for j in range(d):
+                        dj = float(dout_vec[j])
+                        if self.affine:
+                            self.grad_beta[j] += dj
+                            self.grad_gamma[j] += dj * x_hat_vec[j]
+                            dxhat_j = dj * self.gamma[j]
+                        else:
+                            dxhat_j = dj
+                        d_xhat_vec[j] = dxhat_j
+                        sum_d_xhat += dxhat_j
+                        sum_d_xhat_xhat += dxhat_j * x_hat_vec[j]
+
+                    # Analytical dX for this token:
+                    dx_vec: list[float] = [0.0] * d
+                    for j in range(d):
+                        dx_vec[j] = inv_std * (
+                            d_xhat_vec[j]
+                            - inv_d * sum_d_xhat
+                            - inv_d * x_hat_vec[j] * sum_d_xhat_xhat
+                        )
+                    sample_dx.append(dx_vec)
+                dx_3d.append(sample_dx)
+            return dx_3d
+        else:
+            # 2D: [N, D]
+            n_samples = len(d_out)
+            dx_2d: list[list[float]] = []
+
+            for n in range(n_samples):
+                dout_vec = d_out[n]
+                x_hat_vec = self._cached_x_hat[n]
+                inv_std = self._cached_inv_std[n]
+
+                d_xhat_vec = [0.0] * d
+                sum_d_xhat = 0.0
+                sum_d_xhat_xhat = 0.0
+
+                for j in range(d):
+                    dj = float(dout_vec[j])
+                    if self.affine:
+                        self.grad_beta[j] += dj
+                        self.grad_gamma[j] += dj * x_hat_vec[j]
+                        dxhat_j = dj * self.gamma[j]
+                    else:
+                        dxhat_j = dj
+                    d_xhat_vec[j] = dxhat_j
+                    sum_d_xhat += dxhat_j
+                    sum_d_xhat_xhat += dxhat_j * x_hat_vec[j]
+
+                dx_vec = [0.0] * d
+                for j in range(d):
+                    dx_vec[j] = inv_std * (
+                        d_xhat_vec[j]
+                        - inv_d * sum_d_xhat
+                        - inv_d * x_hat_vec[j] * sum_d_xhat_xhat
+                    )
+                dx_2d.append(dx_vec)
+            return dx_2d
+
+    def zero_grad(self) -> None:
+        """Reset parameter gradients."""
+        if self.affine:
+            self.grad_gamma = [0.0] * self.num_features
+            self.grad_beta = [0.0] * self.num_features
+
+    def get_parameters(self) -> dict[str, Any]:
+        """Return trainable parameters."""
+        if not self.affine:
+            return {}
+        return {
+            "gamma": list(self.gamma),
+            "beta": list(self.beta),
+        }
+
+    def set_parameters(self, params: dict[str, Any]) -> None:
+        """Load trainable parameters."""
+        if self.affine:
+            if "gamma" in params:
+                self.gamma = list(params["gamma"])
+            if "beta" in params:
+                self.beta = list(params["beta"])
+
+    def get_gradients(self) -> dict[str, Any]:
+        """Return parameter gradients."""
+        if not self.affine:
+            return {}
+        return {
+            "gamma": list(self.grad_gamma),
+            "beta": list(self.grad_beta),
+        }
+
+    def get_state(self) -> dict[str, Any]:
+        """Return non-trainable state (empty for LayerNorm)."""
+        return {}
+
+    def set_state(self, state: dict[str, Any]) -> None:
+        """Load non-trainable state (no-op for LayerNorm)."""
+        pass
+
+
 def get_normalization(
     norm_type: str | None,
     num_features: int,
@@ -627,7 +952,14 @@ def get_normalization(
                 momentum=momentum,
                 affine=affine,
             )
+    if norm in ("layer_norm", "layernorm", "ln"):
+        return LayerNorm(
+            normalized_shape=num_features,
+            eps=eps,
+            affine=affine,
+        )
 
     raise ConfigurationError(
-        f"Unsupported normalization '{norm_type}'. Supported: 'none', 'batch_norm'."
+        f"Unsupported normalization '{norm_type}'. "
+        f"Supported: 'none', 'batch_norm', 'layer_norm'."
     )
