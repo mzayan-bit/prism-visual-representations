@@ -7,10 +7,13 @@ import pytest
 from prism.core.errors import ValidationError
 from prism.models.patches import (
     ClassToken,
+    ImagePatchExtractor,
     PatchEmbedding,
     PatchExtractor,
+    PatchGeometry,
     PositionalEmbedding,
     ensure_3d_tensor,
+    patches_to_image,
 )
 
 
@@ -68,6 +71,34 @@ def test_patch_extractor_shapes_and_row_major_ordering() -> None:
     assert patches[0][2] == [8.0, 9.0, 12.0, 13.0]
     # Patch 3 (bottom-right): [10, 11, 14, 15]
     assert patches[0][3] == [10.0, 11.0, 14.0, 15.0]
+
+
+@pytest.mark.unit
+def test_image_patch_extractor_geometry_and_reconstruction_identity() -> None:
+    """Verify extract_patches and patches_to_image exact reconstruction identity."""
+    geom = PatchGeometry.create(image_size=(8, 8), patch_size=(4, 4), channels=3)
+    extractor = ImagePatchExtractor(geometry=geom)
+
+    # Deterministic 2x3x8x8 image
+    img = [
+        [
+            [[float(n * 100 + c * 20 + h * 4 + w) for w in range(8)] for h in range(8)]
+            for c in range(3)
+        ]
+        for n in range(2)
+    ]
+
+    patches = extractor.extract_patches(img)
+    assert len(patches) == 2
+    assert len(patches[0]) == 4
+    assert len(patches[0][0]) == 48
+
+    # Reconstruct via method and standalone function
+    reconstructed_method = extractor.reconstruct_patches(patches)
+    reconstructed_func = patches_to_image(patches, geometry=geom)
+
+    assert reconstructed_method == img
+    assert reconstructed_func == img
 
 
 @pytest.mark.unit

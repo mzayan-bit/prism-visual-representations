@@ -147,13 +147,14 @@ TrainingResult & Completed Run Lifecycle
 - `SchedulerState`: Immutable Pydantic contract capturing full reproducible snapshot of scheduler state with JSON serialization.
 
 ### 7. Vision Transformer Foundations (`prism.models.patches`, `prism.models.attention`)
-- `PatchExtractor`: Divides $[N, C, H, W]$ image tensors into $L = (H/P_h) \times (W/P_w)$ non-overlapping patches in row-major order with flattened dimension $D_{\text{patch}} = C \cdot P_h \cdot P_w$, and reconstructs $dX \in \mathbb{R}^{N \times C \times H \times W}$ analytically.
-- `PatchEmbedding`: Linear projection $E = P W_E + b_E$ mapping patch tokens to $D_{\text{embed}}$-dimensional embedding vectors.
+- `PatchGeometry`: Strongly typed immutable Pydantic descriptor tracking image dimensions, patch dimensions, grid counts, total patches, and flattened patch dimensions with strict divisibility and positivity validation.
+- `ImagePatchExtractor` / `PatchExtractor`: Divides $[N, C, H, W]$ image tensors into $L = (H/P_h) \times (W/P_w)$ non-overlapping patches in row-major order with flattened dimension $D_{\text{patch}} = C \cdot P_h \cdot P_w$, and reconstructs $dX \in \mathbb{R}^{N \times C \times H \times W}$ analytically. Provides `patches_to_image(patches, geometry)` ensuring `patches_to_image(extract_patches(x)) == x`.
+- `PatchEmbedding`: Linear projection $E = P W_E + b_E$ mapping patch tokens to $D_{\text{embed}}$-dimensional embedding vectors with parameter tracking and analytical backward pass.
 - `ClassToken`: Shared learnable token $[1, 1, D_{\text{embed}}]$ prepended to sequence $([N, L+1, D_{\text{embed}}])$, accumulating gradients across the batch dimension.
-- `PositionalEmbedding`: Learnable 1D position embeddings $[1, S, D_{\text{embed}}]$ restoring spatial location awareness to token sequences.
-- `ScaledDotProductAttention`: Numerically stable scaled dot-product attention $\text{softmax}(Q K^T / \sqrt{D_h}) V$ with exact analytical derivatives $(dQ, dK, dV)$.
-- `MultiHeadSelfAttention`: Multi-head projection, independent head attention, head merge, and output projection with full gradient accumulation $dX = dX_Q + dX_K + dX_V$.
-- `AttentionTensorSummary` (`prism.representations.attention`): Structured contracts capturing attention entropy, row normalization, min/max/mean stats, and zero fraction per head.
+- `LearnablePositionalEmbedding` / `PositionalEmbedding`: Learnable 1D position embeddings $[1, S, D_{\text{embed}}]$ restoring spatial location awareness to token sequences with batch gradient accumulation.
+- `ScaledDotProductAttention`: Numerically stable scaled dot-product attention $\text{softmax}(Q K^T / \sqrt{D_h}) V$ with max-subtraction softmax, optional additive masks, and exact analytical derivatives $(dQ, dK, dV)$.
+- `MultiHeadSelfAttention`: Multi-head projection, independent head attention, head merge, intermediate representation caching (`last_q`, `last_k`, `last_v`, `last_head_outputs`, `last_concat`, `last_attention_weights`), and output projection with full gradient accumulation $dX = dX_Q + dX_K + dX_V$.
+- Attention Representations (`prism.representations.attention`): `AttentionHeadSummary`, `AttentionTensorSummary`, `compute_attention_entropy`, `compute_diagonal_attention_mass`, `summarize_attention_weights`, and `compare_attention_summaries` capturing entropy shifts, diagonal token focus, and row normalization audits.
 
 ### 8. Controlled Comparisons (`prism.experiments.comparisons`)
 - `ControlledComparison` schema, `create_normalization_comparison`, `create_residual_comparison`, and `create_scheduler_comparison` helpers isolating experimental factors while holding invariant all strictly controlled dimensions.

@@ -100,7 +100,7 @@ prism-visual-representations/
 │   │       ├── core/          # Base enums, identifiers, errors, metadata
 │   │       ├── data/          # Samples, universes, materialization, ordering, batching
 │   │       ├── experiments/   # Definitions, runs, harness, seeding, comparisons
-│   │       ├── models/        # Linear, MLP, CNN, ResNet, residual blocks, conv2d, pooling, norm
+│   │       ├── models/        # Linear, MLP, CNN, ResNet, residual blocks, patches, attention, norm
 │   │       ├── training/      # Training engine, losses, SGD, schedulers, gradient flow
 │   │       ├── evaluation/    # Evaluation engine, metrics, and structured reports
 │   │       ├── representations/# Representation descriptors, feature batches, summaries
