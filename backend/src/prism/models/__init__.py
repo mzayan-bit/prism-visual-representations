@@ -31,10 +31,14 @@ from prism.models.normalization import (
 )
 from prism.models.patches import (
     ClassToken,
+    ImagePatchExtractor,
+    LearnablePositionalEmbedding,
     PatchEmbedding,
     PatchExtractor,
+    PatchGeometry,
     PositionalEmbedding,
     ensure_3d_tensor,
+    patches_to_image,
 )
 from prism.models.pooling import AvgPool2D, MaxPool2D
 from prism.models.residual import (
@@ -64,6 +68,8 @@ __all__ = [
     "ConvolutionalNeuralNetwork",
     "GELUActivation",
     "IdentityShortcut",
+    "ImagePatchExtractor",
+    "LearnablePositionalEmbedding",
     "LinearSoftmaxClassifier",
     "MaxPool2D",
     "ModelSpecification",
@@ -71,6 +77,7 @@ __all__ = [
     "MultiLayerPerceptron",
     "PatchEmbedding",
     "PatchExtractor",
+    "PatchGeometry",
     "PositionalEmbedding",
     "ProjectionShortcut",
     "ReLUActivation",
@@ -91,6 +98,7 @@ __all__ = [
     "initialize_conv2d_parameters",
     "initialize_linear_parameters",
     "initialize_mlp_parameters",
+    "patches_to_image",
     "softmax_1d",
     "softmax_backward_1d",
 ]

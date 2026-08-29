@@ -1,12 +1,179 @@
-"""Explicit patch representation abstractions for Vision Transformers."""
+"""Explicit patch representation abstractions and geometry for Vision Transformers."""
+
+from __future__ import annotations
 
 import copy
+import json
 import math
 import random
 from typing import Any
 
-from prism.core.errors import ValidationError
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from prism.core.errors import SerializationError, ValidationError
 from prism.models.spatial import ensure_4d_tensor, normalize_spatial_pair
+
+
+class PatchGeometry(BaseModel):
+    """Immutable mathematical descriptor for 2D image patch geometry."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    image_height: int = Field(gt=0, description="Height of input image in pixels")
+    image_width: int = Field(gt=0, description="Width of input image in pixels")
+    channels: int = Field(gt=0, description="Number of image color channels")
+    patch_height: int = Field(gt=0, description="Height of each patch in pixels")
+    patch_width: int = Field(gt=0, description="Width of each patch in pixels")
+    patches_per_row: int = Field(
+        gt=0, description="Number of patches along image width"
+    )
+    patches_per_column: int = Field(
+        gt=0, description="Number of patches along image height"
+    )
+    total_patches: int = Field(
+        gt=0, description="Total number of patches (sequence length T)"
+    )
+    flattened_patch_dimension: int = Field(
+        gt=0, description="Dimensionality of each flattened patch vector (D_patch)"
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def compute_and_validate_geometry(cls, values: Any) -> Any:
+        """Validate divisibility and compute derived patch geometry dimensions."""
+        if not isinstance(values, dict):
+            raise ValidationError("PatchGeometry values must be a dictionary.")
+
+        h_img = values.get("image_height")
+        w_img = values.get("image_width")
+        channels = values.get("channels", 3)
+        p_h = values.get("patch_height")
+        p_w = values.get("patch_width")
+
+        if (
+            h_img is None
+            or w_img is None
+            or p_h is None
+            or p_w is None
+            or channels is None
+        ):
+            raise ValidationError(
+                "image_height, image_width, channels, patch_height, and patch_width "
+                "are required."
+            )
+
+        if not all(
+            isinstance(v, int) and v > 0 for v in (h_img, w_img, channels, p_h, p_w)
+        ):
+            raise ValidationError("All geometry dimensions must be positive integers.")
+
+        if h_img % p_h != 0:
+            raise ValidationError(
+                f"Image height ({h_img}) is not divisible by patch height ({p_h})."
+            )
+        if w_img % p_w != 0:
+            raise ValidationError(
+                f"Image width ({w_img}) is not divisible by patch width ({p_w})."
+            )
+
+        calc_per_row = w_img // p_w
+        calc_per_col = h_img // p_h
+        calc_total = calc_per_row * calc_per_col
+        calc_dim = channels * p_h * p_w
+
+        # Verify or fill derived quantities
+        values["patches_per_row"] = values.get("patches_per_row", calc_per_row)
+        values["patches_per_column"] = values.get("patches_per_column", calc_per_col)
+        values["total_patches"] = values.get("total_patches", calc_total)
+        values["flattened_patch_dimension"] = values.get(
+            "flattened_patch_dimension", calc_dim
+        )
+
+        if values["patches_per_row"] != calc_per_row:
+            raise ValidationError(
+                f"patches_per_row mismatch: expected {calc_per_row}, "
+                f"got {values['patches_per_row']}."
+            )
+        if values["patches_per_column"] != calc_per_col:
+            raise ValidationError(
+                f"patches_per_column mismatch: expected {calc_per_col}, "
+                f"got {values['patches_per_column']}."
+            )
+        if values["total_patches"] != calc_total:
+            raise ValidationError(
+                f"total_patches mismatch: expected {calc_total}, "
+                f"got {values['total_patches']}."
+            )
+        if values["flattened_patch_dimension"] != calc_dim:
+            raise ValidationError(
+                f"flattened_patch_dimension mismatch: expected {calc_dim}, "
+                f"got {values['flattened_patch_dimension']}."
+            )
+
+        return values
+
+    @classmethod
+    def create(
+        cls,
+        image_size: int | tuple[int, int],
+        patch_size: int | tuple[int, int],
+        channels: int = 3,
+    ) -> PatchGeometry:
+        """Create PatchGeometry from spatial dimension pairs and channel count."""
+        h_img, w_img = normalize_spatial_pair(image_size, "image_size")
+        p_h, p_w = normalize_spatial_pair(patch_size, "patch_size")
+
+        if channels <= 0:
+            raise ValidationError(f"channels must be positive integer, got {channels}.")
+
+        return cls(
+            image_height=h_img,
+            image_width=w_img,
+            channels=channels,
+            patch_height=p_h,
+            patch_width=p_w,
+            patches_per_row=w_img // p_w if p_w > 0 else 1,
+            patches_per_column=h_img // p_h if p_h > 0 else 1,
+            total_patches=(
+                (w_img // p_w) * (h_img // p_h) if (p_w > 0 and p_h > 0) else 1
+            ),
+            flattened_patch_dimension=channels * p_h * p_w,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert geometry to dictionary."""
+        return self.model_dump(mode="json")
+
+    def to_json(self, indent: int | None = None) -> str:
+        """Convert geometry to JSON string."""
+        return json.dumps(
+            self.to_dict(),
+            indent=indent,
+            sort_keys=True,
+            ensure_ascii=True,
+        )
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> PatchGeometry:
+        """Construct PatchGeometry from dictionary."""
+        try:
+            return cls.model_validate(data)
+        except Exception as exc:
+            raise SerializationError(
+                f"Failed to deserialize PatchGeometry: {exc}"
+            ) from exc
+
+    @classmethod
+    def from_json(cls, json_str: str) -> PatchGeometry:
+        """Construct PatchGeometry from JSON string."""
+        try:
+            return cls.from_dict(json.loads(json_str))
+        except SerializationError:
+            raise
+        except Exception as exc:
+            raise SerializationError(
+                f"Invalid JSON string for PatchGeometry: {exc}"
+            ) from exc
 
 
 def ensure_3d_tensor(data: Any) -> list[list[list[float]]]:
@@ -85,7 +252,87 @@ def ensure_3d_tensor(data: Any) -> list[list[list[float]]]:
     return tensor_3d
 
 
-class PatchExtractor:
+def patches_to_image(
+    patches: Any,
+    geometry: PatchGeometry | None = None,
+    image_shape: tuple[int, int, int] | None = None,
+    patch_size: int | tuple[int, int] | None = None,
+) -> list[list[list[list[float]]]]:
+    """Reconstruct 4D image batch [N, C, H, W] from flattened patches [N, T, D_patch].
+
+    Parameters
+    ----------
+    patches : 3D patch tensor [N, T, D_patch]
+    geometry : Optional PatchGeometry defining spatial configuration
+    image_shape : Optional (channels, height, width) if geometry not provided
+    patch_size : Optional (patch_height, patch_width) if geometry not provided
+
+    Returns
+    -------
+    list[list[list[list[float]]]]
+        Reconstructed 4D image batch of shape [N, C, H, W]
+    """
+    p_3d = ensure_3d_tensor(patches)
+    n_samples = len(p_3d)
+
+    if geometry is not None:
+        c_channels = geometry.channels
+        h_img = geometry.image_height
+        w_img = geometry.image_width
+        p_h = geometry.patch_height
+        p_w = geometry.patch_width
+        grid_h = geometry.patches_per_column
+        grid_w = geometry.patches_per_row
+    elif image_shape is not None and patch_size is not None:
+        c_channels, h_img, w_img = image_shape
+        p_h, p_w = normalize_spatial_pair(patch_size, "patch_size")
+        geom = PatchGeometry.create((h_img, w_img), (p_h, p_w), c_channels)
+        grid_h = geom.patches_per_column
+        grid_w = geom.patches_per_row
+    else:
+        raise ValidationError(
+            "Either geometry or both (image_shape, patch_size) must be provided."
+        )
+
+    expected_t = grid_h * grid_w
+    expected_d = c_channels * p_h * p_w
+
+    if len(p_3d[0]) != expected_t:
+        raise ValidationError(
+            f"Patch count ({len(p_3d[0])}) does not match expected ({expected_t})."
+        )
+    if len(p_3d[0][0]) != expected_d:
+        raise ValidationError(
+            f"Patch dimension ({len(p_3d[0][0])}) does not match "
+            f"expected ({expected_d})."
+        )
+
+    reconstructed: list[list[list[list[float]]]] = [
+        [[[0.0 for _ in range(w_img)] for _ in range(h_img)] for _ in range(c_channels)]
+        for _ in range(n_samples)
+    ]
+
+    for n in range(n_samples):
+        patch_idx = 0
+        for r in range(grid_h):
+            h_start = r * p_h
+            for c in range(grid_w):
+                w_start = c * p_w
+                patch_vec = p_3d[n][patch_idx]
+                flat_idx = 0
+                for ch in range(c_channels):
+                    for ph in range(p_h):
+                        for pw in range(p_w):
+                            reconstructed[n][ch][h_start + ph][w_start + pw] = (
+                                patch_vec[flat_idx]
+                            )
+                            flat_idx += 1
+                patch_idx += 1
+
+    return reconstructed
+
+
+class ImagePatchExtractor:
     """Extract non-overlapping 2D image patches into flattened sequence tokens.
 
     Maps image tensor X in R^(N x C x H x W) to patch tokens P in R^(N x L x D_patch)
@@ -93,13 +340,30 @@ class PatchExtractor:
     height).
     """
 
-    def __init__(self, patch_size: int | tuple[int, int]) -> None:
-        self.p_h, self.p_w = normalize_spatial_pair(patch_size, "patch_size")
-        if self.p_h <= 0 or self.p_w <= 0:
-            raise ValidationError(
-                f"Patch dimensions must be positive, got ({self.p_h}, {self.p_w})."
-            )
+    def __init__(
+        self,
+        patch_size: int | tuple[int, int] | None = None,
+        geometry: PatchGeometry | None = None,
+    ) -> None:
+        if geometry is not None:
+            self.geometry: PatchGeometry | None = geometry
+            self.p_h = geometry.patch_height
+            self.p_w = geometry.patch_width
+        elif patch_size is not None:
+            self.p_h, self.p_w = normalize_spatial_pair(patch_size, "patch_size")
+            if self.p_h <= 0 or self.p_w <= 0:
+                raise ValidationError(
+                    f"Patch dimensions must be positive, got ({self.p_h}, {self.p_w})."
+                )
+            self.geometry = None
+        else:
+            raise ValidationError("Either patch_size or geometry must be provided.")
+
         self._cached_input_shape: tuple[int, int, int, int] | None = None
+
+    def extract_patches(self, inputs: Any) -> list[list[list[float]]]:
+        """Extract patches from 4D image batch producing [N, L, D_patch]."""
+        return self.forward(inputs)
 
     def forward(self, inputs: Any) -> list[list[list[float]]]:
         """Extract patches from 4D image batch producing [N, L, D_patch]."""
@@ -116,6 +380,17 @@ class PatchExtractor:
         if h_img <= 0 or w_img <= 0:
             raise ValidationError(
                 f"Input spatial dimensions must be positive, got ({h_img}, {w_img})."
+            )
+
+        if self.geometry is not None and (
+            self.geometry.image_height != h_img
+            or self.geometry.image_width != w_img
+            or self.geometry.channels != c_channels
+        ):
+            raise ValidationError(
+                f"Input shape ({c_channels}, {h_img}, {w_img}) does not match "
+                f"configured geometry ({self.geometry.channels}, "
+                f"{self.geometry.image_height}, {self.geometry.image_width})."
             )
 
         if h_img % self.p_h != 0:
@@ -156,6 +431,21 @@ class PatchExtractor:
             extracted.append(sample_patches)
 
         return extracted
+
+    def reconstruct_patches(self, patches: Any) -> list[list[list[list[float]]]]:
+        """Reconstruct 4D image batch from extracted patches without grad tracking."""
+        if self._cached_input_shape is not None:
+            _, c_channels, h_img, w_img = self._cached_input_shape
+            return patches_to_image(
+                patches,
+                image_shape=(c_channels, h_img, w_img),
+                patch_size=(self.p_h, self.p_w),
+            )
+        if self.geometry is not None:
+            return patches_to_image(patches, geometry=self.geometry)
+        raise ValidationError(
+            "Cannot reconstruct patches before forward pass without geometry."
+        )
 
     def backward(self, d_out: Any) -> list[list[list[list[float]]]]:
         """Reconstruct 4D image gradient [N, C, H, W] from patch gradients."""
@@ -212,6 +502,10 @@ class PatchExtractor:
                     patch_idx += 1
 
         return dx
+
+
+# Alias for backward compatibility
+PatchExtractor = ImagePatchExtractor
 
 
 class PatchEmbedding:
@@ -281,6 +575,14 @@ class PatchEmbedding:
                     f"bias mismatch: expected ({self.embed_dim},), got ({len(b)},)"
                 )
             self.bias_weights = copy.deepcopy(b)
+
+    def get_state(self) -> dict[str, Any]:
+        """Return non-trainable persistent state."""
+        return {}
+
+    def set_state(self, state: dict[str, Any]) -> None:
+        """Restore non-trainable state."""
+        pass
 
     def get_gradients(self) -> dict[str, Any]:
         """Return computed parameter gradients."""
@@ -414,6 +716,14 @@ class ClassToken:
                 )
             self.token = copy.deepcopy(tok)
 
+    def get_state(self) -> dict[str, Any]:
+        """Return non-trainable state."""
+        return {}
+
+    def set_state(self, state: dict[str, Any]) -> None:
+        """Restore non-trainable state."""
+        pass
+
     def get_gradients(self) -> dict[str, Any]:
         """Return computed CLS token gradient."""
         return {"token": copy.deepcopy(self.grad_token)}
@@ -479,7 +789,7 @@ class ClassToken:
         return de_3d
 
 
-class PositionalEmbedding:
+class LearnablePositionalEmbedding:
     """Learnable 1D positional embeddings added to token sequences: Y = X + P_pos."""
 
     def __init__(
@@ -536,6 +846,14 @@ class PositionalEmbedding:
                     f"{actual_d})."
                 )
             self.embeddings = copy.deepcopy(emb)
+
+    def get_state(self) -> dict[str, Any]:
+        """Return non-trainable state."""
+        return {}
+
+    def set_state(self, state: dict[str, Any]) -> None:
+        """Restore non-trainable state."""
+        pass
 
     def get_gradients(self) -> dict[str, Any]:
         """Return computed positional embedding gradients."""
@@ -603,3 +921,7 @@ class PositionalEmbedding:
 
         # dX = dY (elementwise identity pass-through)
         return [[list(token) for token in sample] for sample in dy_3d]
+
+
+# Alias for backward compatibility
+PositionalEmbedding = LearnablePositionalEmbedding

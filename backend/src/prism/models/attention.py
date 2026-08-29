@@ -419,6 +419,12 @@ class MultiHeadSelfAttention:
 
         self.attn = ScaledDotProductAttention()
         self.last_attention_weights: list[list[list[list[float]]]] | None = None
+        self.last_q: list[list[list[list[float]]]] | None = None
+        self.last_k: list[list[list[list[float]]]] | None = None
+        self.last_v: list[list[list[list[float]]]] | None = None
+        self.last_head_outputs: list[list[list[list[float]]]] | None = None
+        self.last_concat: list[list[list[float]]] | None = None
+
         self._cached_x: list[list[list[float]]] | None = None
         self._cached_concat: list[list[list[float]]] | None = None
 
@@ -488,6 +494,14 @@ class MultiHeadSelfAttention:
                             f"got ({len(val)},)."
                         )
                     setattr(self, name, copy.deepcopy(val))
+
+    def get_state(self) -> dict[str, Any]:
+        """Return non-trainable state."""
+        return {}
+
+    def set_state(self, state: dict[str, Any]) -> None:
+        """Restore non-trainable state."""
+        pass
 
     def get_gradients(self) -> dict[str, Any]:
         """Return computed parameter gradients."""
@@ -565,11 +579,16 @@ class MultiHeadSelfAttention:
             k_4d.append(sample_k)
             v_4d.append(sample_v)
 
+        self.last_q = q_4d
+        self.last_k = k_4d
+        self.last_v = v_4d
+
         # 2. Scaled Dot-Product Attention per head
         attn_out_4d, attn_weights_4d = self.attn.forward(
             q=q_4d, k=k_4d, v=v_4d, mask=mask
         )
         self.last_attention_weights = attn_weights_4d
+        self.last_head_outputs = attn_out_4d
 
         # 3. Concatenate heads: [N, H, L, D_head] -> [N, L, D_embed]
         concat_3d: list[list[list[float]]] = []
@@ -582,6 +601,7 @@ class MultiHeadSelfAttention:
                 sample_concat.append(row)
             concat_3d.append(sample_concat)
 
+        self.last_concat = concat_3d
         self._cached_concat = concat_3d
 
         # 4. Output projection: Out = Concat W_O + b_O
