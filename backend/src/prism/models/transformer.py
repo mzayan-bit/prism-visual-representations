@@ -847,21 +847,33 @@ class VisionTransformer(BaseVisionModel):
         grads: dict[str, Any] = {}
 
         for k, v in self.patch_embed.get_gradients().items():
-            grads[f"patch_embed.{k}"] = v
+            clean_k = k.replace("grad_", "")
+            grads[f"grad_patch_embed.{clean_k}"] = v
+            grads[f"patch_embed.{clean_k}"] = v
 
         for k, v in self.cls_token.get_gradients().items():
-            grads[f"cls_token.{k}"] = v
+            clean_k = k.replace("grad_", "")
+            grads[f"grad_cls_token.{clean_k}"] = v
+            grads[f"cls_token.{clean_k}"] = v
 
         for k, v in self.pos_embed.get_gradients().items():
-            grads[f"pos_embed.{k}"] = v
+            clean_k = k.replace("grad_", "")
+            grads[f"grad_pos_embed.{clean_k}"] = v
+            grads[f"pos_embed.{clean_k}"] = v
 
         for k, v in self.encoder.get_gradients().items():
-            grads[f"encoder.{k}"] = v
+            clean_k = k.replace("grad_", "")
+            grads[f"grad_encoder.{clean_k}"] = v
+            grads[f"encoder.{clean_k}"] = v
 
         for k, v in self.norm.get_gradients().items():
-            grads[f"norm.{k}"] = v
+            clean_k = k.replace("grad_", "")
+            grads[f"grad_norm.{clean_k}"] = v
+            grads[f"norm.{clean_k}"] = v
 
+        grads["grad_classifier.weights"] = copy.deepcopy(self.grad_classifier_w)
         grads["classifier.weights"] = copy.deepcopy(self.grad_classifier_w)
+        grads["grad_classifier.bias"] = copy.deepcopy(self.grad_classifier_b)
         grads["classifier.bias"] = copy.deepcopy(self.grad_classifier_b)
 
         return grads
