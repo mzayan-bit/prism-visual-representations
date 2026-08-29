@@ -19,9 +19,21 @@ from prism.representations.centroids import (
     ClassCentroidSummary,
     compute_centroid_geometry,
 )
+from prism.representations.comparison import (
+    ArchitectureGeometrySummary,
+    CrossArchitectureGeometryReport,
+    RepeatedSeedGeometryMetric,
+    aggregate_repeated_seed_geometry,
+    compare_architecture_geometries,
+)
 from prism.representations.contracts import (
     RepresentationBatch,
     RepresentationDescriptor,
+)
+from prism.representations.evolution import (
+    LayerGeometryPoint,
+    LayerGeometryProfile,
+    analyze_layer_geometry_profile,
 )
 from prism.representations.geometry import (
     DistanceMetric,
@@ -57,6 +69,7 @@ from prism.representations.summaries import (
 )
 
 __all__ = [
+    "ArchitectureGeometrySummary",
     "AttentionHeadSummary",
     "AttentionPattern",
     "AttentionTensorSummary",
@@ -64,12 +77,16 @@ __all__ = [
     "CandidateFailureCase",
     "CentroidGeometryReport",
     "ClassCentroidSummary",
+    "CrossArchitectureGeometryReport",
     "DistanceMetric",
     "FeatureDistributionSummary",
+    "LayerGeometryPoint",
+    "LayerGeometryProfile",
     "NearestNeighborEntry",
     "NeighborhoodGeometrySummary",
     "PrincipalComponentAnalysis",
     "ProjectionResult",
+    "RepeatedSeedGeometryMetric",
     "RepresentationBatch",
     "RepresentationDataset",
     "RepresentationDescriptor",
@@ -79,7 +96,10 @@ __all__ = [
     "TransformerAttentionProfile",
     "VectorNormSummary",
     "VectorNormalizationPolicy",
+    "aggregate_repeated_seed_geometry",
+    "analyze_layer_geometry_profile",
     "analyze_representation_geometry",
+    "compare_architecture_geometries",
     "compare_attention_summaries",
     "compare_distribution_summaries",
     "compare_transformer_attention_profiles",

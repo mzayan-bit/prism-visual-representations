@@ -256,6 +256,52 @@ def vectorize_spatial_features(
             f"Must specify GLOBAL_AVERAGE_POOL or FLATTEN."
         )
 
+    if isinstance(first, list) and isinstance(first[0], list):
+        # 3D sequence tensor: [N, S, D]
+        n_samples = len(data)
+        s_dim = len(first)
+        d_dim = len(first[0])
+        orig_seq_shape: tuple[int, ...] = (n_samples, s_dim, d_dim)
+        seq_vectors: list[list[float]] = []
+
+        if policy_enum == SpatialVectorizationPolicy.GLOBAL_AVERAGE_POOL:
+            for sample in data:
+                row = [0.0] * d_dim
+                for token in sample:
+                    for d_idx in range(d_dim):
+                        val = float(token[d_idx])
+                        if not math.isfinite(val):
+                            raise ValidationError(
+                                "Non-finite value in sequence feature map."
+                            )
+                        row[d_idx] += val
+                for d_idx in range(d_dim):
+                    row[d_idx] /= float(s_dim)
+                seq_vectors.append(row)
+            return seq_vectors, orig_seq_shape, d_dim
+
+        if policy_enum == SpatialVectorizationPolicy.FLATTEN:
+            flat_dim = s_dim * d_dim
+            for sample in data:
+                row = [0.0] * flat_dim
+                idx = 0
+                for token in sample:
+                    for d_idx in range(d_dim):
+                        val = float(token[d_idx])
+                        if not math.isfinite(val):
+                            raise ValidationError(
+                                "Non-finite value in sequence feature map."
+                            )
+                        row[idx] = val
+                        idx += 1
+                seq_vectors.append(row)
+            return seq_vectors, orig_seq_shape, flat_dim
+
+        raise ValidationError(
+            f"Cannot pass 3D sequence tensors with policy='{policy_enum.value}'. "
+            f"Must specify GLOBAL_AVERAGE_POOL or FLATTEN."
+        )
+
     # Already 2D vectors: [N, D]
     n_samples = len(data)
     d_dim = len(first) if isinstance(first, list) else 1
