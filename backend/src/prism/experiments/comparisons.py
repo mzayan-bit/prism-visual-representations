@@ -282,3 +282,60 @@ def create_scheduler_comparison(
         subset_fingerprint=subset_fingerprint,
         seed=seed,
     )
+
+
+def create_vit_architecture_comparison(
+    comparison_id: str,
+    name: str,
+    baseline_experiment_id: str,
+    candidate_experiment_id: str,
+    dataset_fingerprint: str,
+    varied_hyperparameters: dict[str, tuple[Any, Any]],
+    seed: int = 42,
+    fixed_factors: dict[str, Any] | None = None,
+    partition_fingerprint: str | None = None,
+    subset_fingerprint: str | None = None,
+    description: str = (
+        "Controlled comparison isolating Vision Transformer architectural factors."
+    ),
+) -> ControlledComparison:
+    """Helper creating ControlledComparison across ViT architectural factors.
+
+    Parameters
+    ----------
+    varied_hyperparameters:
+        Dict mapping hyperparameter name (e.g. 'depth', 'patch_size',
+        'num_heads', 'embed_dim') to (baseline_value, candidate_value) tuple.
+    """
+    varied: dict[str, Any] = {
+        "model_family": {
+            "baseline": "vision_transformer",
+            "candidate": "vision_transformer",
+        }
+    }
+    for param_name, (base_val, cand_val) in varied_hyperparameters.items():
+        varied[param_name] = {
+            "baseline": base_val,
+            "candidate": cand_val,
+        }
+
+    base_fixed: dict[str, Any] = {
+        "dataset_fingerprint": dataset_fingerprint,
+        "seed": seed,
+    }
+    if fixed_factors:
+        base_fixed.update(fixed_factors)
+
+    return ControlledComparison(
+        comparison_id=comparison_id,
+        name=name,
+        description=description,
+        baseline_experiment_id=baseline_experiment_id,
+        candidate_experiment_id=candidate_experiment_id,
+        varied_factors=varied,
+        fixed_factors=base_fixed,
+        dataset_fingerprint=dataset_fingerprint,
+        partition_fingerprint=partition_fingerprint,
+        subset_fingerprint=subset_fingerprint,
+        seed=seed,
+    )

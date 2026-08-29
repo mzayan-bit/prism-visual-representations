@@ -455,3 +455,148 @@ def compare_attention_summaries(
         "head_entropy_deltas": head_entropy_deltas,
         "head_diagonal_mass_deltas": head_diag_deltas,
     }
+
+
+class TransformerAttentionProfile(BaseModel):
+    """Multi-layer attention behavior profile across Transformer encoder depth."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    model_id: str = Field(description="Identifier of evaluated Transformer model")
+    depth: int = Field(ge=1, description="Number of encoder layers in profile")
+    num_heads: int = Field(ge=1, description="Number of attention heads per layer")
+    layer_summaries: list[AttentionTensorSummary] = Field(
+        description="Per-layer attention tensor summaries ordered from 0 to L-1"
+    )
+    layer_mean_entropies: list[float] = Field(
+        description="Mean attention entropy at each encoder layer"
+    )
+    layer_diagonal_masses: list[float] = Field(
+        description="Mean diagonal attention mass at each encoder layer"
+    )
+    entropy_trend: str = Field(
+        default="stable",
+        description="Qualitative entropy progression across depth",
+    )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert profile to dictionary."""
+        return self.model_dump(mode="json")
+
+    def to_json(self, indent: int | None = None) -> str:
+        """Convert profile to JSON string."""
+        return json.dumps(
+            self.to_dict(),
+            indent=indent,
+            sort_keys=True,
+            ensure_ascii=True,
+        )
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> TransformerAttentionProfile:
+        """Create profile from dictionary."""
+        try:
+            return cls.model_validate(data)
+        except Exception as exc:
+            raise SerializationError(
+                f"Failed to deserialize TransformerAttentionProfile: {exc}"
+            ) from exc
+
+    @classmethod
+    def from_json(cls, json_str: str) -> TransformerAttentionProfile:
+        """Create profile from JSON string."""
+        try:
+            return cls.from_dict(json.loads(json_str))
+        except SerializationError:
+            raise
+        except Exception as exc:
+            raise SerializationError(
+                f"Invalid JSON string for TransformerAttentionProfile: {exc}"
+            ) from exc
+
+
+def compute_transformer_attention_profile(
+    attention_weights: list[Any],
+    model_id: str = "vit-model",
+    tolerance: float = 1e-4,
+) -> TransformerAttentionProfile:
+    """Compute depth-wise attention evolution profile across all Transformer layers."""
+    if not attention_weights:
+        raise ValidationError("attention_weights list cannot be empty.")
+
+    depth = len(attention_weights)
+    layer_summaries: list[AttentionTensorSummary] = []
+    layer_entropies: list[float] = []
+    layer_diags: list[float] = []
+
+    for layer_w in attention_weights:
+        summary = summarize_attention_weights(layer_w, tolerance=tolerance)
+        layer_summaries.append(summary)
+        layer_entropies.append(summary.mean_entropy)
+        layer_diags.append(summary.mean_diagonal_mass)
+
+    num_heads = layer_summaries[0].num_heads
+
+    # Determine entropy trend
+    if depth >= 2:
+        diff = layer_entropies[-1] - layer_entropies[0]
+        if diff > 0.05:
+            trend = "increasing"
+        elif diff < -0.05:
+            trend = "decreasing"
+        else:
+            trend = "stable"
+    else:
+        trend = "single_layer"
+
+    return TransformerAttentionProfile(
+        model_id=model_id,
+        depth=depth,
+        num_heads=num_heads,
+        layer_summaries=layer_summaries,
+        layer_mean_entropies=layer_entropies,
+        layer_diagonal_masses=layer_diags,
+        entropy_trend=trend,
+    )
+
+
+def compare_transformer_attention_profiles(
+    profile_a: TransformerAttentionProfile,
+    profile_b: TransformerAttentionProfile,
+) -> dict[str, Any]:
+    """Compare attention evolution across depth between two Transformer models."""
+    if profile_a.depth != profile_b.depth:
+        raise ValidationError(
+            f"Cannot compare profiles with different depths: "
+            f"{profile_a.depth} vs {profile_b.depth}."
+        )
+
+    layer_comparisons = [
+        compare_attention_summaries(sum_a, sum_b)
+        for sum_a, sum_b in zip(
+            profile_a.layer_summaries, profile_b.layer_summaries, strict=True
+        )
+    ]
+
+    return {
+        "model_id_a": profile_a.model_id,
+        "model_id_b": profile_b.model_id,
+        "depth": profile_a.depth,
+        "layer_comparisons": layer_comparisons,
+        "layer_entropy_deltas": [
+            b_ent - a_ent
+            for a_ent, b_ent in zip(
+                profile_a.layer_mean_entropies,
+                profile_b.layer_mean_entropies,
+                strict=True,
+            )
+        ],
+        "layer_diagonal_mass_deltas": [
+            b_diag - a_diag
+            for a_diag, b_diag in zip(
+                profile_a.layer_diagonal_masses,
+                profile_b.layer_diagonal_masses,
+                strict=True,
+            )
+        ],
+    }

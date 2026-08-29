@@ -21,6 +21,8 @@ from prism.models.base import BaseVisionModel
 from prism.models.cnn import ConvolutionalNeuralNetwork
 from prism.models.linear import LinearSoftmaxClassifier
 from prism.models.mlp import MultiLayerPerceptron
+from prism.models.resnet import ResidualNeuralNetwork
+from prism.models.transformer import VisionTransformer
 from prism.training.loss import SoftmaxCrossEntropyLoss, compute_accuracy
 from prism.training.optimizers import BaseOptimizer, create_optimizer
 from prism.training.results import TrainingResult
@@ -98,6 +100,10 @@ class TrainingEngine:
         seed = experiment.reproducibility.seed or 42
         if model is not None:
             model_inst = model
+        elif experiment.model.family == ModelFamily.VISION_TRANSFORMER:
+            model_inst = VisionTransformer(spec=experiment.model, seed=seed)
+        elif experiment.model.family == ModelFamily.RESNET:
+            model_inst = ResidualNeuralNetwork(spec=experiment.model, seed=seed)
         elif experiment.model.family == ModelFamily.CNN:
             model_inst = ConvolutionalNeuralNetwork(spec=experiment.model, seed=seed)
         elif experiment.model.family == ModelFamily.MLP:

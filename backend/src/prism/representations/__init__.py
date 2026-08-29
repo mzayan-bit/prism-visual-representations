@@ -5,10 +5,13 @@ from prism.representations.attention import (
     AttentionPattern,
     AttentionTensorSummary,
     AttentionWeightSummary,
+    TransformerAttentionProfile,
     compare_attention_summaries,
+    compare_transformer_attention_profiles,
     compute_attention_entropy,
     compute_attention_summary,
     compute_diagonal_attention_mass,
+    compute_transformer_attention_profile,
     summarize_attention_weights,
 )
 from prism.representations.contracts import (
@@ -29,11 +32,14 @@ __all__ = [
     "FeatureDistributionSummary",
     "RepresentationBatch",
     "RepresentationDescriptor",
+    "TransformerAttentionProfile",
     "compare_attention_summaries",
     "compare_distribution_summaries",
+    "compare_transformer_attention_profiles",
     "compute_attention_entropy",
     "compute_attention_summary",
     "compute_diagonal_attention_mass",
     "compute_distribution_summary",
+    "compute_transformer_attention_profile",
     "summarize_attention_weights",
 ]

@@ -5,6 +5,7 @@ from prism.experiments.comparisons import (
     create_normalization_comparison,
     create_residual_comparison,
     create_scheduler_comparison,
+    create_vit_architecture_comparison,
 )
 from prism.experiments.context import PreparedExecution, RuntimeContext
 from prism.experiments.definitions import ExperimentDefinition
@@ -55,6 +56,7 @@ __all__ = [
     "create_normalization_comparison",
     "create_residual_comparison",
     "create_scheduler_comparison",
+    "create_vit_architecture_comparison",
     "initialize_seeds",
     "inspect_git_provenance",
     "is_valid_transition",

@@ -10,8 +10,18 @@ from typing import Any
 from prism.core.errors import ValidationError
 from prism.models.activations import BaseActivation, get_activation
 from prism.models.attention import MultiHeadSelfAttention
+from prism.models.base import BaseVisionModel
 from prism.models.normalization import LayerNorm
-from prism.models.patches import ensure_3d_tensor
+from prism.models.patches import (
+    ClassToken,
+    ImagePatchExtractor,
+    LearnablePositionalEmbedding,
+    PatchEmbedding,
+    PatchGeometry,
+    ensure_3d_tensor,
+)
+from prism.models.spatial import ensure_4d_tensor
+from prism.models.specifications import ModelSpecification
 
 
 class TransformerFeedForward:
@@ -515,3 +525,524 @@ class TransformerEncoderBlock:
             dx_3d.append(sample_dx)
 
         return dx_3d
+
+
+class TransformerEncoder:
+    """Stacked Transformer Encoder composed of depth L TransformerEncoderBlocks."""
+
+    def __init__(
+        self,
+        depth: int,
+        embed_dim: int,
+        num_heads: int,
+        hidden_dim: int | None = None,
+        mlp_ratio: float = 4.0,
+        activation: str | BaseActivation = "gelu",
+        norm_eps: float = 1e-5,
+        bias: bool = True,
+        seed: int = 42,
+    ) -> None:
+        if depth <= 0:
+            raise ValidationError(f"depth must be positive, got {depth}.")
+
+        self.depth = depth
+        self.embed_dim = embed_dim
+        self.num_heads = num_heads
+        self.hidden_dim = hidden_dim
+        self.mlp_ratio = mlp_ratio
+        self.norm_eps = norm_eps
+        self.use_bias = bias
+
+        self.blocks: list[TransformerEncoderBlock] = []
+        for idx in range(depth):
+            block_seed = seed + idx * 1000 + 17
+            block = TransformerEncoderBlock(
+                embed_dim=embed_dim,
+                num_heads=num_heads,
+                hidden_dim=hidden_dim,
+                mlp_ratio=mlp_ratio,
+                activation=activation,
+                norm_eps=norm_eps,
+                bias=bias,
+                seed=block_seed,
+            )
+            self.blocks.append(block)
+
+        self._cached_inputs: list[list[list[float]]] | None = None
+        self._cached_block_outputs: list[list[list[list[float]]]] = []
+
+    def zero_grad(self) -> None:
+        """Clear parameter gradients in all stacked encoder blocks."""
+        for block in self.blocks:
+            block.zero_grad()
+
+    def get_parameters(self) -> dict[str, Any]:
+        """Return all trainable parameters prefixed with block index."""
+        params: dict[str, Any] = {}
+        for idx, block in enumerate(self.blocks):
+            for k, v in block.get_parameters().items():
+                params[f"blocks.{idx}.{k}"] = v
+        return params
+
+    def set_parameters(self, params: dict[str, Any]) -> None:
+        """Load trainable parameters from hierarchical mapping."""
+        for idx, block in enumerate(self.blocks):
+            prefix = f"blocks.{idx}."
+            block_p = {
+                k[len(prefix) :]: v for k, v in params.items() if k.startswith(prefix)
+            }
+            if block_p:
+                block.set_parameters(block_p)
+
+    def get_gradients(self) -> dict[str, Any]:
+        """Return computed parameter gradients across all blocks."""
+        grads: dict[str, Any] = {}
+        for idx, block in enumerate(self.blocks):
+            for k, v in block.get_gradients().items():
+                grads[f"blocks.{idx}.{k}"] = v
+        return grads
+
+    def get_state(self) -> dict[str, Any]:
+        """Return non-trainable state."""
+        return {}
+
+    def set_state(self, state: dict[str, Any]) -> None:
+        """Restore non-trainable state."""
+        pass
+
+    def forward(self, inputs: Any, mask: Any = None) -> list[list[list[float]]]:
+        """Pass input sequence through all encoder blocks sequentially."""
+        x = ensure_3d_tensor(inputs)
+        self._cached_inputs = x
+        self._cached_block_outputs = []
+
+        current_x = x
+        for block in self.blocks:
+            current_x = block.forward(current_x, mask=mask)
+            self._cached_block_outputs.append(current_x)
+
+        return current_x
+
+    def backward(self, d_out: Any) -> list[list[list[float]]]:
+        """Propagate gradients through all encoder blocks in reverse order."""
+        if self._cached_inputs is None:
+            raise ValidationError("Cannot run backward before forward pass.")
+
+        current_dout = ensure_3d_tensor(d_out)
+        for block in reversed(self.blocks):
+            current_dout = block.backward(current_dout)
+
+        return current_dout
+
+    def get_attention_weights(
+        self,
+    ) -> list[list[list[list[list[float]]]]]:
+        """Return non-mutating copy of attention weights [L, N, H, T, T]."""
+        weights_per_layer: list[list[list[list[list[float]]]]] = []
+        for block in self.blocks:
+            if block.last_attention_weights is not None:
+                weights_per_layer.append(copy.deepcopy(block.last_attention_weights))
+            else:
+                weights_per_layer.append([])
+        return weights_per_layer
+
+
+class VisionTransformer(BaseVisionModel):
+    """Complete Vision Transformer (ViT) model for visual representations.
+
+    Pipeline:
+        X (N, C, H, W)
+        -> PatchExtractor (N, T, D_patch)
+        -> PatchEmbedding (N, T, D_model)
+        -> ClassToken (N, T+1, D_model)
+        -> PositionalEmbedding (N, T+1, D_model)
+        -> TransformerEncoder (N, T+1, D_model)
+        -> Final LayerNorm (N, T+1, D_model)
+        -> CLS Slice (N, D_model)
+        -> Linear Classification Head (N, num_classes)
+    """
+
+    def __init__(
+        self,
+        spec: ModelSpecification,
+        seed: int = 42,
+    ) -> None:
+        super().__init__(spec)
+        if spec.num_classes is None or spec.num_classes <= 0:
+            raise ValidationError(
+                f"num_classes must be positive, got {spec.num_classes}."
+            )
+        self.num_classes_val: int = spec.num_classes
+
+        # 1. Input Spatial Dimensions
+        if len(spec.input_shape) != 3:
+            raise ValidationError(
+                f"Expected input_shape (C, H, W), got {spec.input_shape}."
+            )
+        self.channels, self.image_height, self.image_width = spec.input_shape
+
+        # 2. Hyperparameters
+        patch_size_raw = spec.hyperparameters.get("patch_size", 4)
+        if isinstance(patch_size_raw, (list, tuple)):
+            self.patch_size: tuple[int, int] = (
+                int(patch_size_raw[0]),
+                int(patch_size_raw[1]),
+            )
+        else:
+            self.patch_size = (int(patch_size_raw), int(patch_size_raw))
+
+        self.embed_dim = int(spec.hyperparameters.get("embed_dim", 64))
+        self.num_heads = int(spec.hyperparameters.get("num_heads", 4))
+        self.depth = int(spec.hyperparameters.get("depth", 4))
+        self.mlp_ratio = float(spec.hyperparameters.get("mlp_ratio", 4.0))
+        self.norm_eps = float(spec.hyperparameters.get("norm_eps", 1e-5))
+        self.act_name = str(spec.hyperparameters.get("activation", "gelu"))
+        self.bias = bool(spec.hyperparameters.get("bias", True))
+        self.seed = seed
+
+        # 3. Component Instantiation
+        self.geometry = PatchGeometry.create(
+            image_size=(self.image_height, self.image_width),
+            patch_size=self.patch_size,
+            channels=self.channels,
+        )
+
+        self.patch_extractor = ImagePatchExtractor(geometry=self.geometry)
+
+        self.patch_embed = PatchEmbedding(
+            in_features=self.geometry.flattened_patch_dimension,
+            embed_dim=self.embed_dim,
+            bias=self.bias,
+            seed=seed + 1,
+        )
+
+        self.cls_token = ClassToken(
+            embed_dim=self.embed_dim,
+            seed=seed + 2,
+            init_std=0.02,
+        )
+
+        self.pos_embed = LearnablePositionalEmbedding(
+            num_positions=self.geometry.total_patches + 1,
+            embed_dim=self.embed_dim,
+            seed=seed + 3,
+            init_std=0.02,
+        )
+
+        self.encoder = TransformerEncoder(
+            depth=self.depth,
+            embed_dim=self.embed_dim,
+            num_heads=self.num_heads,
+            mlp_ratio=self.mlp_ratio,
+            activation=self.act_name,
+            norm_eps=self.norm_eps,
+            bias=self.bias,
+            seed=seed + 10,
+        )
+
+        self.norm = LayerNorm(
+            normalized_shape=self.embed_dim,
+            eps=self.norm_eps,
+            affine=True,
+        )
+
+        # 4. Classification Head: W_head [D_model, num_classes], b_head [num_classes]
+        rng = random.Random(seed + 99)
+        std_head = math.sqrt(2.0 / float(self.embed_dim + self.num_classes_val))
+        self.classifier_w: list[list[float]] = [
+            [rng.gauss(0.0, std_head) for _ in range(self.num_classes_val)]
+            for _ in range(self.embed_dim)
+        ]
+        self.classifier_b: list[float] = [0.0] * self.num_classes_val
+
+        self.zero_grad()
+
+        # Cache for intermediate representations and backward pass
+        self._cached_input: Any = None
+        self._cached_patches: list[list[list[float]]] | None = None
+        self._cached_embeddings: list[list[list[float]]] | None = None
+        self._cached_cls_prepended: list[list[list[float]]] | None = None
+        self._cached_pos_added: list[list[list[float]]] | None = None
+        self._cached_encoder_out: list[list[list[float]]] | None = None
+        self._cached_norm_out: list[list[list[float]]] | None = None
+        self._cached_cls_repr: list[list[float]] | None = None
+
+    def zero_grad(self) -> None:
+        """Reset all parameter gradient buffers."""
+        self.patch_embed.zero_grad()
+        self.cls_token.zero_grad()
+        self.pos_embed.zero_grad()
+        self.encoder.zero_grad()
+        self.norm.zero_grad()
+
+        self.grad_classifier_w: list[list[float]] = [
+            [0.0] * self.num_classes_val for _ in range(self.embed_dim)
+        ]
+        self.grad_classifier_b: list[float] = [0.0] * self.num_classes_val
+
+    def get_parameters(self) -> dict[str, Any]:
+        """Discover and return all trainable model parameters."""
+        params: dict[str, Any] = {}
+
+        for k, v in self.patch_embed.get_parameters().items():
+            params[f"patch_embed.{k}"] = v
+
+        for k, v in self.cls_token.get_parameters().items():
+            params[f"cls_token.{k}"] = v
+
+        for k, v in self.pos_embed.get_parameters().items():
+            params[f"pos_embed.{k}"] = v
+
+        for k, v in self.encoder.get_parameters().items():
+            params[f"encoder.{k}"] = v
+
+        for k, v in self.norm.get_parameters().items():
+            params[f"norm.{k}"] = v
+
+        params["classifier.weights"] = copy.deepcopy(self.classifier_w)
+        params["classifier.bias"] = copy.deepcopy(self.classifier_b)
+
+        return params
+
+    def set_parameters(self, params: dict[str, Any]) -> None:
+        """Load trainable parameters from hierarchical mapping."""
+        pe_p = {k[12:]: v for k, v in params.items() if k.startswith("patch_embed.")}
+        cls_p = {k[10:]: v for k, v in params.items() if k.startswith("cls_token.")}
+        pos_p = {k[10:]: v for k, v in params.items() if k.startswith("pos_embed.")}
+        enc_p = {k[8:]: v for k, v in params.items() if k.startswith("encoder.")}
+        norm_p = {k[5:]: v for k, v in params.items() if k.startswith("norm.")}
+
+        if pe_p:
+            self.patch_embed.set_parameters(pe_p)
+        if cls_p:
+            self.cls_token.set_parameters(cls_p)
+        if pos_p:
+            self.pos_embed.set_parameters(pos_p)
+        if enc_p:
+            self.encoder.set_parameters(enc_p)
+        if norm_p:
+            self.norm.set_parameters(norm_p)
+
+        if "classifier.weights" in params:
+            cw = params["classifier.weights"]
+            if len(cw) != self.embed_dim or len(cw[0]) != self.num_classes_val:
+                raise ValidationError(
+                    f"classifier.weights shape mismatch: expected "
+                    f"({self.embed_dim}, {self.num_classes_val}), got ({len(cw)}, "
+                    f"{len(cw[0]) if cw else 0})."
+                )
+            self.classifier_w = copy.deepcopy(cw)
+
+        if "classifier.bias" in params:
+            cb = params["classifier.bias"]
+            if len(cb) != self.num_classes_val:
+                raise ValidationError(
+                    f"classifier.bias mismatch: expected ({self.num_classes_val},), "
+                    f"got ({len(cb)},)."
+                )
+            self.classifier_b = copy.deepcopy(cb)
+
+    def get_gradients(self) -> dict[str, Any]:
+        """Return computed parameter gradients."""
+        grads: dict[str, Any] = {}
+
+        for k, v in self.patch_embed.get_gradients().items():
+            grads[f"patch_embed.{k}"] = v
+
+        for k, v in self.cls_token.get_gradients().items():
+            grads[f"cls_token.{k}"] = v
+
+        for k, v in self.pos_embed.get_gradients().items():
+            grads[f"pos_embed.{k}"] = v
+
+        for k, v in self.encoder.get_gradients().items():
+            grads[f"encoder.{k}"] = v
+
+        for k, v in self.norm.get_gradients().items():
+            grads[f"norm.{k}"] = v
+
+        grads["classifier.weights"] = copy.deepcopy(self.grad_classifier_w)
+        grads["classifier.bias"] = copy.deepcopy(self.grad_classifier_b)
+
+        return grads
+
+    def forward(self, inputs: Any) -> list[list[float]]:
+        """Compute ViT forward pass producing logits [N, num_classes]."""
+        x_4d = ensure_4d_tensor(inputs)
+        self._cached_input = x_4d
+
+        # 1. Patch Extraction: [N, C, H, W] -> [N, T, D_patch]
+        patches = self.patch_extractor.forward(x_4d)
+        self._cached_patches = patches
+
+        # 2. Patch Embedding: [N, T, D_patch] -> [N, T, D_model]
+        embeddings = self.patch_embed.forward(patches)
+        self._cached_embeddings = embeddings
+
+        # 3. Class Token Prepending: [N, T, D_model] -> [N, T+1, D_model]
+        tokens_with_cls = self.cls_token.forward(embeddings)
+        self._cached_cls_prepended = tokens_with_cls
+
+        # 4. Positional Encoding: [N, T+1, D_model] -> [N, T+1, D_model]
+        tokens_with_pos = self.pos_embed.forward(tokens_with_cls)
+        self._cached_pos_added = tokens_with_pos
+
+        # 5. Transformer Encoder: [N, T+1, D_model] -> [N, T+1, D_model]
+        encoder_out = self.encoder.forward(tokens_with_pos)
+        self._cached_encoder_out = encoder_out
+
+        # 6. Final LayerNorm: [N, T+1, D_model] -> [N, T+1, D_model]
+        norm_out = self.norm.forward(encoder_out)
+        self._cached_norm_out = norm_out
+
+        # 7. Extract CLS representation at index 0: [N, D_model]
+        cls_repr: list[list[float]] = [list(sample[0]) for sample in norm_out]
+        self._cached_cls_repr = cls_repr
+
+        # 8. Classification Head: [N, D_model] -> [N, num_classes]
+        n_samples = len(cls_repr)
+        logits: list[list[float]] = []
+        for n in range(n_samples):
+            cls_vec = cls_repr[n]
+            row_logits: list[float] = [0.0] * self.num_classes_val
+            for c in range(self.num_classes_val):
+                dot = (
+                    sum(
+                        cls_vec[d] * self.classifier_w[d][c]
+                        for d in range(self.embed_dim)
+                    )
+                    + self.classifier_b[c]
+                )
+                row_logits[c] = dot
+            logits.append(row_logits)
+
+        return logits
+
+    def backward(self, d_logits: list[list[float]]) -> None:
+        """Propagate gradients from output logits all the way to input pixels."""
+        if (
+            self._cached_cls_repr is None
+            or self._cached_norm_out is None
+            or self._cached_input is None
+        ):
+            raise ValidationError("Cannot run backward before forward pass.")
+
+        n_samples = len(self._cached_cls_repr)
+        seq_len = self.geometry.total_patches + 1
+
+        if len(d_logits) != n_samples or len(d_logits[0]) != self.num_classes_val:
+            raise ValidationError(
+                f"d_logits shape mismatch: expected ({n_samples}, "
+                f"{self.num_classes_val})."
+            )
+
+        # 1. Head backward: d_cls = d_logits W_head^T, dW_head += CLS^T d_logits
+        d_cls: list[list[float]] = []
+        for n in range(n_samples):
+            dlog_vec = d_logits[n]
+            cls_vec = self._cached_cls_repr[n]
+            dcls_vec = [0.0] * self.embed_dim
+
+            for d in range(self.embed_dim):
+                dcls_vec[d] = sum(
+                    dlog_vec[c] * self.classifier_w[d][c]
+                    for c in range(self.num_classes_val)
+                )
+                cls_d = cls_vec[d]
+                for c in range(self.num_classes_val):
+                    self.grad_classifier_w[d][c] += cls_d * dlog_vec[c]
+
+            for c in range(self.num_classes_val):
+                self.grad_classifier_b[c] += dlog_vec[c]
+
+            d_cls.append(dcls_vec)
+
+        # 2. Embed d_cls into sequence gradient d_norm_out [N, T+1, D_model]
+        d_norm_out: list[list[list[float]]] = []
+        for n in range(n_samples):
+            sample_d = [d_cls[n]] + [[0.0] * self.embed_dim for _ in range(seq_len - 1)]
+            d_norm_out.append(sample_d)
+
+        # 3. Final LayerNorm backward: d_encoder_out = LN_backward(d_norm_out)
+        d_encoder_out = self.norm.backward(d_norm_out)
+
+        # 4. Stacked Encoder backward: d_pos = Encoder_backward(d_encoder_out)
+        d_pos_added = self.encoder.backward(d_encoder_out)
+
+        # 5. Positional Embedding backward: d_cls_prepended = Pos_backward(d_pos)
+        d_cls_prepended = self.pos_embed.backward(d_pos_added)
+
+        # 6. Class Token backward: d_embeddings = CLS_backward(d_cls_prepended)
+        d_embeddings = self.cls_token.backward(d_cls_prepended)
+
+        # 7. Patch Embedding backward: d_patches = PatchEmbed_backward(d_embeddings)
+        d_patches = self.patch_embed.backward(d_embeddings)
+
+        # 8. Patch Extractor backward: dX = Extractor_backward(d_patches)
+        _ = self.patch_extractor.backward(d_patches)
+
+    def extract_representations(
+        self, inputs: Any, layer: str = "cls_representation"
+    ) -> Any:
+        """Extract intermediate representations at specified architectural depth."""
+        layer_norm_name = layer.strip().lower()
+
+        # Run forward pass if not already computed for these exact inputs
+        logits = self.forward(inputs)
+
+        if layer_norm_name in ("input", "input_spatial"):
+            return copy.deepcopy(self._cached_input)
+        if layer_norm_name == "patches":
+            return copy.deepcopy(self._cached_patches)
+        if layer_norm_name in ("patch_embeddings", "embeddings"):
+            return copy.deepcopy(self._cached_embeddings)
+        if layer_norm_name == "tokens_pre_position":
+            return copy.deepcopy(self._cached_cls_prepended)
+        if layer_norm_name in ("tokens_post_position", "tokens_with_pos"):
+            return copy.deepcopy(self._cached_pos_added)
+        if layer_norm_name in ("final_tokens", "encoder_final"):
+            return copy.deepcopy(self._cached_norm_out)
+        if layer_norm_name in (
+            "cls_representation",
+            "cls",
+            "final_hidden",
+            "representation",
+        ):
+            return copy.deepcopy(self._cached_cls_repr)
+        if layer_norm_name in ("patch_tokens", "patch_token_representations"):
+            if self._cached_norm_out is not None:
+                return [
+                    [list(tok) for tok in sample[1:]]
+                    for sample in self._cached_norm_out
+                ]
+            return []
+        if layer_norm_name in ("logits", "output"):
+            return copy.deepcopy(logits)
+        if layer_norm_name in ("attention_weights", "attention"):
+            return self.get_attention_weights()
+
+        # Check block-specific output or attention: e.g. "encoder_0_output", "encoder_0"
+        if layer_norm_name.startswith("encoder_"):
+            parts = layer_norm_name.split("_")
+            try:
+                b_idx = int(parts[1])
+                if 0 <= b_idx < len(self.encoder.blocks):
+                    block = self.encoder.blocks[b_idx]
+                    if "attn" in layer_norm_name or "attention" in layer_norm_name:
+                        return copy.deepcopy(block.last_attention_weights)
+                    return copy.deepcopy(block.last_output)
+            except (ValueError, IndexError):
+                pass
+
+        raise ValidationError(
+            f"Unsupported representation layer '{layer}'. Supported: 'input_spatial', "
+            f"'patches', 'patch_embeddings', 'tokens_pre_position', "
+            f"'tokens_post_position', 'encoder_<k>_output', 'final_tokens', "
+            f"'cls_representation', 'patch_tokens', 'logits'."
+        )
+
+    def get_attention_weights(
+        self,
+    ) -> list[list[list[list[list[float]]]]]:
+        """Return attention matrices [L, N, H, T+1, T+1] across all blocks."""
+        return self.encoder.get_attention_weights()

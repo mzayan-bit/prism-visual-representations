@@ -57,8 +57,10 @@ from prism.models.spatial import (
 )
 from prism.models.specifications import ModelSpecification
 from prism.models.transformer import (
+    TransformerEncoder,
     TransformerEncoderBlock,
     TransformerFeedForward,
+    VisionTransformer,
 )
 
 __all__ = [
@@ -93,8 +95,10 @@ __all__ = [
     "ScaledDotProductAttention",
     "SimpleCNN",
     "SimpleResNet",
+    "TransformerEncoder",
     "TransformerEncoderBlock",
     "TransformerFeedForward",
+    "VisionTransformer",
     "compute_conv2d_output_shape",
     "compute_pool2d_output_shape",
     "compute_receptive_field",

@@ -34,11 +34,15 @@ class RepresentationDescriptor(BaseModel):
     )
     representation_kind: str = Field(
         default="vector",
-        description="Category: 'vector' (1D features) or 'spatial' (C, H, W maps)",
+        description="Category: 'vector', 'spatial', 'tokens', or 'attention'",
     )
     spatial_shape: tuple[int, int, int] | None = Field(
         default=None,
         description="Spatial dimensions (C, H, W) if representation_kind is 'spatial'",
+    )
+    tokens_shape: tuple[int, int] | None = Field(
+        default=None,
+        description="Token dimensions (T, D) if representation_kind is 'tokens'",
     )
     receptive_field: int | None = Field(
         default=None,
@@ -66,6 +70,16 @@ class RepresentationDescriptor(BaseModel):
         """Return True if this descriptor represents a spatial feature map."""
         return self.representation_kind == "spatial"
 
+    @property
+    def is_tokens(self) -> bool:
+        """Return True if this descriptor represents a sequence of token vectors."""
+        return self.representation_kind == "tokens"
+
+    @property
+    def is_attention(self) -> bool:
+        """Return True if this descriptor represents an attention pattern tensor."""
+        return self.representation_kind == "attention"
+
     @field_validator("model_id")
     @classmethod
     def validate_model_id_field(cls, v: str) -> str:
@@ -82,9 +96,10 @@ class RepresentationDescriptor(BaseModel):
     @classmethod
     def validate_kind(cls, v: str) -> str:
         v_norm = v.strip().lower()
-        if v_norm not in ("vector", "spatial"):
+        if v_norm not in ("vector", "spatial", "tokens", "attention"):
             raise ValueError(
-                f"representation_kind must be 'vector' or 'spatial', got '{v}'"
+                f"representation_kind must be 'vector', 'spatial', 'tokens', "
+                f"or 'attention', got '{v}'"
             )
         return v_norm
 

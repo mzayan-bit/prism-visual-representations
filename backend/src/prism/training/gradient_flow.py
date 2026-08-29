@@ -19,8 +19,33 @@ def _infer_logical_stage_and_depth(
     """Infer logical stage name and relative depth index from parameter identifier."""
     name = param_name.lower()
 
-    if "stem" in name or "conv_0" in name or "layer_0" in name:
-        return "stem", 0
+    if "patch_embed" in name or "stem" in name or "conv_0" in name or "layer_0" in name:
+        return "stem" if "stem" in name or "conv_0" in name else "input_embedding", 0
+
+    if "cls_token" in name:
+        return "input_embedding", 1
+
+    if "pos_embed" in name:
+        return "input_embedding", 2
+
+    if "encoder" in name or "blocks." in name:
+        parts = name.split(".")
+        try:
+            if "blocks" in parts:
+                b_idx = int(parts[parts.index("blocks") + 1])
+                sub_layer_offset = 0
+                if "ln1" in name:
+                    sub_layer_offset = 1
+                elif "attn" in name:
+                    sub_layer_offset = 2
+                elif "ln2" in name:
+                    sub_layer_offset = 3
+                elif "ffn" in name:
+                    sub_layer_offset = 4
+                return f"encoder_{b_idx}", 10 + b_idx * 10 + sub_layer_offset
+            return "encoder", 10
+        except (ValueError, IndexError):
+            return "encoder", 10
 
     if "stage_" in name:
         parts = name.split("_")
@@ -40,7 +65,10 @@ def _infer_logical_stage_and_depth(
         except (ValueError, IndexError):
             return "conv", 5
 
-    if "classifier" in name or "fc_" in name or "weights_out" in name:
+    if "norm." in name or name == "norm":
+        return "final_norm", 900
+
+    if "classifier" in name or "fc_" in name or "weights_out" in name or "head" in name:
         return "classifier", 999
 
     return "body", 50
