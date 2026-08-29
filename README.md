@@ -41,7 +41,7 @@ Baselines                  Residual Learning                Self-Supervision
 | **Phase 10** | Residual Learning, Skip Connections, Plain-vs-ResNet & Gradient Flow | :white_check_mark: Completed |
 | **Phase 11** | Learning Rate Scheduling & Reproducible Optimization Control | :white_check_mark: Completed |
 | **Phase 12** | Vision Transformers (ViT) & Attention Geometry | :white_check_mark: Completed |
-| **Phase 13** | Self-Supervised Learning & Representation Analysis (CKA, Probes) | :hourglass_flowing_sand: Planned |
+| **Phase 13** | Controlled CNN / ResNet / Vision Transformer Architecture Experiments | :white_check_mark: Completed |
 | **Phase 14** | Robustness Under Corruptions & Distribution Shifts | :hourglass_flowing_sand: Planned |
 | **Phase 15** | Comparative Explainability (Attributions, Rollout, Grad-CAM) | :hourglass_flowing_sand: Planned |
 | **Phase 16** | Downstream Dense Transfer (Detection & Segmentation) | :hourglass_flowing_sand: Planned |

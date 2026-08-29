@@ -1,5 +1,19 @@
 # PRISM Architecture Overview
 
+## Controlled architecture experiment layer
+
+`ArchitectureComparisonSuite` composes existing experiment, data, training,
+evaluation, model, and representation contracts. It records the research
+question, definitions, comparison mode, data identity, policies, and
+lifecycle; it does not implement model mathematics or a second training loop.
+
+`STRICT_CONTROLLED` audits typed dataset, partition/subset, preprocessing,
+seed, model, optimizer, scheduler, training, and evaluation factors and
+rejects undeclared differences. `ARCHITECTURE_APPROPRIATE` permits declared
+architecture-specific settings while retaining those differences in the
+audit and report. `ExperimentSuiteRunner` returns compact metric, curve,
+convergence, gradient, representation, attention, and pairwise summaries.
+
 ## Monorepo Layout & System Design
 
 PRISM is architected as a modular research monorepo structured around clean domain boundaries.

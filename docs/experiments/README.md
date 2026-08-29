@@ -1,5 +1,38 @@
 # PRISM Experiments Guide
 
+## Controlled architecture comparisons
+
+Phase 13 provides a Python API for controlled CNN, residual CNN, and Vision
+Transformer studies:
+
+```python
+from prism.experiments import ComparisonMode, ExperimentSuiteRunner
+from prism.experiments import create_architecture_comparison_suite
+
+suite = create_architecture_comparison_suite(
+    "suite-cnn-resnet-vit",
+    "Architecture comparison",
+    "How do visual models behave under shared conditions?",
+    [cnn_experiment, resnet_experiment, vit_experiment],
+    comparison_mode=ComparisonMode.STRICT_CONTROLLED,
+)
+audit = suite.validate_factors()
+report = ExperimentSuiteRunner().run(suite, execute_experiment)
+serialized = report.to_json(indent=2)
+```
+
+The callback should reuse `ExperimentExecutionHarness`, `DataPreparer`,
+`TrainingEngine`, and `EvaluationEngine`, returning an
+`ArchitectureRunResult`. Reports include real metric records, aligned curves,
+convergence descriptors, exact parameter counts, gradient-flow and final
+representation summaries, ViT-only attention profiles, pairwise deltas, and
+honest partial-failure status. `SampleEfficiencyPlan` preserves nested
+data-budget identity, while repeated-seed contracts avoid fabricating runs.
+
+Phase 13 does not run large benchmarks, download datasets, perform
+hyperparameter search, compute confidence intervals, or build the Observatory
+dashboard.
+
 ## Purpose
 This directory stores documentation, interactive notebooks, and synthesized research findings for PRISM experimental campaigns.
 
@@ -284,4 +317,3 @@ for head in attn_summary.head_summaries:
         f"Head {head.head_index}: entropy={head.entropy:.4f}, min={head.min_value:.4f}, max={head.max_value:.4f}"
     )
 ```
-

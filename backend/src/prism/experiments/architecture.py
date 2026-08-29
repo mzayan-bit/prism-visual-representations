@@ -172,8 +172,13 @@ class ArchitectureComparisonSuite(BaseModel):
 
     def compute_fingerprint(self) -> str:
         payload = self.model_dump(
-            mode="json", exclude={"created_at", "status", "warnings"}
+            mode="json",
+            exclude={"created_at", "status", "warnings", "experiment_definitions"},
         )
+        payload["experiment_definitions"] = [
+            experiment.compute_fingerprint()
+            for experiment in self.experiment_definitions
+        ]
         encoded = json.dumps(
             _stable(payload), sort_keys=True, separators=(",", ":")
         ).encode()
@@ -282,6 +287,7 @@ def audit_experiment_factors(
     aliases = {
         "dataset": {"dataset.dataset_id", "dataset.version", "dataset.fingerprint"},
         "model_family": {"model.family"},
+        "model_architecture": {"model.architecture"},
         "architecture": {"model.architecture"},
         "batch_size": {"training.batch_size", "evaluation.batch_size"},
         "optimizer": {"training.optimizer"},
@@ -425,4 +431,10 @@ def create_architecture_comparison_suite(
         },
         metadata=metadata,
     )
+    suite.controlled_factors = sorted(suite.audit_factors().constant_factors)
     return suite
+
+
+# Repository-friendly aliases for generic suite consumers.
+ExperimentSuite = ArchitectureComparisonSuite
+ControlledExperimentSuite = ArchitectureComparisonSuite

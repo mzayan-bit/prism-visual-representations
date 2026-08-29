@@ -1,5 +1,19 @@
 # PRISM Research Contract
 
+## Phase 13 architecture-comparison contract
+
+Architecture comparisons are measurements, not universal rankings. Each suite
+records dataset and controlled-data identities, preprocessing, reproducibility
+policy, training budget, evaluation protocol, architecture metadata, exact
+trainable parameter count, and intentionally varied factors. Strict suites
+fail when an undeclared typed factor differs; architecture-appropriate suites
+retain every permitted difference for audit.
+
+Unavailable metrics remain unavailable. CNN and residual CNN attention is not
+applicable; ViT attention summaries are included only when real attention
+weights exist. Representation dimensions are explicit, and gradient and
+distribution summaries are descriptive rather than causal or inferential.
+
 ## Core Scientific Principles & Non-Negotiable Standards
 
 PRISM is a scientific research platform designed to investigate how visual representations are formed, structured, and transferred across different learning paradigms.
