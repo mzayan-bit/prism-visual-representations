@@ -9,6 +9,7 @@ import { MetricOverviewStrip } from "./components/MetricOverviewStrip";
 import { NeighborhoodPanel } from "./components/NeighborhoodPanel";
 import { ObservatoryHeader } from "./components/ObservatoryHeader";
 import { PCAScatterPlot } from "./components/PCAScatterPlot";
+import RobustnessLaboratoryView from "./components/RobustnessLaboratoryView";
 import {
   getCrossArchitectureComparison,
   getLayerGeometryProfile,
@@ -21,7 +22,10 @@ import {
   SpatialTransformation,
 } from "./types";
 
-export default function ObservatoryPage() {
+export default function PRISMDashboardPage() {
+  const [appMode, setAppMode] = useState<"robustness" | "observatory">("robustness");
+
+  // Observatory state
   const metadata = useMemo(() => getObservatoryMetadata(), []);
   const comparison = useMemo(() => getCrossArchitectureComparison(), []);
 
@@ -64,95 +68,139 @@ export default function ObservatoryPage() {
   }, [selectedArch, selectedLayer]);
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100 selection:bg-cyan-900 selection:text-cyan-100">
-      {/* Top Header Controls */}
-      <ObservatoryHeader
-        architectures={metadata.architectures}
-        selectedArch={selectedArch}
-        onSelectArch={handleSelectArch}
-        availableLayers={availableLayers}
-        selectedLayer={selectedLayer}
-        onSelectLayer={setSelectedLayer}
-        dataBudgets={metadata.data_budgets}
-        selectedBudget={selectedBudget}
-        onSelectBudget={setSelectedBudget}
-        spatialPolicy={spatialPolicy}
-        onSelectSpatialPolicy={setSpatialPolicy}
-        normPolicy={normPolicy}
-        onSelectNormPolicy={setNormPolicy}
-        distanceMetric={distanceMetric}
-        onSelectDistanceMetric={setDistanceMetric}
-        activeTab={activeTab}
-        onSelectTab={setActiveTab}
-      />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* KPI Metric Strip */}
-        <MetricOverviewStrip report={activeReport} />
-
-        {/* Tab 1: Geometry & Neighborhood Inspector */}
-        {activeTab === "geometry" && activeReport && (
-          <div className="space-y-6">
-            {/* Top Grid: Scatter Plot + Inspector Panels */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Central Left: Interactive 2D PCA Scatter Plot (7 cols) */}
-              <div className="lg:col-span-7">
-                <PCAScatterPlot
-                  projection={activeReport.pca_projection}
-                  centroidGeometry={activeReport.centroid_geometry}
-                  sampleNeighborhoods={
-                    activeReport.neighborhood_geometry.sample_neighborhoods
-                  }
-                  selectedSampleId={selectedSampleId}
-                  onSelectSample={setSelectedSampleId}
-                />
-              </div>
-
-              {/* Central Right: Neighborhood & Failure Inspector (5 cols) */}
-              <div className="lg:col-span-5 space-y-4">
-                <NeighborhoodPanel
-                  neighborhood={
-                    selectedSampleId
-                      ? activeReport.neighborhood_geometry.sample_neighborhoods[
-                          selectedSampleId
-                        ] || null
-                      : null
-                  }
-                  selectedSampleId={selectedSampleId}
-                  onSelectNeighbor={setSelectedSampleId}
-                />
-
-                <FailureExplorerPanel
-                  failures={activeReport.candidate_failures}
-                  selectedSampleId={selectedSampleId}
-                  onSelectSample={setSelectedSampleId}
-                />
-              </div>
-            </div>
-
-            {/* Bottom: Class Centroids Table */}
-            <ClassCentroidsTable
-              centroidGeometry={activeReport.centroid_geometry}
-            />
+    <main className="min-h-screen bg-slate-950 text-slate-100 selection:bg-cyan-900 selection:text-cyan-100">
+      {/* Top Application Mode Navigation Switcher */}
+      <nav className="bg-slate-900 border-b border-slate-800 px-6 py-2.5 flex items-center justify-between z-40 sticky top-0">
+        <div className="flex items-center gap-3">
+          <div className="text-sm font-black tracking-wider text-cyan-400 font-mono">
+            PRISM // RESEARCH SUITE
           </div>
-        )}
+          <span className="text-xs text-slate-500">|</span>
+          <span className="text-xs text-slate-400">Visual Representation & Robustness Platform</span>
+        </div>
 
-        {/* Tab 2: Layer-Wise Geometry Evolution */}
-        {activeTab === "evolution" && (
-          <LayerEvolutionPanel
-            profile={activeProfile}
-            onSelectLayer={(layer) => {
-              setSelectedLayer(layer);
-              setActiveTab("geometry");
-            }}
+        <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800">
+          <button
+            id="nav-mode-robustness"
+            onClick={() => setAppMode("robustness")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              appMode === "robustness"
+                ? "bg-cyan-600 text-white shadow-md shadow-cyan-500/20"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <span>🛡️</span> Robustness Laboratory (Phase 15)
+          </button>
+          <button
+            id="nav-mode-observatory"
+            onClick={() => setAppMode("observatory")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              appMode === "observatory"
+                ? "bg-cyan-600 text-white shadow-md shadow-cyan-500/20"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <span>🔬</span> Geometry Observatory (Phase 14)
+          </button>
+        </div>
+      </nav>
+
+      {/* Phase 15: Robustness & Distribution Shift Laboratory */}
+      {appMode === "robustness" && <RobustnessLaboratoryView />}
+
+      {/* Phase 14: Representation Geometry Observatory */}
+      {appMode === "observatory" && (
+        <div>
+          {/* Top Header Controls */}
+          <ObservatoryHeader
+            architectures={metadata.architectures}
+            selectedArch={selectedArch}
+            onSelectArch={handleSelectArch}
+            availableLayers={availableLayers}
+            selectedLayer={selectedLayer}
+            onSelectLayer={setSelectedLayer}
+            dataBudgets={metadata.data_budgets}
+            selectedBudget={selectedBudget}
+            onSelectBudget={setSelectedBudget}
+            spatialPolicy={spatialPolicy}
+            onSelectSpatialPolicy={setSpatialPolicy}
+            normPolicy={normPolicy}
+            onSelectNormPolicy={setNormPolicy}
+            distanceMetric={distanceMetric}
+            onSelectDistanceMetric={setDistanceMetric}
+            activeTab={activeTab}
+            onSelectTab={setActiveTab}
           />
-        )}
 
-        {/* Tab 3: Cross-Architecture Benchmarks */}
-        {activeTab === "comparison" && (
-          <ArchitectureComparisonPanel comparison={comparison} />
-        )}
-      </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+            {/* KPI Metric Strip */}
+            <MetricOverviewStrip report={activeReport} />
+
+            {/* Tab 1: Geometry & Neighborhood Inspector */}
+            {activeTab === "geometry" && activeReport && (
+              <div className="space-y-6">
+                {/* Top Grid: Scatter Plot + Inspector Panels */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  {/* Central Left: Interactive 2D PCA Scatter Plot (7 cols) */}
+                  <div className="lg:col-span-7">
+                    <PCAScatterPlot
+                      projection={activeReport.pca_projection}
+                      centroidGeometry={activeReport.centroid_geometry}
+                      sampleNeighborhoods={
+                        activeReport.neighborhood_geometry.sample_neighborhoods
+                      }
+                      selectedSampleId={selectedSampleId}
+                      onSelectSample={setSelectedSampleId}
+                    />
+                  </div>
+
+                  {/* Central Right: Neighborhood & Failure Inspector (5 cols) */}
+                  <div className="lg:col-span-5 space-y-4">
+                    <NeighborhoodPanel
+                      neighborhood={
+                        selectedSampleId
+                          ? activeReport.neighborhood_geometry.sample_neighborhoods[
+                              selectedSampleId
+                            ] || null
+                          : null
+                      }
+                      selectedSampleId={selectedSampleId}
+                      onSelectNeighbor={setSelectedSampleId}
+                    />
+
+                    <FailureExplorerPanel
+                      failures={activeReport.candidate_failures}
+                      selectedSampleId={selectedSampleId}
+                      onSelectSample={setSelectedSampleId}
+                    />
+                  </div>
+                </div>
+
+                {/* Bottom: Class Centroids Table */}
+                <ClassCentroidsTable
+                  centroidGeometry={activeReport.centroid_geometry}
+                />
+              </div>
+            )}
+
+            {/* Tab 2: Layer-Wise Geometry Evolution */}
+            {activeTab === "evolution" && (
+              <LayerEvolutionPanel
+                profile={activeProfile}
+                onSelectLayer={(layer) => {
+                  setSelectedLayer(layer);
+                  setActiveTab("geometry");
+                }}
+              />
+            )}
+
+            {/* Tab 3: Cross-Architecture Benchmarks */}
+            {activeTab === "comparison" && (
+              <ArchitectureComparisonPanel comparison={comparison} />
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }

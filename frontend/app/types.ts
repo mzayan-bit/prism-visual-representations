@@ -159,3 +159,214 @@ export interface CrossArchitectureGeometryReport {
   architectures: Record<string, ArchitectureGeometrySummary>;
   coordinate_space_note: string;
 }
+
+// ----------------------------------------------------------------------------
+// Phase 15 — Robustness & Distribution Shift Laboratory Types
+// ----------------------------------------------------------------------------
+
+export type CorruptionType =
+  | "gaussian_noise"
+  | "blur"
+  | "brightness"
+  | "contrast"
+  | "occlusion"
+  | "resolution_degradation";
+
+export interface SampleRepresentationDrift {
+  sample_id: string;
+  label: string | number;
+  clean_prediction: number;
+  corrupted_prediction: number;
+  prediction_changed: boolean;
+  clean_correct: boolean;
+  corrupted_correct: boolean;
+  clean_loss: number;
+  corrupted_loss: number;
+  euclidean_drift: number;
+  cosine_similarity: number;
+  cosine_distance: number;
+  relative_norm_change: number;
+}
+
+export interface RepresentationDriftSummary {
+  num_samples: number;
+  mean_euclidean_drift: number;
+  std_euclidean_drift: number;
+  median_euclidean_drift: number;
+  max_euclidean_drift: number;
+  mean_cosine_similarity: number;
+  mean_cosine_distance: number;
+  mean_relative_norm_change: number;
+  per_class_mean_drift: Record<string, number>;
+  per_class_mean_cosine_similarity: Record<string, number>;
+  drift_by_prediction_outcome: Record<string, number>;
+  top_drift_sample_ids: string[];
+}
+
+export interface SharedPCAProjectionResult {
+  original_dim: number;
+  projected_dim: number;
+  num_samples: number;
+  sample_ids: string[];
+  labels: (string | number)[];
+  clean_coordinates: number[][];
+  corrupted_coordinates: number[][];
+  displacement_vectors: number[][];
+  displacement_magnitudes: number[];
+  explained_variance_ratio: number[];
+  cumulative_explained_variance: number[];
+  basis_note: string;
+}
+
+export interface ClassCentroidDriftSummary {
+  class_label: string;
+  clean_centroid_norm: number;
+  corrupted_centroid_norm: number;
+  centroid_displacement: number;
+  cosine_similarity: number;
+  clean_intra_compactness: number;
+  corrupted_intra_compactness: number;
+  compactness_delta: number;
+  clean_competing_separation: number;
+  corrupted_competing_separation: number;
+  competing_separation_delta: number;
+}
+
+export interface NeighborhoodDriftSummary {
+  k: number;
+  mean_neighbor_overlap_ratio: number;
+  clean_mean_label_consistency: number;
+  corrupted_mean_label_consistency: number;
+  label_consistency_delta: number;
+  nearest_neighbor_label_flip_fraction: number;
+}
+
+export interface GeometryDriftReport {
+  clean_centroid_report: CentroidGeometryReport;
+  corrupted_centroid_report: CentroidGeometryReport;
+  mean_centroid_displacement: number;
+  class_centroid_drifts: Record<string, ClassCentroidDriftSummary>;
+  neighborhood_drift: NeighborhoodDriftSummary;
+  shared_pca: SharedPCAProjectionResult;
+  separation_to_compactness_ratio_delta: number;
+}
+
+export interface LayerAttentionDrift {
+  layer_name: string;
+  clean_entropy: number;
+  corrupted_entropy: number;
+  entropy_delta: number;
+  clean_diagonal_mass: number;
+  corrupted_diagonal_mass: number;
+  diagonal_mass_delta: number;
+}
+
+export interface AttentionDriftSummary {
+  model_id: string;
+  num_layers: number;
+  clean_overall_mean_entropy: number;
+  corrupted_overall_mean_entropy: number;
+  overall_entropy_delta: number;
+  clean_overall_diagonal_mass: number;
+  corrupted_overall_diagonal_mass: number;
+  overall_diagonal_mass_delta: number;
+  layer_drifts: LayerAttentionDrift[];
+}
+
+export interface RobustnessFailureRecord {
+  sample_id: string;
+  category: string;
+  description: string;
+  severity: number;
+  metrics: Record<string, number>;
+}
+
+export interface CorruptionEvaluationSummary {
+  corruption_type: CorruptionType;
+  severity: number;
+  num_samples: number;
+  clean_accuracy: number;
+  corrupted_accuracy: number;
+  absolute_accuracy_drop: number;
+  relative_accuracy_drop: number;
+  clean_loss: number;
+  corrupted_loss: number;
+  loss_increase: number;
+  predictions_changed_count: number;
+  prediction_consistency_fraction: number;
+  representation_drift: RepresentationDriftSummary;
+  geometry_drift: GeometryDriftReport;
+  attention_drift: AttentionDriftSummary | null;
+  failure_counts_by_category: Record<string, number>;
+}
+
+export interface CorruptionSeverityCurve {
+  corruption_type: CorruptionType;
+  severities: number[];
+  clean_accuracy: number;
+  accuracy_trajectory: number[];
+  loss_trajectory: number[];
+  representation_drift_trajectory: number[];
+  neighbor_consistency_trajectory: number[];
+  centroid_displacement_trajectory: number[];
+  total_accuracy_drop: number;
+  mean_accuracy: number;
+  area_under_curve: number;
+}
+
+export interface RobustnessExperimentReport {
+  experiment_id: string;
+  model_id: string;
+  model_family: string;
+  dataset_id: string;
+  eval_split: string;
+  layer_name: string;
+  num_samples: number;
+  clean_accuracy: number;
+  clean_loss: number;
+  evaluations: Record<string, CorruptionEvaluationSummary>;
+  severity_curves: Record<string, CorruptionSeverityCurve>;
+  sample_drifts: Record<string, SampleRepresentationDrift[]>;
+  flagged_failures: RobustnessFailureRecord[];
+  warnings: string[];
+}
+
+export interface ArchitectureRobustnessSummary {
+  architecture: string;
+  model_family: string;
+  model_id: string;
+  clean_accuracy: number;
+  mean_corrupted_accuracy: number;
+  mean_accuracy_drop: number;
+  mean_representation_drift: number;
+  mean_neighbor_overlap: number;
+  mean_centroid_displacement: number;
+  total_parameters: number | null;
+}
+
+export interface CrossArchitectureRobustnessReport {
+  comparison_id: string;
+  name: string;
+  dataset_id: string;
+  architectures: Record<string, ArchitectureRobustnessSummary>;
+  detailed_reports: Record<string, RobustnessExperimentReport>;
+  coordinate_space_note: string;
+}
+
+export interface RobustnessExperimentMeta {
+  experiment_id: string;
+  name: string;
+  architectures: string[];
+  corruption_types: string[];
+  severities: number[];
+  layers: Record<string, string[]>;
+  data_budgets: number[];
+  num_classes: number;
+  class_names: string[];
+}
+
+export interface RobustnessDatasetPayload {
+  metadata: RobustnessExperimentMeta;
+  reports: Record<string, RobustnessExperimentReport>;
+  comparison: CrossArchitectureRobustnessReport;
+}

@@ -5,9 +5,17 @@ from prism.api.geometry_service import (
     ObservatoryExperimentMeta,
     generate_observatory_demo_data,
 )
+from prism.api.robustness_service import (
+    RobustnessExperimentMeta,
+    RobustnessService,
+    generate_robustness_demo_data,
+)
 
 __all__ = [
     "GeometryService",
     "ObservatoryExperimentMeta",
+    "RobustnessExperimentMeta",
+    "RobustnessService",
     "generate_observatory_demo_data",
+    "generate_robustness_demo_data",
 ]
