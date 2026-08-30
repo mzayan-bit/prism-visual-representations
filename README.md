@@ -20,8 +20,8 @@ Baselines                  Residual Learning                Self-Supervision
 ## Project Status
 
 > [!NOTE]
-> **Active Development**: PRISM has completed **Phase 14: Representation Geometry Observatory**.
-> The platform introduces a complete mathematical and visual framework for representation geometry analysis: deterministic Jacobi Principal Component Analysis (PCA) with consistent sign orientation, class centroid summaries, intra-class compactness ($\bar{d}_{\text{intra}}$), inter-class centroid separation ($\bar{d}_{\text{inter}}$), separation-to-compactness ratios, exact $k$-nearest neighbor consistency, candidate failure case discovery, layer-wise geometric evolution profiling across network depth, cross-architecture geometry benchmarks (CNN vs ResNet vs ViT) on matched data budgets, and an interactive Next.js PRISM Observatory research dashboard.
+> **Active Development**: PRISM has completed **Phase 15: Robustness & Distribution Shift Laboratory**.
+> The platform introduces a complete mathematical and visual framework for measuring visual model and representation resilience under controlled distribution shifts: 6 standardized corruption families (Gaussian Noise, Spatial Blur, Brightness Shift, Contrast Shift, Rectangular Occlusion, Resolution Degradation) with calibrated severity levels (1 to 5), non-destructive `CorruptedDatasetView` evaluation over frozen models, paired representation drift analysis (Euclidean drift, cosine alignment, relative norm shifts), shared PCA coordinate projections where corrupted vectors are projected onto clean bases, $k$-NN neighborhood consistency retention, class centroid displacement tracking, ViT multi-head attention entropy shifts ($\Delta H$), a rigorous failure taxonomy, cross-architecture robustness benchmarks (CNN vs ResNet vs ViT), and an interactive Next.js PRISM Robustness Laboratory dashboard.
 
 ---
 
@@ -43,7 +43,7 @@ Baselines                  Residual Learning                Self-Supervision
 | **Phase 12** | Vision Transformers (ViT) & Attention Geometry | :white_check_mark: Completed |
 | **Phase 13** | Controlled CNN / ResNet / Vision Transformer Architecture Experiments | :white_check_mark: Completed |
 | **Phase 14** | Representation Geometry Observatory & Manifold Analysis | :white_check_mark: Completed |
-| **Phase 15** | Robustness Under Corruptions & Distribution Shifts | :hourglass_flowing_sand: Planned |
+| **Phase 15** | Robustness Under Corruptions & Distribution Shifts | :white_check_mark: Completed |
 | **Phase 16** | Comparative Explainability (Attributions, Rollout, Grad-CAM) | :hourglass_flowing_sand: Planned |
 | **Phase 17** | Downstream Dense Transfer (Detection & Segmentation) | :hourglass_flowing_sand: Planned |
 

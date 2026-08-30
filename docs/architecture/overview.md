@@ -183,6 +183,17 @@ TrainingResult & Completed Run Lifecycle
 - Cross-Architecture Geometry Benchmarks (`prism.representations.comparison`): Comparative evaluation comparing CNN vs ResNet vs Vision Transformer geometries on identical data budgets and test splits, explicitly observing coordinate space independence.
 - PRISM Observatory UI (`frontend/app/`): Interactive Next.js research dashboard featuring live SVG PCA projections, neighborhood inspectors, candidate failure explorers, layer progression charts, and cross-architecture benchmark tables.
 
+### 10. Robustness & Distribution Shift Laboratory (`prism.robustness`, `prism.api`)
+- Controlled Corruption Operators (`prism.robustness.corruptions`): 6 pure Python corruption families (`gaussian_noise`, `blur`, `brightness`, `contrast`, `occlusion`, `resolution_degradation`) with calibrated severity levels (1 to 5) and cryptographic SHA-256 fingerprinting.
+- Non-Destructive Dataset Views (`CorruptedDatasetView`): Wraps materialized datasets on-the-fly without copying or mutating clean sample data or manifests.
+- Paired Representation Drift Analysis (`prism.robustness.drift`): Computes paired sample Euclidean displacement $\Delta z = \|z_{\text{clean}} - z_{\text{corrupt}}\|_2$, cosine alignment, relative norm change, per-class aggregations, and outcome-partitioned drift distributions.
+- Shared PCA Coordinate Projections (`prism.robustness.geometry_drift`): Fits PCA basis strictly on clean representations and transforms corrupted representations into the identical basis, enabling direct visualization of 2D displacement vectors $\mathbf{d}_i = \mathbf{z}_i' - \mathbf{z}_i$.
+- Geometric Manifold Degradation (`GeometryDriftReport`): Tracks class centroid displacement $\Delta \mu_c = \|\mu_c' - \mu_c\|_2$, intra-class dispersion changes, competing class separation collapse, and $k$-NN neighbor retention / rank-1 label flips.
+- ViT Attention Drift (`prism.robustness.attention_drift`): Measures multi-head self-attention entropy dispersion $\Delta H$ and diagonal attention mass concentration shifts $\Delta M_{\text{diag}}$ across transformer encoder depth.
+- Robustness Suite Runner & Severity Curves (`prism.robustness.evaluation`): Orchestrates evaluation of frozen models across corruption suites, computing severity trajectories, AUC scores, and automated failure categorization (`RobustnessFailureCategory`).
+- Cross-Architecture Robustness Benchmarking: Compares CNN vs ResNet vs ViT robustness under identical corruptions on matched evaluation partitions.
+- PRISM Robustness Laboratory UI (`frontend/app/components/RobustnessLaboratoryView.tsx`): Interactive dashboard with corruption selectors, severity sliders, paired PCA drift plots, sample inspectors, severity curves, failure tables, and cross-architecture comparisons.
+
 ---
 
 ## Domain Subsystems
@@ -205,8 +216,11 @@ Standardized evaluation protocols (`EvaluationConfiguration`, `MetricSpecificati
 ### `prism.representations`
 Representation datasets (`RepresentationDataset`), centroid reports (`CentroidGeometryReport`), neighborhood summaries (`NeighborhoodGeometrySummary`), PCA projections (`ProjectionResult`), layer evolution profiles (`LayerGeometryProfile`), and cross-architecture geometry comparisons (`CrossArchitectureGeometryReport`).
 
+### `prism.robustness`
+Corruptions (`CorruptionType`, `CorruptionSpecification`), dataset views (`CorruptedDatasetView`), paired drift analysis (`RepresentationDriftSummary`), shared PCA (`SharedPCAProjectionResult`), geometric drift (`GeometryDriftReport`), ViT attention drift (`AttentionDriftSummary`), robustness suites (`CorruptionSuite`, `RobustnessSuiteRunner`), and cross-architecture reports (`CrossArchitectureRobustnessReport`).
+
 ### `prism.api`
-Research service layer (`GeometryService`) providing experiment metadata, geometric queries, and observatory dataset serving.
+Research service layer (`GeometryService`, `RobustnessService`) providing experiment metadata, geometric queries, robustness evaluations, and dashboard demo data serving.
 
 ### `prism.experiments`
 Declarative experiment definitions (`ExperimentDefinition`), run lifecycle tracking (`ExperimentRun`), runtime harness (`ExperimentExecutionHarness`), and controlled comparison suites (`ArchitectureComparisonSuite`).

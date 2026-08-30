@@ -199,8 +199,8 @@ def apply_gaussian_noise(
     image: list[list[list[float]]],
     sigma: float,
     seed: int | None = None,
-    clip_min: float | None = None,
-    clip_max: float | None = None,
+    clip_min: float | None = 0.0,
+    clip_max: float | None = 1.0,
 ) -> list[list[list[float]]]:
     """Apply additive Gaussian noise to a 3D image tensor [C, H, W]."""
     c, h, w = _validate_image_shape(image)

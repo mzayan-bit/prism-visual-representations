@@ -143,6 +143,14 @@ When evaluating representation geometry across layers and architectures:
 - **Statistical Significance in Compactness**: Flag estimation warnings when individual class sample counts ($n_c < 3$) are insufficient for stable intra-class variance estimation.
 - **Dimensionality Caveat Disclaimers**: 2D/3D visualizations capture only a subspace of total variance; reports must always display cumulative explained variance ratios.
 
+### 11. Robustness & Distribution Shift Evaluation Standards
+When evaluating visual models under corruptions and distribution shifts:
+- **Non-Destructive Corruptions**: Clean sample records, images, and dataset manifests must never be overwritten, modified, or permanently duplicated. Corruptions are applied on-the-fly via deterministic `CorruptedDatasetView` wrappers preserving sample IDs and target linkages.
+- **Frozen Model Evaluation**: Robustness evaluation runs strictly over frozen models. Model parameters must never be updated, and normalization layers (`BatchNorm2D`) must not update running statistics during corruption evaluation.
+- **Shared PCA Basis Protocol**: For clean-vs-corrupted manifold comparisons within a single model and layer, PCA must be fitted strictly on clean representations $\mathbf{X}_{\text{clean}}$. Corrupted representations $\mathbf{X}_{\text{corrupt}}$ are transformed into the identical coordinate basis $\mathbf{Z}_{\text{corrupt}} = (\mathbf{X}_{\text{corrupt}} - \boldsymbol{\mu}_{\text{clean}})\mathbf{V}_{\text{clean}}$, ensuring that displacement vectors $\mathbf{d}_i = \mathbf{z}_i' - \mathbf{z}_i$ represent valid geometric trajectories in a shared coordinate space.
+- **ViT Attention Drift Applicability**: Attention pattern shifts and entropy changes are computed exclusively when multi-head self-attention mechanisms exist (Vision Transformers). They are marked explicitly as not applicable for CNN and ResNet models.
+- **Multi-Severity Trajectory Auditing**: Corruptions must be evaluated across multiple calibrated severities (1 to 5) to produce monotonic or structured degradation curves with normalized Area Under Curve (AUC) metrics.
+
 ---
 
 ## Data and Artifact Policy

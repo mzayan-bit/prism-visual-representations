@@ -384,3 +384,80 @@ comparison = compare_architecture_geometries(
     labels=test_labels,
 )
 ```
+
+---
+
+## 8. Robustness & Distribution Shift Experiments (`prism.robustness`)
+
+Phase 15 provides programmatic APIs for evaluating visual model and representation resilience under controlled input corruptions and distribution shifts:
+
+```python
+from prism.robustness import (
+    CorruptionType,
+    CorruptionSpecification,
+    CorruptionSuite,
+    CorruptedDatasetView,
+    RobustnessSuiteRunner,
+    compare_architecture_robustness,
+    compute_representation_drift,
+    compute_geometry_drift,
+    compute_vit_attention_drift,
+)
+
+# 1. Define Declarative Robustness Suite
+suite = CorruptionSuite(
+    suite_id="suite-standard-robustness",
+    name="Standard Robustness Evaluation Suite",
+    corruption_types=[
+        CorruptionType.GAUSSIAN_NOISE,
+        CorruptionType.BLUR,
+        CorruptionType.BRIGHTNESS,
+        CorruptionType.CONTRAST,
+        CorruptionType.OCCLUSION,
+        CorruptionType.RESOLUTION_DEGRADATION,
+    ],
+    severities=[1, 2, 3, 4, 5],
+    eval_split="test",
+    layer_name="final_hidden",
+    seed=42,
+    k_neighbors=5,
+    pca_components=2,
+)
+
+# 2. Run Robustness Suite on Frozen Model
+runner = RobustnessSuiteRunner()
+report = runner.run_suite(
+    model=model,
+    clean_dataset=materialized_test_dataset,
+    suite=suite,
+    experiment_id="exp-robustness-resnet",
+)
+
+# 3. Inspect Clean vs Corrupted Summary
+eval_summary = report.evaluations["gaussian_noise::sev3"]
+print(f"Clean Accuracy: {eval_summary.clean_accuracy:.2%}")
+print(f"Corrupted Accuracy: {eval_summary.corrupted_accuracy:.2%}")
+print(f"Accuracy Drop: -{eval_summary.absolute_accuracy_drop:.2%}")
+print(
+    f"Mean Euclidean Representation Drift: {eval_summary.representation_drift.mean_euclidean_drift:.4f}"
+)
+print(
+    f"Cosine Similarity: {eval_summary.representation_drift.mean_cosine_similarity:.4f}"
+)
+print(
+    f"5-NN Retention Overlap: {eval_summary.geometry_drift.neighborhood_drift.mean_neighbor_overlap_ratio:.2%}"
+)
+
+# 4. Severity Degradation Curves & AUC
+curve = report.severity_curves[CorruptionType.GAUSSIAN_NOISE.value]
+print(f"Area Under Curve (AUC): {curve.area_under_curve:.2%}")
+print(f"Total Accuracy Drop (Sev 1->5): -{curve.total_accuracy_drop:.2%}")
+
+# 5. Cross-Architecture Robustness Benchmark
+comp_report = compare_architecture_robustness(
+    models={"cnn": cnn_model, "resnet": resnet_model, "vit": vit_model},
+    clean_dataset=materialized_test_dataset,
+    suite=suite,
+    comparison_id="comp-arch-robustness-eval",
+)
+```
