@@ -594,9 +594,11 @@ class ResidualNeuralNetwork(BaseVisionModel):
         if layer_norm in (
             "final_stage",
             "final_spatial",
+            "final_conv",
             "spatial_features",
             "last_stage",
             "last_block",
+            "default",
         ):
             s_idx = num_stages - 1
             b_idx = len(self.stages[s_idx]) - 1

@@ -20,8 +20,16 @@ Baselines                  Residual Learning                Self-Supervision
 ## Project Status
 
 > [!NOTE]
-> **Active Development**: PRISM has completed **Phase 15: Robustness & Distribution Shift Laboratory**.
-> The platform introduces a complete mathematical and visual framework for measuring visual model and representation resilience under controlled distribution shifts: 6 standardized corruption families (Gaussian Noise, Spatial Blur, Brightness Shift, Contrast Shift, Rectangular Occlusion, Resolution Degradation) with calibrated severity levels (1 to 5), non-destructive `CorruptedDatasetView` evaluation over frozen models, paired representation drift analysis (Euclidean drift, cosine alignment, relative norm shifts), shared PCA coordinate projections where corrupted vectors are projected onto clean bases, $k$-NN neighborhood consistency retention, class centroid displacement tracking, ViT multi-head attention entropy shifts ($\Delta H$), a rigorous failure taxonomy, cross-architecture robustness benchmarks (CNN vs ResNet vs ViT), and an interactive Next.js PRISM Robustness Laboratory dashboard.
+> **Active Development**: PRISM has completed **Phase 16: Explainability & Visual Attribution Laboratory**.
+> The platform introduces a complete mathematical and visual framework for producing, analyzing, comparing, and visualizing model-attribution signals across Convolutional Neural Networks (CNNs), Residual CNNs (ResNets), and Vision Transformers (ViTs):
+> - **Input Gradient Saliency** ($\partial S_c / \partial x$) & **Gradient $\times$ Input** ($(\partial S_c / \partial x) \odot x$) with channel reduction policies (`ABS_MAX`, `ABS_MEAN`, `L2_CHANNEL_NORM`).
+> - **Sliding-Window Occlusion Sensitivity** with configurable window size, stride, zero/mean fill policies, and safeguard thresholds.
+> - **Grad-CAM** for CNNs and ResNets with spatial activation and gradient capture, channel-importance alpha weights ($\alpha_k^c$), ReLU rectification, and deterministic bilinear 2D upsampling.
+> - **Vision Transformer CLS-to-Patch Attention Attribution** mapping multi-head encoder attention weights to 2D patch grids.
+> - **Cross-Method Agreement Analysis** with spatial cosine similarity, top-$p$% Jaccard overlap masks, and center-of-mass displacement metrics.
+> - **Attribution Drift Analysis** measuring spatial evidence stability under controlled input corruptions paired with representation drift distance.
+> - **Explanation Failure Taxonomy** systematically flagging low attribution mass, method disagreement, corruption shifts, and prediction flips with stable attributions.
+> - **Interactive Next.js PRISM Explainability Laboratory** with multi-mode navigation, continuous overlay sliders, colormaps, agreement matrices, and failure diagnostics.
 
 ---
 
@@ -44,7 +52,7 @@ Baselines                  Residual Learning                Self-Supervision
 | **Phase 13** | Controlled CNN / ResNet / Vision Transformer Architecture Experiments | :white_check_mark: Completed |
 | **Phase 14** | Representation Geometry Observatory & Manifold Analysis | :white_check_mark: Completed |
 | **Phase 15** | Robustness Under Corruptions & Distribution Shifts | :white_check_mark: Completed |
-| **Phase 16** | Comparative Explainability (Attributions, Rollout, Grad-CAM) | :hourglass_flowing_sand: Planned |
+| **Phase 16** | Explainability & Visual Attribution Laboratory | :white_check_mark: Completed |
 | **Phase 17** | Downstream Dense Transfer (Detection & Segmentation) | :hourglass_flowing_sand: Planned |
 
 ---

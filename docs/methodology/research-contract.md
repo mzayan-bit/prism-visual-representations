@@ -151,6 +151,18 @@ When evaluating visual models under corruptions and distribution shifts:
 - **ViT Attention Drift Applicability**: Attention pattern shifts and entropy changes are computed exclusively when multi-head self-attention mechanisms exist (Vision Transformers). They are marked explicitly as not applicable for CNN and ResNet models.
 - **Multi-Severity Trajectory Auditing**: Corruptions must be evaluated across multiple calibrated severities (1 to 5) to produce monotonic or structured degradation curves with normalized Area Under Curve (AUC) metrics.
 
+### 12. Explainability & Visual Attribution Standards
+When computing, comparing, and visualizing model-attribution maps:
+- **Attribution is Descriptive Evidence, Not Causal Truth**: Attribution maps measure mathematical sensitivity ($\frac{\partial S_c}{\partial x}$), perturbation sensitivity ($\Delta S_c$), activation weighting ($\alpha_k A^k$), or attention routing. They must never be described as definitive causal explanations of model decisions.
+- **Frozen Model & Invariant State**: Attribution routines must never mutate model weights, biases, or `BatchNorm` running statistics. Forward and backward passes run strictly in evaluation mode (`model.eval()`).
+- **Explicit Target Class Semantics**: Every attribution map must record its target class $c$, target mode (`PREDICTED_CLASS`, `TRUE_CLASS`, `EXPLICIT_CLASS`), and pre-softmax logit score $S_c$.
+- **Architectural Applicability**:
+  - Grad-CAM requires intermediate spatial feature activations and gradients; it applies to CNNs and ResNets and is explicitly rejected for Vision Transformers.
+  - ViT CLS-to-patch attention attribution applies exclusively to Vision Transformers and is marked unsupported for CNNs and ResNets.
+  - Input Gradient, Gradient $\times$ Input, and Occlusion Sensitivity are model-agnostic and apply to all differentiable/forward-evaluable vision models.
+- **Deterministic Normalization & Colormaps**: Signed gradient maps must preserve positive and negative polarity and be rendered with diverging colormaps. Non-negative heatmaps (Grad-CAM, Attention) use sequential colormaps (`turbo`, `plasma`, `viridis`) with explicit min-max or sum scaling policies.
+- **Cross-Method Agreement & Attribution Drift**: Cross-method comparisons and clean-vs-corrupted drift must report objective quantitative metrics (cosine similarity, top-10% Jaccard overlap, center-of-mass Euclidean displacement) on matched spatial grids.
+
 ---
 
 ## Data and Artifact Policy

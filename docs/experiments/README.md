@@ -461,3 +461,81 @@ comp_report = compare_architecture_robustness(
     comparison_id="comp-arch-robustness-eval",
 )
 ```
+
+---
+
+## Phase 16 Explainability & Visual Attribution Experiments
+
+PRISM provides a unified, mathematically rigorous interface for computing, comparing, and evaluating attribution signals across CNNs, ResNets, and Vision Transformers:
+
+```python
+from prism.explainability import (
+    AttributionMethod,
+    AttributionSpecification,
+    TargetClassMode,
+    compute_input_gradient_saliency,
+    compute_gradient_x_input,
+    compute_occlusion_sensitivity,
+    compute_grad_cam,
+    compute_vit_attention_attribution,
+    compare_attributions,
+    compute_attribution_drift,
+    flag_explanation_failures,
+)
+
+# 1. Compute Input Saliency and Gradient x Input
+res_ig = compute_input_gradient_saliency(
+    model=resnet_model,
+    image=sample_image_3d,
+    target_mode=TargetClassMode.PREDICTED_CLASS,
+)
+
+res_gxi = compute_gradient_x_input(
+    model=resnet_model,
+    image=sample_image_3d,
+    target_mode=TargetClassMode.PREDICTED_CLASS,
+)
+
+# 2. Compute Sliding-Window Occlusion Sensitivity
+res_occ = compute_occlusion_sensitivity(
+    model=resnet_model,
+    image=sample_image_3d,
+    window_size=(2, 2),
+    stride=(1, 1),
+)
+
+# 3. Compute Grad-CAM (CNN and ResNet)
+res_cam = compute_grad_cam(
+    model=resnet_model,
+    image=sample_image_3d,
+    layer_name="final_stage",
+)
+
+# 4. ViT CLS-to-Patch Attention Attribution (ViT only)
+res_vit = compute_vit_attention_attribution(
+    model=vit_model,
+    image=sample_image_3d,
+)
+
+# 5. Cross-Method Spatial Agreement Analysis
+report = compare_attributions([res_ig, res_gxi, res_occ, res_cam])
+print(f"Mean Pairwise Agreement: {report.mean_cross_method_agreement:.3f}")
+
+# 6. Attribution Drift under Input Corruption
+drift = compute_attribution_drift(
+    clean_result=res_ig,
+    corrupted_result=res_ig_corrupted,
+    corruption_type="gaussian_noise",
+    corruption_severity=0.15,
+)
+print(f"Attribution Cosine Similarity: {drift.attribution_cosine_similarity:.3f}")
+print(f"Prediction Preserved: {drift.prediction_preserved}")
+
+# 7. Diagnostic Failure Taxonomy
+flags = flag_explanation_failures(
+    attribution_result=res_ig,
+    comparison_report=report,
+    drift_summary=drift,
+)
+```
+

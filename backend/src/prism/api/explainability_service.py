@@ -175,12 +175,40 @@ class ExplainabilityService:
     def __init__(self) -> None:
         self._reports_cache: dict[str, AttributionComparisonReport] = {}
         self._drift_cache: dict[str, AttributionDriftSummary] = {}
+        self._demo_payload: ExplainabilityDemoPayload | None = None
+
+    def register_demo_payload(self, payload: ExplainabilityDemoPayload) -> None:
+        """Register and cache full demo payload."""
+        self._demo_payload = payload
+
+    def get_metadata(self) -> ExplainabilityExperimentMeta | None:
+        """Retrieve experiment metadata from cached payload."""
+        if self._demo_payload is not None:
+            return self._demo_payload.metadata
+        return None
+
+    def get_all_samples(self) -> list[ExplainabilitySamplePayload]:
+        """Retrieve all sample payloads from cached payload."""
+        if self._demo_payload is not None:
+            return self._demo_payload.samples
+        return []
+
+    def get_sample(self, sample_id: str) -> ExplainabilitySamplePayload | None:
+        """Retrieve specific sample payload by ID."""
+        if self._demo_payload is not None:
+            for s in self._demo_payload.samples:
+                if s.sample_id == sample_id:
+                    return s
+        return None
 
     @staticmethod
     def get_supported_methods(architecture: str) -> list[AttributionMethod]:
         """Return valid attribution methods for a given model architecture."""
         arch_norm = architecture.strip().lower()
-        if arch_norm in ("cnn", "convolutional") or arch_norm in ("resnet", "residual"):
+        if arch_norm in ("cnn", "convolutional") or arch_norm in (
+            "resnet",
+            "residual",
+        ):
             return [
                 AttributionMethod.INPUT_GRADIENT,
                 AttributionMethod.GRADIENT_X_INPUT,

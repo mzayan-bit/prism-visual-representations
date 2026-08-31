@@ -219,8 +219,11 @@ Representation datasets (`RepresentationDataset`), centroid reports (`CentroidGe
 ### `prism.robustness`
 Corruptions (`CorruptionType`, `CorruptionSpecification`), dataset views (`CorruptedDatasetView`), paired drift analysis (`RepresentationDriftSummary`), shared PCA (`SharedPCAProjectionResult`), geometric drift (`GeometryDriftReport`), ViT attention drift (`AttentionDriftSummary`), robustness suites (`CorruptionSuite`, `RobustnessSuiteRunner`), and cross-architecture reports (`CrossArchitectureRobustnessReport`).
 
+### `prism.explainability`
+Declarative attribution contracts (`AttributionSpecification`, `AttributionResult`), gradient saliency (`compute_input_gradient_saliency`, `compute_gradient_x_input`), sliding-window occlusion sensitivity (`compute_occlusion_sensitivity`), Grad-CAM (`compute_grad_cam`), ViT CLS-to-patch attention attribution (`compute_vit_attention_attribution`), cross-method agreement (`compare_attributions`), attribution drift under corruptions (`compute_attribution_drift`), and diagnostic failure taxonomy (`flag_explanation_failures`).
+
 ### `prism.api`
-Research service layer (`GeometryService`, `RobustnessService`) providing experiment metadata, geometric queries, robustness evaluations, and dashboard demo data serving.
+Research service layer (`GeometryService`, `RobustnessService`, `ExplainabilityService`) providing experiment metadata, geometric queries, robustness evaluations, explainability payloads, and dashboard demo data serving.
 
 ### `prism.experiments`
 Declarative experiment definitions (`ExperimentDefinition`), run lifecycle tracking (`ExperimentRun`), runtime harness (`ExperimentExecutionHarness`), and controlled comparison suites (`ArchitectureComparisonSuite`).
