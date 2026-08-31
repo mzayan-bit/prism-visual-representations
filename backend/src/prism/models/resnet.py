@@ -539,10 +539,15 @@ class ResidualNeuralNetwork(BaseVisionModel):
 
         # 2. Backprop through Residual Stages in reverse
         cur_d_spatial = d_spatial
+        self._cached_stage_grad_states: dict[int, dict[int, dict[str, Any]]] = {}
         for s_idx in reversed(range(len(self.stages))):
             stage = self.stages[s_idx]
+            self._cached_stage_grad_states[s_idx] = {}
             for b_idx in reversed(range(len(stage))):
                 block = stage[b_idx]
+                self._cached_stage_grad_states[s_idx][b_idx] = {
+                    "output": cur_d_spatial,
+                }
                 cur_d_spatial = block.backward(cur_d_spatial)
 
         # 3. Backprop through Stem
@@ -559,7 +564,71 @@ class ResidualNeuralNetwork(BaseVisionModel):
             if self.stem_norm is not None
             else d_stem_norm
         )
-        _ = self.stem_conv.backward(d_stem_conv)
+        d_input = self.stem_conv.backward(d_stem_conv)
+        self._cached_stem_grad_states = {
+            "stem_out": cur_d_spatial,
+            "conv_post_norm": d_stem_norm,
+            "conv_pre": d_stem_conv,
+            "input": d_input,
+        }
+        self._cached_input_grad = d_input
+
+    def extract_spatial_activation_and_gradient(
+        self, layer: str = "final_stage"
+    ) -> tuple[list[list[list[list[float]]]], list[list[list[list[float]]]]]:
+        """Extract spatial activation tensor A and gradient dS/dA for Grad-CAM."""
+        layer_norm = layer.strip().lower()
+        if not hasattr(self, "_cached_stage_states") or not self._cached_stage_states:
+            raise ValidationError(
+                "Must run forward pass before extracting spatial activations."
+            )
+        if (
+            not hasattr(self, "_cached_stage_grad_states")
+            or not self._cached_stage_grad_states
+        ):
+            raise ValidationError(
+                "Must run backward pass before extracting spatial gradients."
+            )
+
+        num_stages = len(self.stages)
+        if layer_norm in (
+            "final_stage",
+            "final_spatial",
+            "spatial_features",
+            "last_stage",
+            "last_block",
+        ):
+            s_idx = num_stages - 1
+            b_idx = len(self.stages[s_idx]) - 1
+            act = self._cached_stage_states[s_idx][b_idx]["output"]
+            grad = self._cached_stage_grad_states[s_idx][b_idx]["output"]
+            return act, grad
+
+        for s_idx, stage in enumerate(self.stages):
+            if layer_norm == f"stage_{s_idx}":
+                b_idx = len(stage) - 1
+                act = self._cached_stage_states[s_idx][b_idx]["output"]
+                grad = self._cached_stage_grad_states[s_idx][b_idx]["output"]
+                return act, grad
+            for b_idx in range(len(stage)):
+                if layer_norm in (
+                    f"stage_{s_idx}_block_{b_idx}",
+                    f"stage_{s_idx}_block_{b_idx}_output",
+                ):
+                    act = self._cached_stage_states[s_idx][b_idx]["output"]
+                    grad = self._cached_stage_grad_states[s_idx][b_idx]["output"]
+                    return act, grad
+
+        if layer_norm in ("stem", "stem_out"):
+            act = self._cached_stem_states["stem_out"]
+            grad = self._cached_stem_grad_states["stem_out"]
+            return act, grad
+
+        valid = [f"stage_{i}" for i in range(num_stages)] + ["final_stage", "stem"]
+        raise ValidationError(
+            f"Layer '{layer}' is not a valid spatial residual layer for ResNet. "
+            f"Available: {valid}"
+        )
 
     def extract_representations(self, inputs: Any, layer: str = "final_hidden") -> Any:
         """Extract intermediate activations or spatial maps in evaluation mode."""

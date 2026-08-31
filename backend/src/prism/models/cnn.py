@@ -529,6 +529,7 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
         # 2. Backprop through Convolutional Blocks in reverse
         num_blocks = len(self.conv_layers)
         cur_d_spatial = d_spatial
+        self._cached_block_grad_states: dict[int, dict[str, Any]] = {}
 
         for b_idx in reversed(range(num_blocks)):
             conv = self.conv_layers[b_idx]
@@ -551,9 +552,59 @@ class ConvolutionalNeuralNetwork(BaseVisionModel):
             # Backward Normalization
             d_conv = norm.backward(d_act_in) if norm is not None else d_act_in
 
+            # Cache block gradients
+            self._cached_block_grad_states[b_idx] = {
+                "block_out": cur_d_spatial,
+                "conv_post": d_act,
+                "conv_post_norm": d_act_in,
+                "conv_pre": d_conv,
+            }
+
             # Backward Conv2D
             d_prev_block = conv.backward(d_conv)
             cur_d_spatial = d_prev_block
+
+        self._cached_input_grad = cur_d_spatial
+
+    def extract_spatial_activation_and_gradient(
+        self, layer: str = "final_conv"
+    ) -> tuple[list[list[list[list[float]]]], list[list[list[list[float]]]]]:
+        """Extract spatial activation tensor A and gradient dS/dA for Grad-CAM."""
+        layer_norm = layer.strip().lower()
+        if not hasattr(self, "_cached_block_states") or not self._cached_block_states:
+            raise ValidationError(
+                "Must run forward pass before extracting spatial activations."
+            )
+        if (
+            not hasattr(self, "_cached_block_grad_states")
+            or not self._cached_block_grad_states
+        ):
+            raise ValidationError(
+                "Must run backward pass before extracting spatial gradients."
+            )
+
+        num_blocks = len(self.conv_layers)
+        if layer_norm in (
+            "final_conv",
+            "final_spatial",
+            "spatial_features",
+            "last_conv",
+        ):
+            target_idx = num_blocks - 1
+            act = self._cached_block_states[target_idx]["conv_post"]
+            grad = self._cached_block_grad_states[target_idx]["conv_post"]
+            return act, grad
+
+        for b_idx in range(num_blocks):
+            if layer_norm in (f"conv_{b_idx}", f"conv_{b_idx}_post", f"block_{b_idx}"):
+                act = self._cached_block_states[b_idx]["conv_post"]
+                grad = self._cached_block_grad_states[b_idx]["conv_post"]
+                return act, grad
+
+        raise ValidationError(
+            f"Layer '{layer}' is not a valid spatial convolutional layer for CNN. "
+            f"Available: {[f'conv_{i}' for i in range(num_blocks)] + ['final_conv']}"
+        )
 
     def extract_representations(self, inputs: Any, layer: str = "final_hidden") -> Any:
         """Extract intermediate features or spatial feature maps in evaluation mode."""

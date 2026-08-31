@@ -990,8 +990,9 @@ class VisionTransformer(BaseVisionModel):
         # 7. Patch Embedding backward: d_patches = PatchEmbed_backward(d_embeddings)
         d_patches = self.patch_embed.backward(d_embeddings)
 
-        # 8. Patch Extractor backward: dX = Extractor_backward(d_patches)
-        _ = self.patch_extractor.backward(d_patches)
+        # 8. Patch Extractor backward: d_x = Extractor_backward(d_patches)
+        d_x = self.patch_extractor.backward(d_patches)
+        self._cached_input_grad = d_x
 
     def extract_representations(
         self, inputs: Any, layer: str = "cls_representation"

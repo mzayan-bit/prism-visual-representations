@@ -84,3 +84,7 @@ class BaseVisionModel(ABC):
     def extract_representations(self, inputs: Any, layer: str = "final_hidden") -> Any:
         """Extract intermediate representations, feature vectors, or spatial maps."""
         ...
+
+    def get_last_input_gradient(self) -> Any:
+        """Return the most recently computed input gradient tensor if cached."""
+        return getattr(self, "_cached_input_grad", None)
