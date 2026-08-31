@@ -193,16 +193,25 @@ class BatchNorm1D(BaseNormalization):
         else:
             # Evaluation Mode: use running statistics (do not update running stats)
             inv_std = [1.0 / math.sqrt(v + self.eps) for v in self.running_var]
+            x_hat_batch = []
             for n in range(n_samples):
                 out_row = []
+                x_hat_row = []
                 for d in range(self.num_features):
                     x_hat_val = (x[n][d] - self.running_mean[d]) * inv_std[d]
                     if self.affine:
                         out_val = self.gamma[d] * x_hat_val + self.beta[d]
                     else:
                         out_val = x_hat_val
+                    x_hat_row.append(x_hat_val)
                     out_row.append(out_val)
+                x_hat_batch.append(x_hat_row)
                 out.append(out_row)
+
+            self._cached_x = x
+            self._cached_x_hat = x_hat_batch
+            self._cached_inv_std = inv_std
+            self._cached_is_eval = True
 
         return out
 
@@ -229,6 +238,17 @@ class BatchNorm1D(BaseNormalization):
                     self.grad_gamma[j] += dout_val * self._cached_x_hat[n][j]
 
         # 2. Input Gradient: dX
+        if getattr(self, "_cached_is_eval", False):
+            dx_eval: list[list[float]] = []
+            for n in range(n_samples):
+                row = []
+                for j in range(d):
+                    gamma_val = self.gamma[j] if self.affine else 1.0
+                    scale = gamma_val * self._cached_inv_std[j]
+                    row.append(d_out[n][j] * scale)
+                dx_eval.append(row)
+            return dx_eval
+
         # Simplified batchnorm gradient formula:
         # dX = (gamma * inv_std / N) * [ N*d_out - sum(d_out) - x_hat*sum(d_out*x_hat) ]
         if n_samples == 1:
@@ -451,10 +471,13 @@ class BatchNorm2D(BaseNormalization):
         else:
             # Evaluation Mode: use running statistics
             inv_std = [1.0 / math.sqrt(v + self.eps) for v in self.running_var]
+            x_hat_4d = []
             for n in range(n_samples):
                 sample_out = []
+                sample_hat = []
                 for c in range(self.num_features):
                     c_out = []
+                    c_hat = []
                     gamma_c = self.gamma[c] if self.affine else 1.0
                     beta_c = self.beta[c] if self.affine else 0.0
                     inv_s = inv_std[c]
@@ -462,13 +485,23 @@ class BatchNorm2D(BaseNormalization):
 
                     for h in range(h_len):
                         row_out = []
+                        row_hat = []
                         for w in range(w_len):
                             hat_val = (x[n][c][h][w] - mu) * inv_s
                             out_val = gamma_c * hat_val + beta_c
+                            row_hat.append(hat_val)
                             row_out.append(out_val)
+                        c_hat.append(row_hat)
                         c_out.append(row_out)
+                    sample_hat.append(c_hat)
                     sample_out.append(c_out)
+                x_hat_4d.append(sample_hat)
                 out_4d.append(sample_out)
+
+            self._cached_x = x
+            self._cached_x_hat = x_hat_4d
+            self._cached_inv_std = inv_std
+            self._cached_m = 0
 
         return out_4d
 
@@ -504,6 +537,21 @@ class BatchNorm2D(BaseNormalization):
                             )
 
         # 2. Input Gradient: dX
+        if m == 0:
+            dx_eval: list[list[list[list[float]]]] = []
+            for n in range(n_samples):
+                sample_dx: list[list[list[float]]] = []
+                for c in range(self.num_features):
+                    gamma_c = self.gamma[c] if self.affine else 1.0
+                    scale = gamma_c * self._cached_inv_std[c]
+                    c_dx: list[list[float]] = []
+                    for h in range(h_len):
+                        row_dx = [d_out[n][c][h][w] * scale for w in range(w_len)]
+                        c_dx.append(row_dx)
+                    sample_dx.append(c_dx)
+                dx_eval.append(sample_dx)
+            return dx_eval
+
         if m == 1:
             return [
                 [
@@ -527,14 +575,14 @@ class BatchNorm2D(BaseNormalization):
 
         dx: list[list[list[list[float]]]] = []
         for n in range(n_samples):
-            sample_dx: list[list[list[float]]] = []
+            sample_dx = []
             for c in range(self.num_features):
-                c_dx: list[list[float]] = []
+                c_dx = []
                 gamma_c = self.gamma[c] if self.affine else 1.0
                 scale = (gamma_c * self._cached_inv_std[c]) / float(m)
 
                 for h in range(h_len):
-                    row_dx: list[float] = []
+                    row_dx = []
                     for w in range(w_len):
                         dout_val = d_out[n][c][h][w]
                         xhat_val = self._cached_x_hat[n][c][h][w]

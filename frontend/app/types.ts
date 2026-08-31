@@ -370,3 +370,199 @@ export interface RobustnessDatasetPayload {
   reports: Record<string, RobustnessExperimentReport>;
   comparison: CrossArchitectureRobustnessReport;
 }
+
+// -----------------------------------------------------------------------------
+// Phase 16: Explainability & Visual Attribution Types
+// -----------------------------------------------------------------------------
+
+export type AttributionMethod =
+  | "input_gradient"
+  | "gradient_x_input"
+  | "occlusion_sensitivity"
+  | "grad_cam"
+  | "vit_attention";
+
+export type TargetClassMode =
+  | "predicted_class"
+  | "true_class"
+  | "explicit_class";
+
+export type ChannelReductionPolicy =
+  | "abs_max"
+  | "abs_mean"
+  | "l2_channel_norm";
+
+export type AttributionNormalizationPolicy =
+  | "none"
+  | "min_max_absolute"
+  | "abs_sum_normalize"
+  | "signed_min_max";
+
+export type ViTAttentionHeadPolicy = "mean_heads" | "specific_head";
+export type OcclusionFillPolicy = "zero" | "image_mean";
+
+export interface AttributionSpecification {
+  method: AttributionMethod;
+  target_mode: TargetClassMode;
+  explicit_target_class?: number | null;
+  layer_name?: string | null;
+  channel_reduction: ChannelReductionPolicy;
+  normalization: AttributionNormalizationPolicy;
+  occlusion_window_size: [number, number];
+  occlusion_stride: [number, number];
+  occlusion_fill: OcclusionFillPolicy;
+  occlusion_max_windows: number;
+  vit_head_policy: ViTAttentionHeadPolicy;
+  vit_head_index?: number | null;
+  vit_layer_index: number;
+  seed?: number | null;
+  version: string;
+}
+
+export interface AttributionStatistics {
+  min_value: number;
+  max_value: number;
+  mean_value: number;
+  std_value: number;
+  total_absolute_mass: number;
+  top_10_percent_mass_fraction: number;
+  top_25_percent_mass_fraction: number;
+  spatial_entropy: number;
+  concentration_score: number;
+  center_of_mass_row: number;
+  center_of_mass_col: number;
+  is_finite: boolean;
+}
+
+export interface AttributionResult {
+  sample_id: string;
+  model_id: string;
+  architecture: string;
+  method: AttributionMethod;
+  specification: AttributionSpecification;
+  target_class: number;
+  predicted_class: number;
+  true_class: number | null;
+  target_score: number | null;
+  predicted_score: number | null;
+  source_image_shape: number[];
+  attribution_shape: number[];
+  raw_attribution_map: number[][];
+  normalized_attribution_map: number[][];
+  statistics: AttributionStatistics;
+  positive_mass: number;
+  negative_mass: number;
+  absolute_mass: number;
+  method_metadata: Record<string, unknown>;
+  warnings: string[];
+}
+
+export interface MethodAgreementResult {
+  method_a: AttributionMethod;
+  method_b: AttributionMethod;
+  cosine_similarity: number;
+  top_10_percent_overlap: number;
+  top_25_percent_overlap: number;
+  center_of_mass_displacement: number;
+  concentration_difference: number;
+}
+
+export interface AttributionComparisonReport {
+  sample_id: string;
+  model_id: string;
+  architecture: string;
+  target_class: number;
+  predicted_class: number;
+  true_class: number | null;
+  results: Record<string, AttributionResult>;
+  pairwise_agreements: MethodAgreementResult[];
+  cosine_similarity_matrix: Record<string, Record<string, number | null>>;
+  top_10_overlap_matrix: Record<string, Record<string, number | null>>;
+  mean_cross_method_agreement: number;
+  warnings: string[];
+}
+
+export interface AttributionDriftSummary {
+  sample_id: string;
+  model_id: string;
+  architecture: string;
+  method: AttributionMethod;
+  corruption_type: string;
+  corruption_severity: number;
+  clean_target_class: number;
+  corrupted_target_class: number;
+  clean_predicted_class: number;
+  corrupted_predicted_class: number;
+  prediction_preserved: boolean;
+  clean_score: number | null;
+  corrupted_score: number | null;
+  attribution_cosine_similarity: number;
+  top_10_percent_mask_overlap: number;
+  top_25_percent_mask_overlap: number;
+  center_of_mass_displacement: number;
+  concentration_delta: number;
+  representation_drift_distance: number | null;
+  warnings: string[];
+}
+
+export type ExplanationFailureCategory =
+  | "low_attribution_signal"
+  | "method_disagreement"
+  | "attribution_shift_under_corruption"
+  | "prediction_flip_with_stable_attribution"
+  | "large_attribution_shift_with_stable_prediction"
+  | "diffuse_attribution"
+  | "localized_single_region";
+
+export interface ExplanationFailureFlag {
+  category: ExplanationFailureCategory;
+  severity: "low" | "medium" | "high" | "critical";
+  description: string;
+  metrics: Record<string, unknown>;
+}
+
+export interface ExplainabilityExperimentMeta {
+  experiment_id: string;
+  name: string;
+  architectures: string[];
+  supported_methods: Record<string, string[]>;
+  layers: Record<string, string[]>;
+  num_classes: number;
+  class_names: string[];
+  sample_ids: string[];
+}
+
+export interface ExplainabilitySamplePayload {
+  sample_id: string;
+  true_class: number;
+  class_name: string;
+  image_tensor: number[][][];
+  corrupted_image_tensor: number[][][] | null;
+  corruption_name: string | null;
+  corruption_severity: number | null;
+  predictions: Record<string, {
+    predicted_class: number;
+    predicted_name: string;
+    score: number;
+    confidence: number;
+    probabilities: number[];
+  }>;
+  corrupted_predictions: Record<string, {
+    predicted_class: number;
+    predicted_name: string;
+    score: number;
+    confidence: number;
+    probabilities: number[];
+  }>;
+  attributions: Record<string, Record<string, AttributionResult>>;
+  corrupted_attributions: Record<string, Record<string, AttributionResult>>;
+  comparison_reports: Record<string, AttributionComparisonReport>;
+  drift_summaries: Record<string, Record<string, AttributionDriftSummary>>;
+  failure_flags: Record<string, ExplanationFailureFlag[]>;
+}
+
+export interface ExplainabilityDemoPayload {
+  metadata: ExplainabilityExperimentMeta;
+  samples: ExplainabilitySamplePayload[];
+}
+
