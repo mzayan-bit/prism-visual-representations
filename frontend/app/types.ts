@@ -566,3 +566,130 @@ export interface ExplainabilityDemoPayload {
   samples: ExplainabilitySamplePayload[];
 }
 
+export type TransferStrategyType =
+  | "scratch_baseline"
+  | "linear_probe"
+  | "partial_fine_tune"
+  | "full_fine_tune";
+
+export interface ParameterFreezePlanPayload {
+  frozen_parameters: string[];
+  trainable_parameters: string[];
+  logical_stages: Record<string, string[]>;
+  total_tensors: number;
+  frozen_tensors: number;
+  trainable_tensors: number;
+  total_scalar_elements: number;
+  frozen_scalar_elements: number;
+  trainable_scalar_elements: number;
+  trainable_fraction: number;
+}
+
+export interface LayerTransferProbePayload {
+  layer_name: string;
+  representation_dim: number;
+  target_num_classes: number;
+  target_dataset_id: string;
+  target_data_budget: number;
+  probe_parameters_count: number;
+  train_accuracy: number;
+  val_accuracy: number;
+  test_accuracy: number | null;
+  train_loss: number;
+  val_loss: number;
+  epochs_trained: number;
+  best_epoch: number;
+  duration_seconds: number;
+}
+
+export interface TransferRepresentationDriftPayload {
+  source_model_id: string;
+  architecture: string;
+  layer: string;
+  transfer_strategy: string;
+  num_samples: number;
+  mean_euclidean_drift: number;
+  median_euclidean_drift: number;
+  max_euclidean_drift: number;
+  mean_cosine_similarity: number;
+  mean_relative_norm_change: number;
+  is_frozen_backbone: boolean;
+}
+
+export interface DataEfficiencyPointPayload {
+  data_budget: number;
+  sample_count: number;
+  strategy: TransferStrategyType;
+  val_accuracy: number;
+  test_accuracy: number | null;
+  train_loss: number;
+  val_loss: number;
+  epochs_trained: number;
+  best_epoch: number;
+}
+
+export interface SampleEfficiencySummaryPayload {
+  architecture: string;
+  target_dataset_id: string;
+  points: DataEfficiencyPointPayload[];
+  normalized_auc: number;
+}
+
+export interface TransferStrategyComparisonPayload {
+  scratch_accuracy: number;
+  linear_probe_accuracy: number;
+  partial_fine_tune_accuracy: number;
+  full_fine_tune_accuracy: number;
+  linear_probe_gain: number;
+  partial_fine_tune_gain: number;
+  full_fine_tune_gain: number;
+}
+
+export interface TransferLearningReportPayload {
+  transfer_id: string;
+  source_model_id: string;
+  target_model_id: string;
+  architecture: string;
+  strategy: TransferStrategyType;
+  train_loss: number;
+  val_loss: number;
+  train_accuracy: number;
+  val_accuracy: number;
+  test_accuracy: number | null;
+  epochs_trained: number;
+  best_epoch: number;
+  freeze_plan: ParameterFreezePlanPayload;
+  scratch_comparison: TransferStrategyComparisonPayload | null;
+  layer_probes: LayerTransferProbePayload[];
+  representation_drift: TransferRepresentationDriftPayload | null;
+  warnings: string[];
+  duration_seconds: number;
+}
+
+export interface TransferExperimentMetaPayload {
+  experiment_id: string;
+  source_models: string[];
+  architectures: string[];
+  target_tasks: string[];
+  target_budgets: number[];
+  strategies: string[];
+  source_classes: string[];
+  target_classes: string[];
+}
+
+export interface SharedPCADriftPayload {
+  pre_coordinates: number[][];
+  post_coordinates: number[][];
+  displacement_vectors: number[][];
+  explained_variance_ratio: number[];
+  mean_displacement: number;
+}
+
+export interface TransferDemoPayload {
+  metadata: TransferExperimentMetaPayload;
+  reports: Record<string, TransferLearningReportPayload>;
+  layer_probes: Record<string, LayerTransferProbePayload[]>;
+  data_efficiency: Record<string, SampleEfficiencySummaryPayload>;
+  shared_pca_drifts: Record<string, SharedPCADriftPayload>;
+}
+

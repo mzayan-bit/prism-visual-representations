@@ -138,6 +138,11 @@ class MaterializedDataset(Sequence[MaterializedSample]):
         return sample
 
     @property
+    def samples(self) -> list[MaterializedSample]:
+        """Return the ordered list of all materialized samples."""
+        return [self[i] for i in range(len(self._samples))]
+
+    @property
     def sample_ids(self) -> list[str]:
         """Return the ordered list of all sample identifiers."""
         return [s.sample_id for s in self._samples]

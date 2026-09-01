@@ -11,6 +11,7 @@ import { NeighborhoodPanel } from "./components/NeighborhoodPanel";
 import { ObservatoryHeader } from "./components/ObservatoryHeader";
 import { PCAScatterPlot } from "./components/PCAScatterPlot";
 import RobustnessLaboratoryView from "./components/RobustnessLaboratoryView";
+import { TransferLaboratoryView } from "./components/TransferLaboratoryView";
 import {
   getCrossArchitectureComparison,
   getLayerGeometryProfile,
@@ -24,9 +25,9 @@ import {
 } from "./types";
 
 export default function PRISMDashboardPage() {
-  const [appMode, setAppMode] = useState<"explainability" | "robustness" | "observatory">(
-    "explainability"
-  );
+  const [appMode, setAppMode] = useState<
+    "transfer" | "explainability" | "robustness" | "observatory"
+  >("transfer");
 
   // Observatory state
   const metadata = useMemo(() => getObservatoryMetadata(), []);
@@ -82,42 +83,60 @@ export default function PRISMDashboardPage() {
           <span className="text-xs text-slate-400">Visual Representation & Attribution Platform</span>
         </div>
 
-        <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800">
+        <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 overflow-x-auto">
+          <button
+            id="nav-mode-transfer"
+            onClick={() => setAppMode("transfer")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              appMode === "transfer"
+                ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <span>🔄</span> Transfer Lab (Phase 17)
+          </button>
           <button
             id="nav-mode-explainability"
             onClick={() => setAppMode("explainability")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
               appMode === "explainability"
                 ? "bg-cyan-600 text-white shadow-md shadow-cyan-500/20"
                 : "text-slate-400 hover:text-slate-200"
             }`}
           >
-            <span>🔍</span> Explainability Laboratory (Phase 16)
+            <span>🔍</span> Explainability (Phase 16)
           </button>
           <button
             id="nav-mode-robustness"
             onClick={() => setAppMode("robustness")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
               appMode === "robustness"
                 ? "bg-cyan-600 text-white shadow-md shadow-cyan-500/20"
                 : "text-slate-400 hover:text-slate-200"
             }`}
           >
-            <span>🛡️</span> Robustness Laboratory (Phase 15)
+            <span>🛡️</span> Robustness (Phase 15)
           </button>
           <button
             id="nav-mode-observatory"
             onClick={() => setAppMode("observatory")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
               appMode === "observatory"
                 ? "bg-cyan-600 text-white shadow-md shadow-cyan-500/20"
                 : "text-slate-400 hover:text-slate-200"
             }`}
           >
-            <span>🔬</span> Geometry Observatory (Phase 14)
+            <span>🔬</span> Observatory (Phase 14)
           </button>
         </div>
       </nav>
+
+      {/* Phase 17: Transfer Learning & Representation Reuse Laboratory */}
+      {appMode === "transfer" && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <TransferLaboratoryView />
+        </div>
+      )}
 
       {/* Phase 16: Explainability & Visual Attribution Laboratory */}
       {appMode === "explainability" && (
