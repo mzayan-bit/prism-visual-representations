@@ -86,6 +86,7 @@ class SGDOptimizer(BaseOptimizer):
         lr: float = 1e-2,
         momentum: float | None = None,
         weight_decay: float = 0.0,
+        trainable_parameters: set[str] | list[str] | None = None,
     ) -> None:
         if lr <= 0.0:
             raise ValidationError(f"Learning rate must be positive, got {lr}.")
@@ -100,10 +101,20 @@ class SGDOptimizer(BaseOptimizer):
         self._lr = lr
         self.momentum = momentum or 0.0
         self.weight_decay = weight_decay
+        self.trainable_parameters: set[str] | None = (
+            set(trainable_parameters) if trainable_parameters is not None else None
+        )
 
-        # Initialize velocity buffers matching parameter shapes
+        # Initialize velocity buffers (only for trainable parameters)
         params = model.get_parameters()
-        self.velocity: dict[str, Any] = {k: _zero_like(v) for k, v in params.items()}
+        if self.trainable_parameters is not None:
+            self.velocity: dict[str, Any] = {
+                k: _zero_like(v)
+                for k, v in params.items()
+                if k in self.trainable_parameters
+            }
+        else:
+            self.velocity = {k: _zero_like(v) for k, v in params.items()}
 
     @property
     def lr(self) -> float:
@@ -121,6 +132,12 @@ class SGDOptimizer(BaseOptimizer):
         grads = self.model.get_gradients()
 
         for k, param_val in params.items():
+            if (
+                self.trainable_parameters is not None
+                and k not in self.trainable_parameters
+            ):
+                continue
+
             grad_key = f"grad_{k}"
             if grad_key not in grads:
                 continue
@@ -149,6 +166,7 @@ class SGDOptimizer(BaseOptimizer):
 def create_optimizer(
     config: OptimizerSpecification,
     model: BaseVisionModel,
+    trainable_parameters: set[str] | list[str] | None = None,
 ) -> BaseOptimizer:
     """Factory function creating an optimizer from an OptimizerSpecification."""
     opt_type = config.type.lower()
@@ -158,6 +176,7 @@ def create_optimizer(
             lr=config.lr,
             momentum=config.momentum,
             weight_decay=config.weight_decay,
+            trainable_parameters=trainable_parameters,
         )
     raise ConfigurationError(
         f"Unsupported optimizer type '{config.type}'. PRISM supports 'sgd'."
