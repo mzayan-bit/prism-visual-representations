@@ -539,3 +539,78 @@ flags = flag_explanation_failures(
 )
 ```
 
+---
+
+## Running Transfer Learning & Representation Reuse Experiments
+
+```python
+from prism.transfer import (
+    TransferStrategy,
+    NormalizationTransferPolicy,
+    TransferLearningSpecification,
+    create_model_state_snapshot,
+    create_freeze_plan,
+    replace_classifier_head,
+    TransferTrainingRunner,
+    probe_all_layers_transferability,
+    compute_representation_retention,
+    compute_transfer_shared_pca,
+)
+
+# 1. Snapshot trained source model
+snapshot = create_model_state_snapshot(
+    source_model, source_experiment_id="exp_cifar_source"
+)
+
+# 2. Configure Transfer Learning Specification
+spec = TransferLearningSpecification(
+    transfer_id="trans_resnet_linear_probe",
+    source_model_id=source_model.model_id,
+    target_dataset_id="target_task_train",
+    target_num_classes=5,
+    strategy=TransferStrategy.LINEAR_PROBE,
+    normalization_policy=NormalizationTransferPolicy.FREEZE_SOURCE_STATS,
+    target_epochs=10,
+    target_learning_rate=0.01,
+)
+
+# 3. Execute Transfer Experiment Runner
+runner = TransferTrainingRunner()
+report = runner.run_transfer(
+    specification=spec,
+    source_snapshot=snapshot,
+    target_train_dataset=target_train_ds,
+    target_train_loader=train_loader,
+    target_val_dataset=target_val_ds,
+    target_val_loader=val_loader,
+    evaluate_layer_probes=True,
+    probed_layers=["stem", "stage_0", "stage_1", "final_hidden"],
+    evaluate_retention=True,
+    compare_with_scratch=True,
+)
+
+print(f"Transfer Strategy: {report.strategy.value}")
+print(f"Target Accuracy: {report.val_accuracy * 100:.1f}%")
+if report.scratch_comparison:
+    print(f"Scratch Baseline: {report.scratch_comparison.scratch_accuracy * 100:.1f}%")
+    print(
+        f"Linear Probe Gain: {report.scratch_comparison.linear_probe_gain * 100:+.1f}% Δ"
+    )
+
+# 4. Layer Transferability Probes Across Depth
+for probe in report.layer_probes:
+    print(
+        f"Layer {probe.layer_name}: {probe.val_accuracy * 100:.1f}% (dim={probe.representation_dim})"
+    )
+
+# 5. Representation Retention & Shared PCA Drift
+if report.representation_drift:
+    print(
+        f"Mean Cosine Similarity: {report.representation_drift.mean_cosine_similarity:.4f}"
+    )
+    print(
+        f"Mean Euclidean Drift: {report.representation_drift.mean_euclidean_drift:.4f}"
+    )
+```
+
+

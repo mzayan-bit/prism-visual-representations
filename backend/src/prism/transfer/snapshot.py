@@ -97,6 +97,19 @@ class ModelStateSnapshot(BaseModel):
                 f"Failed to deserialize ModelStateSnapshot: {exc}"
             ) from exc
 
+    @classmethod
+    def from_json(cls, json_str: str) -> ModelStateSnapshot:
+        """Construct snapshot from JSON string."""
+        try:
+            data = json.loads(json_str)
+            return cls.from_dict(data)
+        except Exception as exc:
+            if isinstance(exc, (ValidationError, SerializationError)):
+                raise
+            raise SerializationError(
+                f"Failed to parse JSON for ModelStateSnapshot: {exc}"
+            ) from exc
+
 
 def create_model_state_snapshot(
     model: BaseVisionModel,

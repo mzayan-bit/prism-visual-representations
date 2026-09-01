@@ -163,6 +163,22 @@ When computing, comparing, and visualizing model-attribution maps:
 - **Deterministic Normalization & Colormaps**: Signed gradient maps must preserve positive and negative polarity and be rendered with diverging colormaps. Non-negative heatmaps (Grad-CAM, Attention) use sequential colormaps (`turbo`, `plasma`, `viridis`) with explicit min-max or sum scaling policies.
 - **Cross-Method Agreement & Attribution Drift**: Cross-method comparisons and clean-vs-corrupted drift must report objective quantitative metrics (cosine similarity, top-10% Jaccard overlap, center-of-mass Euclidean displacement) on matched spatial grids.
 
+### 13. Transfer Learning & Representation Reuse Standards
+When evaluating learned representation reuse and downstream adaptation across tasks:
+- **Self-Contained Model Provenance**: PRISM studies representation reuse strictly on models trained within PRISM's controlled environment. Downloading opaque external weights (e.g. ImageNet checkpoints) is strictly prohibited.
+- **Strict Parameter Freezing Semantics**: Freezing is not merely setting learning rate to zero. Frozen parameters must be completely excluded from optimizer parameter lists, momentum velocity accumulation, and weight decay penalties.
+- **Controlled Baseline Matching**: Every transfer experiment must evaluate a matched `SCRATCH_BASELINE` (identical architecture, target dataset partition, optimizer hyperparameters, and step budget initialized without source weights).
+- **Four Distinct Adaptation Regimes**:
+  - `SCRATCH_BASELINE`: Random initialization on target data without source pretraining.
+  - `LINEAR_PROBE`: Backbone strictly frozen; only newly initialized linear classifier head is trained.
+  - `PARTIAL_FINE_TUNE`: Early spatial/token layers frozen; late semantic stages and classifier head updated.
+  - `FULL_FINE_TUNE`: All backbone and head parameters updated end-to-end with backpropagation.
+- **BatchNorm Transfer Policies**: Transfer specifications must declare whether normalization statistics are frozen (`FREEZE_SOURCE_STATS`, normalization layers kept in evaluation mode) or adapted (`ADAPT_RUNNING_STATS`, tracking target domain running mean and variance).
+- **Layer Transferability Discipline**: Linear probes trained across intermediate layer activations must extract features in evaluation mode (`model.eval()`) without gradient propagation into the backbone.
+- **Representation Retention & Drift**: Retention analysis must measure Euclidean distance, cosine similarity, and relative norm change on a shared reference dataset between pre-transfer and post-transfer states.
+- **Shared PCA Basis Protocol for Transfer**: To visualize feature drift during fine-tuning, PCA must be fitted on pre-transfer representations $\mathbf{X}_{\text{pre}}$ and both pre- and post-representations projected into that shared basis $\mathbf{Z}_{\text{pre}}, \mathbf{Z}_{\text{post}}$, yielding meaningful displacement trajectories.
+- **Target Label-Efficiency Trajectories**: Data budgets must use mathematically nested target partitions ($S_{10\%} \subseteq S_{25\%} \subseteq S_{50\%} \subseteq S_{100\%}$) to compute normalized Area Under Curve (AUC) transfer advantage.
+
 ---
 
 ## Data and Artifact Policy

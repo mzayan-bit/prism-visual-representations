@@ -20,16 +20,16 @@ Baselines                  Residual Learning                Self-Supervision
 ## Project Status
 
 > [!NOTE]
-> **Active Development**: PRISM has completed **Phase 16: Explainability & Visual Attribution Laboratory**.
-> The platform introduces a complete mathematical and visual framework for producing, analyzing, comparing, and visualizing model-attribution signals across Convolutional Neural Networks (CNNs), Residual CNNs (ResNets), and Vision Transformers (ViTs):
-> - **Input Gradient Saliency** ($\partial S_c / \partial x$) & **Gradient $\times$ Input** ($(\partial S_c / \partial x) \odot x$) with channel reduction policies (`ABS_MAX`, `ABS_MEAN`, `L2_CHANNEL_NORM`).
-> - **Sliding-Window Occlusion Sensitivity** with configurable window size, stride, zero/mean fill policies, and safeguard thresholds.
-> - **Grad-CAM** for CNNs and ResNets with spatial activation and gradient capture, channel-importance alpha weights ($\alpha_k^c$), ReLU rectification, and deterministic bilinear 2D upsampling.
-> - **Vision Transformer CLS-to-Patch Attention Attribution** mapping multi-head encoder attention weights to 2D patch grids.
-> - **Cross-Method Agreement Analysis** with spatial cosine similarity, top-$p$% Jaccard overlap masks, and center-of-mass displacement metrics.
-> - **Attribution Drift Analysis** measuring spatial evidence stability under controlled input corruptions paired with representation drift distance.
-> - **Explanation Failure Taxonomy** systematically flagging low attribution mass, method disagreement, corruption shifts, and prediction flips with stable attributions.
-> - **Interactive Next.js PRISM Explainability Laboratory** with multi-mode navigation, continuous overlay sliders, colormaps, agreement matrices, and failure diagnostics.
+> **Active Development**: PRISM has completed **Phase 17: Transfer Learning & Representation Reuse Laboratory**.
+> The platform introduces a rigorous empirical framework for evaluating how visual representations learned on source domains transfer to downstream target tasks across Convolutional Neural Networks (CNNs), Residual Networks (ResNets), and Vision Transformers (ViTs):
+> - **Source Model State & Snapshot Integrity** (`ModelStateSnapshot`, `create_model_state_snapshot`, `restore_model_from_snapshot`) with tensor checksumming and shape validation.
+> - **Strict Parameter Freezing** (`ParameterFreezePlan`, `create_freeze_plan`) integrated directly into `SGDOptimizer` excluding frozen parameters from velocity updates and weight decay.
+> - **Modular Classifier Head Replacement** (`replace_classifier_head`) dynamically adapting output dimensions across Linear, MLP, CNN, ResNet, and ViT architectures.
+> - **Four Core Transfer Strategies**: Scratch Baseline (`SCRATCH_BASELINE`), Linear Probe (`LINEAR_PROBE`), Partial Fine-Tuning (`PARTIAL_FINE_TUNE`), and Full Fine-Tuning (`FULL_FINE_TUNE`).
+> - **Layer Transferability Probes** (`LayerTransferProbeResult`, `probe_all_layers_transferability`) quantifying target classification utility at arbitrary intermediate layers.
+> - **Representation Retention & Drift** (`TransferRepresentationDriftSummary`, `compute_transfer_shared_pca`) measuring Euclidean drift, cosine similarity, norm delta, and shared PCA coordinate displacement.
+> - **Label-Efficiency Transfer Scaling Curves** quantifying target sample efficiency across nested data budgets (10% → 100%) and normalized Area Under Curve (AUC).
+> - **Interactive Next.js PRISM Transfer Laboratory** featuring parameter freeze maps, strategy comparison matrices, label-efficiency scaling charts, depth probe bars, and shared PCA drift vector fields.
 
 ---
 
@@ -53,7 +53,8 @@ Baselines                  Residual Learning                Self-Supervision
 | **Phase 14** | Representation Geometry Observatory & Manifold Analysis | :white_check_mark: Completed |
 | **Phase 15** | Robustness Under Corruptions & Distribution Shifts | :white_check_mark: Completed |
 | **Phase 16** | Explainability & Visual Attribution Laboratory | :white_check_mark: Completed |
-| **Phase 17** | Downstream Dense Transfer (Detection & Segmentation) | :hourglass_flowing_sand: Planned |
+| **Phase 17** | Transfer Learning & Representation Reuse Laboratory | :white_check_mark: Completed |
+| **Phase 18** | Self-Supervised Learning & Contrastive Pretraining | :hourglass_flowing_sand: Planned |
 
 ---
 

@@ -111,12 +111,25 @@ class TransferDemoPayload(BaseModel):
                 f"Failed to deserialize TransferDemoPayload: {exc}"
             ) from exc
 
+    @classmethod
+    def from_json(cls, json_str: str) -> TransferDemoPayload:
+        """Deserialize demo payload from JSON string."""
+        try:
+            data = json.loads(json_str)
+            return cls.from_dict(data)
+        except Exception as exc:
+            if isinstance(exc, SerializationError):
+                raise
+            raise SerializationError(
+                f"Failed to parse JSON for TransferDemoPayload: {exc}"
+            ) from exc
+
 
 class TransferService:
     """Service managing transfer learning pipelines, reports, and probe queries."""
 
-    def __init__(self) -> None:
-        self._payload: TransferDemoPayload | None = None
+    def __init__(self, payload: TransferDemoPayload | None = None) -> None:
+        self._payload: TransferDemoPayload | None = payload
 
     def register_demo_payload(self, payload: TransferDemoPayload) -> None:
         """Register and cache precomputed transfer payload."""

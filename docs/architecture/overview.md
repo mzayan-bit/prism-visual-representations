@@ -194,6 +194,16 @@ TrainingResult & Completed Run Lifecycle
 - Cross-Architecture Robustness Benchmarking: Compares CNN vs ResNet vs ViT robustness under identical corruptions on matched evaluation partitions.
 - PRISM Robustness Laboratory UI (`frontend/app/components/RobustnessLaboratoryView.tsx`): Interactive dashboard with corruption selectors, severity sliders, paired PCA drift plots, sample inspectors, severity curves, failure tables, and cross-architecture comparisons.
 
+### 11. Transfer Learning & Representation Reuse Laboratory (`prism.transfer`, `prism.api`)
+- Source Model Snapshots (`ModelStateSnapshot`): Checksums, parameter shapes, and validation contracts guaranteeing snapshot compatibility before transfer.
+- Parameter Freezing Engine (`ParameterFreezePlan`, `create_freeze_plan`): Explicit partition of model tensors into frozen vs trainable sets, integrated with `SGDOptimizer` to skip velocity and weight decay updates on frozen weights.
+- Classifier Head Replacement (`replace_classifier_head`): Modular surgery on classification heads across Linear, MLP, CNN, ResNet, and ViT architectures.
+- Four Transfer Strategies: Scratch baseline (`SCRATCH_BASELINE`), Linear probe (`LINEAR_PROBE`), Partial fine-tuning (`PARTIAL_FINE_TUNE`), and Full fine-tuning (`FULL_FINE_TUNE`).
+- Layer Transferability Probes (`LayerTransferProbeResult`, `probe_all_layers_transferability`): Probing linear separability of extracted features across architecture depth.
+- Representation Retention & Shared PCA Drift (`compute_representation_retention`, `compute_transfer_shared_pca`): Measures Euclidean displacement, cosine similarity, norm preservation, and 2D shared PCA trajectories.
+- Target Label-Efficiency Trajectories (`SampleEfficiencyTransferSummary`): Measures target performance scaling across nested data budgets (10% to 100%) and normalized AUC.
+- PRISM Transfer Laboratory UI (`frontend/app/components/TransferLaboratoryView.tsx`): Interactive dashboard featuring parameter freeze maps, strategy comparison matrices, label-efficiency scaling charts, depth probe bars, and shared PCA drift vector fields.
+
 ---
 
 ## Domain Subsystems
@@ -222,11 +232,15 @@ Corruptions (`CorruptionType`, `CorruptionSpecification`), dataset views (`Corru
 ### `prism.explainability`
 Declarative attribution contracts (`AttributionSpecification`, `AttributionResult`), gradient saliency (`compute_input_gradient_saliency`, `compute_gradient_x_input`), sliding-window occlusion sensitivity (`compute_occlusion_sensitivity`), Grad-CAM (`compute_grad_cam`), ViT CLS-to-patch attention attribution (`compute_vit_attention_attribution`), cross-method agreement (`compare_attributions`), attribution drift under corruptions (`compute_attribution_drift`), and diagnostic failure taxonomy (`flag_explanation_failures`).
 
+### `prism.transfer`
+Transfer learning specifications (`TransferLearningSpecification`), model state snapshots (`ModelStateSnapshot`), parameter freezing plans (`ParameterFreezePlan`), head replacement (`replace_classifier_head`), layer transferability probes (`LayerTransferProbeResult`), representation retention analysis (`TransferRepresentationDriftSummary`), transfer suite runner (`TransferTrainingRunner`), and comprehensive reports (`TransferLearningReport`).
+
 ### `prism.api`
-Research service layer (`GeometryService`, `RobustnessService`, `ExplainabilityService`) providing experiment metadata, geometric queries, robustness evaluations, explainability payloads, and dashboard demo data serving.
+Research service layer (`GeometryService`, `RobustnessService`, `ExplainabilityService`, `TransferService`) providing experiment metadata, geometric queries, robustness evaluations, explainability payloads, transfer benchmarks, and dashboard demo data serving.
 
 ### `prism.experiments`
 Declarative experiment definitions (`ExperimentDefinition`), run lifecycle tracking (`ExperimentRun`), runtime harness (`ExperimentExecutionHarness`), and controlled comparison suites (`ArchitectureComparisonSuite`).
 
 ### `prism.artifacts`
 Artifact tracking contracts (`ArtifactReference`) storing logical keys, storage URIs, checksums, and generating run IDs.
+
