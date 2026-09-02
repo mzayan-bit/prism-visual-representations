@@ -20,16 +20,16 @@ Baselines                  Residual Learning                Self-Supervision
 ## Project Status
 
 > [!NOTE]
-> **Active Development**: PRISM has completed **Phase 17: Transfer Learning & Representation Reuse Laboratory**.
-> The platform introduces a rigorous empirical framework for evaluating how visual representations learned on source domains transfer to downstream target tasks across Convolutional Neural Networks (CNNs), Residual Networks (ResNets), and Vision Transformers (ViTs):
-> - **Source Model State & Snapshot Integrity** (`ModelStateSnapshot`, `create_model_state_snapshot`, `restore_model_from_snapshot`) with tensor checksumming and shape validation.
-> - **Strict Parameter Freezing** (`ParameterFreezePlan`, `create_freeze_plan`) integrated directly into `SGDOptimizer` excluding frozen parameters from velocity updates and weight decay.
-> - **Modular Classifier Head Replacement** (`replace_classifier_head`) dynamically adapting output dimensions across Linear, MLP, CNN, ResNet, and ViT architectures.
-> - **Four Core Transfer Strategies**: Scratch Baseline (`SCRATCH_BASELINE`), Linear Probe (`LINEAR_PROBE`), Partial Fine-Tuning (`PARTIAL_FINE_TUNE`), and Full Fine-Tuning (`FULL_FINE_TUNE`).
-> - **Layer Transferability Probes** (`LayerTransferProbeResult`, `probe_all_layers_transferability`) quantifying target classification utility at arbitrary intermediate layers.
-> - **Representation Retention & Drift** (`TransferRepresentationDriftSummary`, `compute_transfer_shared_pca`) measuring Euclidean drift, cosine similarity, norm delta, and shared PCA coordinate displacement.
-> - **Label-Efficiency Transfer Scaling Curves** quantifying target sample efficiency across nested data budgets (10% → 100%) and normalized Area Under Curve (AUC).
-> - **Interactive Next.js PRISM Transfer Laboratory** featuring parameter freeze maps, strategy comparison matrices, label-efficiency scaling charts, depth probe bars, and shared PCA drift vector fields.
+> **Active Development**: PRISM has completed **Phase 19: Generative / Reconstruction-Based Representation Learning**.
+> The platform provides a pure-Python, zero-dependency empirical laboratory for studying visual representations emerging from masked patch reconstruction and spatial denoising autoencoders across Vision Transformers (ViT), ResNets, and CNNs:
+> - **Deterministic Patch Masking & Context** (`MaskingContext`, `generate_patch_mask`) using SHA-256 seed hashing without global RNG side-effects.
+> - **Learnable Mask Tokens** (`LearnableMaskToken`) substituting masked patch embeddings ($1 \times D_{\text{model}}$) with analytical gradient accumulation.
+> - **Linear & Spatial Reconstruction Decoders** (`PatchReconstructionDecoder`, `SpatialReconstructionDecoder`) mapping latents to patch pixel space ($D_{\text{model}} \to D_{\text{patch}}$) and image space ($D_{\text{latent}} \to C \times H \times W$).
+> - **Masked MSE Loss** (`MaskedMSELoss`) computing analytical gradients $\frac{2}{M \cdot D}(\hat{y} - y)$ strictly over masked patches while visible patches receive exact zero gradient.
+> - **Label Independence Invariant**: Pretraining optimization operates strictly unsupervised without class labels.
+> - **Reconstruction Diagnostics & Failure Taxonomy** (`compute_reconstruction_diagnostics`) evaluating localized patch errors, latent variance, and five failure categories.
+> - **3-Way Benchmark Comparison**: Empirical comparisons among Supervised (Phase 13), SimCLR Contrastive (Phase 18), and Masked Reconstruction (Phase 19).
+> - **Interactive Next.js Reconstruction Laboratory**: Visual triplet viewer (Original, Masked, Reconstructed, Spatial Error Map), training dynamics, masking ratio studies, layer-wise probes, and failure explorer.
 
 ---
 
@@ -55,7 +55,8 @@ Baselines                  Residual Learning                Self-Supervision
 | **Phase 16** | Explainability & Visual Attribution Laboratory | :white_check_mark: Completed |
 | **Phase 17** | Transfer Learning & Representation Reuse Laboratory | :white_check_mark: Completed |
 | **Phase 18** | Self-Supervised Learning & Contrastive Pretraining | :white_check_mark: Completed |
-| **Phase 19** | Temporal & Video Representation Learning | :hourglass_flowing_sand: Planned |
+| **Phase 19** | Generative / Reconstruction-Based Representation Learning | :white_check_mark: Completed |
+| **Phase 20** | Multi-Modal & Vision-Language Alignment | :hourglass_flowing_sand: Planned |
 
 ---
 

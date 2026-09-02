@@ -194,6 +194,19 @@ When evaluating learned representation reuse and downstream adaptation across ta
 
 ---
 
+## 11. Reconstruction-Based Representation Learning & Masked Modeling Contracts
+
+- **Unsupervised Label Independence Invariant**: Target class labels are strictly prohibited from entering the reconstruction loss computation, patch masking decision logic, or backward gradient graphs.
+- **Deterministic Seed-Derived Patch Masking**: Patch masks are generated using deterministic SHA-256 hash digests (`MaskingContext`) ensuring perfect reproducibility across epochs, batches, and seeds without side effects on global RNG.
+- **Strict Mask Partitioning**: Mask ratio $r \in [0.0, 1.0)$ determines the exact masked count $M = \lfloor T \cdot r \rfloor$. Selected patch indices must be strictly valid ($0 \le p_i < T$) with zero duplicates.
+- **Analytical Masked MSE Loss & Zero-Gradient Routing**:
+  $$\mathcal{L}_{\text{masked}} = \frac{1}{M \cdot D} \sum_{i \in \mathcal{M}} \|\hat{\mathbf{p}}_i - \mathbf{p}_i\|_2^2$$
+  Visible patches receive exactly zero analytical gradient ($d\mathbf{p}_j = \mathbf{0}, \forall j \notin \mathcal{M}$). Upstream encoder gradients propagate exclusively through masked positions and the learnable mask token.
+- **Reconstruction Quality $\neq$ Semantic Representation Quality**: Low reconstruction MSE does not automatically imply high semantic representation utility. Models may minimize pixel-level MSE by predicting low-frequency blur or smooth interpolations without learning linearly separable class representations.
+- **Failure Taxonomy Discipline**: Diagnostic failures must be objectively categorized according to mathematical thresholds (`HIGH_RECONSTRUCTION_ERROR`, `LOCALIZED_PATCH_FAILURE`, `LOW_LATENT_VARIANCE`, `OVER_SMOOTH_RECONSTRUCTION`, `CORRUPTION_RECOVERY_FAILURE`) without speculative assertions.
+
+---
+
 ## Data and Artifact Policy
 
 ### Prohibited from Version Control:

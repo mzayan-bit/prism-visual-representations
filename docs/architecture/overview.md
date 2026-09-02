@@ -212,8 +212,16 @@ TrainingResult & Completed Run Lifecycle
 - L2 Vector Normalization & Analytical Backward: Normalizes projected embeddings $\hat{\mathbf{z}} = \mathbf{z} / \|\mathbf{z}\|_2$ and computes exact derivatives.
 - NT-Xent Contrastive Loss (`ContrastiveNTXentLoss`): Normalized temperature-scaled cross-entropy loss with log-sum-exp stabilization and analytical gradients.
 - Representation Collapse Diagnostics (`RepresentationCollapseSummary`, `compute_collapse_diagnostics`): Monitors per-dimension feature variance, mean standard deviation, near-zero variance fraction, and distinct-sample angular spread.
-- Downstream Linear Probe Evaluation: Freezes SSL encoder, discards projection head, attaches newly initialized classification head, and evaluates transfer accuracy and label-efficiency scaling.
-- PRISM SSL Laboratory UI (`frontend/app/components/SelfSupervisedLaboratoryView.tsx`): Interactive dashboard featuring augmentation pair inspectors, pretraining dynamics curves, collapse diagnostics, Supervised vs SimCLR vs Scratch comparison matrices, label-efficiency charts, post-hoc 2D PCA geometry, and layer-wise transfer probes.
+### 13. Reconstruction & Masked Representation Learning Laboratory (`prism.reconstruction`, `prism.api`)
+- Deterministic Masking Engine (`MaskingContext`, `DeterministicMaskingRNG`, `generate_patch_mask`): Seed-derived SHA-256 patch partitioning ($M = \lfloor T \cdot r \rfloor$) guaranteeing zero duplicates and no global RNG side-effects.
+- Learnable Mask Tokens (`LearnableMaskToken`): $1 \times D_{\text{model}}$ learnable vector replacing masked patch embeddings during forward propagation and accumulating analytical gradients during backpropagation.
+- Linear Patch Decoder (`PatchReconstructionDecoder`): Maps transformer patch tokens to pixel space $\mathbf{p} \in \mathbb{R}^{D_{\text{patch}}}$ with exact analytical transpose projection.
+- Spatial Reconstruction Decoder (`SpatialReconstructionDecoder`): Maps bottleneck latent representations $\mathbf{h} \in \mathbb{R}^D$ to reconstructed spatial images $\hat{\mathbf{x}} \in \mathbb{R}^{C \times H \times W}$.
+- Masked MSE Loss (`MaskedMSELoss`): $\mathcal{L} = \frac{1}{M \cdot D} \sum_{i \in \mathcal{M}} \|\hat{\mathbf{p}}_i - \mathbf{p}_i\|_2^2$ with analytical gradient $\frac{2}{M \cdot D}(\hat{\mathbf{p}}_i - \mathbf{p}_i)$ strictly over masked patches (visible patches receive 0.0 gradient).
+- Label Independence Invariant: Pretraining loss, gradients, and masking operate in complete independence of target class labels.
+- Reconstruction Diagnostics & Failure Taxonomy (`compute_reconstruction_diagnostics`): Measures mean reconstruction error, per-sample error distributions, latent representation variance/std dev, and classifies 5 failure modes (`HIGH_RECONSTRUCTION_ERROR`, `LOCALIZED_PATCH_FAILURE`, `LOW_LATENT_VARIANCE`, `OVER_SMOOTH_RECONSTRUCTION`, `CORRUPTION_RECOVERY_FAILURE`).
+- Downstream Linear Probing: Freezes pretrained reconstruction backbone and trains a linear probe on frozen features to quantify downstream classification utility.
+- PRISM Reconstruction Laboratory UI (`frontend/app/components/ReconstructionLaboratoryView.tsx`): Interactive dashboard featuring visual triplet inspectors (Original, Masked, Reconstructed, Spatial Error Map), training dynamics curves, 3-way benchmark comparisons (Supervised vs SimCLR vs Reconstruction), masking-ratio studies, layer-wise probes, and failure case exploration.
 
 ---
 
@@ -249,8 +257,11 @@ Transfer learning specifications (`TransferLearningSpecification`), model state 
 ### `prism.ssl`
 Self-supervised contrastive learning specifications (`SelfSupervisedTrainingSpecification`), deterministic augmentation contexts (`AugmentationContext`, `AugmentationPolicy`), paired view generators (`ContrastiveViewGenerator`, `ContrastiveBatchLoader`), representation encoder adapters (`RepresentationEncoder`), SimCLR projection heads (`SimCLRProjectionHead`), NT-Xent loss (`ContrastiveNTXentLoss`), training engine (`SelfSupervisedTrainingEngine`), collapse diagnostics (`RepresentationCollapseSummary`), and comprehensive reporting (`SelfSupervisedLearningReport`).
 
+### `prism.reconstruction`
+Generative and reconstruction-based representation learning specifications (`ReconstructionLearningSpecification`), deterministic masking contexts (`MaskingContext`), patch masks (`PatchMask`), learnable mask tokens (`LearnableMaskToken`), reconstruction decoders (`PatchReconstructionDecoder`, `SpatialReconstructionDecoder`), masked MSE loss (`MaskedMSELoss`), training engine (`ReconstructionTrainingEngine`), diagnostics reports (`ReconstructionDiagnosticsReport`), and benchmark reporting (`ReconstructionLearningReport`).
+
 ### `prism.api`
-Research service layer (`GeometryService`, `RobustnessService`, `ExplainabilityService`, `TransferService`, `SelfSupervisedService`) providing experiment metadata, geometric queries, robustness evaluations, explainability payloads, transfer benchmarks, SSL pretraining benchmarks, and dashboard demo data serving.
+Research service layer (`GeometryService`, `RobustnessService`, `ExplainabilityService`, `TransferService`, `SelfSupervisedService`, `ReconstructionService`) providing experiment metadata, geometric queries, robustness evaluations, explainability payloads, transfer benchmarks, SSL pretraining benchmarks, reconstruction learning benchmarks, and dashboard demo data serving.
 
 ### `prism.experiments`
 Declarative experiment definitions (`ExperimentDefinition`), run lifecycle tracking (`ExperimentRun`), runtime harness (`ExperimentExecutionHarness`), and controlled comparison suites (`ArchitectureComparisonSuite`).

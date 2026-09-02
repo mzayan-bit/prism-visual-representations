@@ -659,4 +659,58 @@ print(f"Collapse Status: {'COLLAPSED' if collapse.is_collapsed else 'HEALTHY'}")
 # Discard projection head, freeze SSL backbone snapshot, attach linear classifier head
 ```
 
+---
+
+## Generative & Reconstruction-Based Representation Learning
+
+Phase 19 introduces generative and reconstruction-based representation learning via Masked Image Modeling (MIM) on Vision Transformers and spatial Denoising Autoencoders (DAE) on CNNs / ResNets:
+
+```python
+from prism.core.enums import ModelFamily
+from prism.reconstruction.enums import ReconstructionMethod
+from prism.reconstruction.specification import ReconstructionLearningSpecification
+from prism.reconstruction.engine import ReconstructionTrainingEngine
+
+# 1. Configure Masked Image Modeling Specification (Label Independent)
+recon_spec = ReconstructionLearningSpecification(
+    reconstruction_id="recon_vit_mim_cifar",
+    method=ReconstructionMethod.MASKED_PATCH_RECONSTRUCTION,
+    encoder_family=ModelFamily.VISION_TRANSFORMER,
+    encoder_spec=vit_model_spec,
+    input_shape=(3, 8, 8),
+    patch_size=4,
+    mask_ratio=0.5,
+    epochs=20,
+    batch_size=32,
+    learning_rate=0.05,
+    seed=42,
+    dataset_id="cifar10_unlabeled",
+)
+
+# 2. Train Reconstruction Encoder & Decoders
+engine = ReconstructionTrainingEngine()
+report = engine.train(
+    dataset=unlabeled_train_dataset,
+    spec=recon_spec,
+    downstream_target_dataset=labeled_target_dataset,
+)
+
+# 3. Inspect Reconstruction Diagnostics & Failure Taxonomy
+diagnostics = report.diagnostics
+print(f"Mean Reconstruction Error: {diagnostics.mean_reconstruction_error:.4f}")
+print(f"Latent Representation Std: {diagnostics.latent_std:.4f}")
+print(
+    f"Near-Zero Variance Fraction: {diagnostics.near_zero_variance_fraction * 100:.1f}%"
+)
+print(
+    f"Failure Categories Flagged: {[f.value for f in diagnostics.failure_categories]}"
+)
+
+# 4. Downstream Linear Probe Performance
+if report.downstream_linear_probe_accuracy is not None:
+    print(
+        f"Linear Probe Test Accuracy: {report.downstream_linear_probe_accuracy * 100:.1f}%"
+    )
+```
+
 

@@ -258,7 +258,7 @@ class ReconstructionTrainingEngine:
                     d_patch_embeds: list[list[list[float]]] = []
                     for b in range(n_batch):
                         d_sub = mask_token.backward_masked_tokens(
-                            d_embeddings[b][1:], batch.masks[b].masked_indices
+                            d_embeddings[b], batch.masks[b].masked_indices
                         )
                         d_patch_embeds.append(d_sub)
 
