@@ -787,3 +787,90 @@ export interface SSLDemoPayload {
   layer_probes: Record<string, SSLLayerProbePointPayload[]>;
 }
 
+// ==========================================
+// PHASE 19: RECONSTRUCTION LEARNING TYPES
+// ==========================================
+
+export interface VisualTripletSamplePayload {
+  sample_id: string;
+  class_name: string;
+  method: string;
+  original_image: number[][][];
+  corrupted_or_masked_image: number[][][];
+  reconstructed_image: number[][][];
+  error_map: number[][];
+  masked_patch_indices: number[];
+  sample_mse: number;
+  failure_category: string | null;
+}
+
+export interface MaskingRatioPointPayload {
+  mask_ratio: number;
+  mask_ratio_percent: string;
+  reconstruction_mse: number;
+  linear_probe_accuracy: number;
+  latent_std: number;
+}
+
+export interface ThreeWayComparisonEntryPayload {
+  architecture: string;
+  supervised_accuracy: number;
+  simclr_accuracy: number;
+  reconstruction_accuracy: number;
+  supervised_latent_std: number;
+  simclr_latent_std: number;
+  reconstruction_latent_std: number;
+  supervised_compactness: number;
+  simclr_compactness: number;
+  reconstruction_compactness: number;
+  supervised_separation: number;
+  simclr_separation: number;
+  reconstruction_separation: number;
+}
+
+export interface ReconstructionLayerProbeEntryPayload {
+  layer_id: string;
+  depth_index: number;
+  supervised_accuracy: number;
+  simclr_accuracy: number;
+  reconstruction_accuracy: number;
+}
+
+export interface ReconstructionFailureCasePayload {
+  sample_id: string;
+  category: string;
+  reconstruction_mse: number;
+  description: string;
+  patch_index: number | null;
+}
+
+export interface ReconstructionDynamicsPayload {
+  epochs: number[];
+  total_loss: number[];
+  masked_mse: number[];
+  latent_std: number[];
+  learning_rate: number[];
+}
+
+export interface ReconstructionMetadataPayload {
+  experiment_id: string;
+  title: string;
+  description: string;
+  methods: string[];
+  architectures: string[];
+  mask_ratios: number[];
+  dataset_id: string;
+  created_at_utc: string;
+}
+
+export interface ReconstructionDatasetPayload {
+  metadata: ReconstructionMetadataPayload;
+  triplets_masked_patch: VisualTripletSamplePayload[];
+  triplets_denoising: VisualTripletSamplePayload[];
+  dynamics: ReconstructionDynamicsPayload;
+  masking_ratio_study: MaskingRatioPointPayload[];
+  three_way_comparison: ThreeWayComparisonEntryPayload[];
+  layer_probes: ReconstructionLayerProbeEntryPayload[];
+  failure_cases: ReconstructionFailureCasePayload[];
+}
+

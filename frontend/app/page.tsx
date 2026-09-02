@@ -10,6 +10,7 @@ import { MetricOverviewStrip } from "./components/MetricOverviewStrip";
 import { NeighborhoodPanel } from "./components/NeighborhoodPanel";
 import { ObservatoryHeader } from "./components/ObservatoryHeader";
 import { PCAScatterPlot } from "./components/PCAScatterPlot";
+import { ReconstructionLaboratoryView } from "./components/ReconstructionLaboratoryView";
 import RobustnessLaboratoryView from "./components/RobustnessLaboratoryView";
 import { SelfSupervisedLaboratoryView } from "./components/SelfSupervisedLaboratoryView";
 import { TransferLaboratoryView } from "./components/TransferLaboratoryView";
@@ -27,8 +28,8 @@ import {
 
 export default function PRISMDashboardPage() {
   const [appMode, setAppMode] = useState<
-    "ssl" | "transfer" | "explainability" | "robustness" | "observatory"
-  >("ssl");
+    "reconstruction" | "ssl" | "transfer" | "explainability" | "robustness" | "observatory"
+  >("reconstruction");
 
   // Observatory state
   const metadata = useMemo(() => getObservatoryMetadata(), []);
@@ -86,6 +87,17 @@ export default function PRISMDashboardPage() {
 
         <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 overflow-x-auto">
           <button
+            id="nav-mode-reconstruction"
+            onClick={() => setAppMode("reconstruction")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              appMode === "reconstruction"
+                ? "bg-violet-600 text-white shadow-md shadow-violet-500/20"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <span>🧩</span> Reconstruction Lab (Phase 19)
+          </button>
+          <button
             id="nav-mode-ssl"
             onClick={() => setAppMode("ssl")}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
@@ -142,6 +154,9 @@ export default function PRISMDashboardPage() {
           </button>
         </div>
       </nav>
+
+      {/* Phase 19: Reconstruction & Masked Representation Learning Laboratory */}
+      {appMode === "reconstruction" && <ReconstructionLaboratoryView />}
 
       {/* Phase 18: Self-Supervised Learning Laboratory */}
       {appMode === "ssl" && <SelfSupervisedLaboratoryView />}
