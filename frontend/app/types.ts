@@ -693,3 +693,97 @@ export interface TransferDemoPayload {
   shared_pca_drifts: Record<string, SharedPCADriftPayload>;
 }
 
+// ---------------------------------------------------------------------------
+// Phase 18: Self-Supervised Learning (SimCLR) Types
+// ---------------------------------------------------------------------------
+
+export interface SSLMetadataPayload {
+  experiment_id: string;
+  title: string;
+  description: string;
+  method: string;
+  architectures: string[];
+  temperatures: number[];
+  dataset_id: string;
+  created_at_utc: string;
+}
+
+export interface RepresentationCollapseSummaryPayload {
+  total_dimensions: number;
+  mean_feature_std: number;
+  near_zero_variance_dimensions: number;
+  near_zero_variance_fraction: number;
+  distinct_sample_cosine_spread: number;
+  mean_positive_alignment_distance: number;
+  is_collapsed: boolean;
+  warnings: string[];
+}
+
+export interface SelfSupervisedLearningReportPayload {
+  ssl_id: string;
+  encoder_family: string;
+  architecture: string;
+  dataset_id: string;
+  total_encoder_parameters: number;
+  projection_head_parameters: number;
+  epochs: number;
+  temperature: number;
+  loss_trajectory: number[];
+  positive_similarity_trajectory: number[];
+  negative_similarity_trajectory: number[];
+  similarity_gap_trajectory: number[];
+  learning_rate_trajectory: number[];
+  collapse_summary: RepresentationCollapseSummaryPayload;
+  linear_probe_accuracy: number | null;
+  supervised_probe_accuracy: number | null;
+  scratch_accuracy: number | null;
+  transfer_gain_vs_scratch: number | null;
+  warnings: string[];
+}
+
+export interface SupervisedVsSSLComparisonPayload {
+  architecture: string;
+  dataset_id: string;
+  supervised_accuracy: number;
+  ssl_accuracy: number;
+  scratch_accuracy: number;
+  supervised_feature_std: number;
+  ssl_feature_std: number;
+  accuracy_gap_ssl_vs_supervised: number;
+  accuracy_gain_ssl_vs_scratch: number;
+}
+
+export interface SSLLabelEfficiencyPointPayload {
+  budget_fraction: number;
+  budget_percent_label: string;
+  ssl_accuracy: number;
+  supervised_accuracy: number;
+  scratch_accuracy: number;
+}
+
+export interface SSLGeometryPointPayload {
+  sample_id: string;
+  pca_x: number;
+  pca_y: number;
+  class_label: number;
+  class_name: string;
+  is_positive_view: boolean;
+}
+
+export interface SSLLayerProbePointPayload {
+  layer_id: string;
+  layer_depth_index: number;
+  representation_dim: number;
+  ssl_accuracy: number;
+  supervised_accuracy: number;
+}
+
+export interface SSLDemoPayload {
+  metadata: SSLMetadataPayload;
+  reports: Record<string, SelfSupervisedLearningReportPayload>;
+  comparisons: Record<string, SupervisedVsSSLComparisonPayload>;
+  label_efficiency: Record<string, SSLLabelEfficiencyPointPayload[]>;
+  geometry_points: Record<string, SSLGeometryPointPayload[]>;
+  layer_probes: Record<string, SSLLayerProbePointPayload[]>;
+}
+

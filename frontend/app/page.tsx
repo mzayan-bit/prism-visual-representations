@@ -11,6 +11,7 @@ import { NeighborhoodPanel } from "./components/NeighborhoodPanel";
 import { ObservatoryHeader } from "./components/ObservatoryHeader";
 import { PCAScatterPlot } from "./components/PCAScatterPlot";
 import RobustnessLaboratoryView from "./components/RobustnessLaboratoryView";
+import { SelfSupervisedLaboratoryView } from "./components/SelfSupervisedLaboratoryView";
 import { TransferLaboratoryView } from "./components/TransferLaboratoryView";
 import {
   getCrossArchitectureComparison,
@@ -26,8 +27,8 @@ import {
 
 export default function PRISMDashboardPage() {
   const [appMode, setAppMode] = useState<
-    "transfer" | "explainability" | "robustness" | "observatory"
-  >("transfer");
+    "ssl" | "transfer" | "explainability" | "robustness" | "observatory"
+  >("ssl");
 
   // Observatory state
   const metadata = useMemo(() => getObservatoryMetadata(), []);
@@ -85,6 +86,17 @@ export default function PRISMDashboardPage() {
 
         <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 overflow-x-auto">
           <button
+            id="nav-mode-ssl"
+            onClick={() => setAppMode("ssl")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              appMode === "ssl"
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <span>🌌</span> SSL Lab (Phase 18)
+          </button>
+          <button
             id="nav-mode-transfer"
             onClick={() => setAppMode("transfer")}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
@@ -130,6 +142,9 @@ export default function PRISMDashboardPage() {
           </button>
         </div>
       </nav>
+
+      {/* Phase 18: Self-Supervised Learning Laboratory */}
+      {appMode === "ssl" && <SelfSupervisedLaboratoryView />}
 
       {/* Phase 17: Transfer Learning & Representation Reuse Laboratory */}
       {appMode === "transfer" && (

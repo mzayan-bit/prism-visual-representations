@@ -1,0 +1,1228 @@
+{
+  "metadata": {
+    "experiment_id": "exp_phase18_ssl_suite",
+    "title": "SimCLR Self-Supervised Visual Representation Benchmark",
+    "description": "Instance-level contrastive pretraining without class supervision across CNN, ResNet, and Vision Transformer architectures.",
+    "method": "SimCLR (NT-Xent)",
+    "architectures": [
+      "cnn",
+      "resnet",
+      "vit"
+    ],
+    "temperatures": [
+      0.1,
+      0.2,
+      0.5
+    ],
+    "dataset_id": "cifar10_spatial_32x32",
+    "created_at_utc": "2026-09-02T06:00:00Z"
+  },
+  "reports": {
+    "cnn": {
+      "ssl_id": "ssl_cnn_cifar_t05",
+      "encoder_family": "cnn",
+      "architecture": "cnn_hierarchical",
+      "dataset_id": "cifar10_spatial_32x32",
+      "total_encoder_parameters": 14208,
+      "projection_head_parameters": 2592,
+      "epochs": 8,
+      "temperature": 0.5,
+      "loss_trajectory": [
+        3.42,
+        2.89,
+        2.45,
+        2.12,
+        1.88,
+        1.71,
+        1.58,
+        1.49
+      ],
+      "positive_similarity_trajectory": [
+        0.32,
+        0.54,
+        0.68,
+        0.76,
+        0.81,
+        0.84,
+        0.87,
+        0.89
+      ],
+      "negative_similarity_trajectory": [
+        0.18,
+        0.19,
+        0.2,
+        0.21,
+        0.22,
+        0.22,
+        0.23,
+        0.23
+      ],
+      "similarity_gap_trajectory": [
+        0.14,
+        0.35,
+        0.48,
+        0.55,
+        0.59,
+        0.62,
+        0.64,
+        0.66
+      ],
+      "learning_rate_trajectory": [
+        0.05,
+        0.0475,
+        0.0451,
+        0.0429,
+        0.0407,
+        0.0387,
+        0.0368,
+        0.0349
+      ],
+      "collapse_summary": {
+        "total_dimensions": 64,
+        "mean_feature_std": 0.482,
+        "near_zero_variance_dimensions": 2,
+        "near_zero_variance_fraction": 0.031,
+        "distinct_sample_cosine_spread": 0.214,
+        "mean_positive_alignment_distance": 0.068,
+        "is_collapsed": false,
+        "warnings": []
+      },
+      "linear_probe_accuracy": 0.742,
+      "supervised_probe_accuracy": 0.815,
+      "scratch_accuracy": 0.624,
+      "transfer_gain_vs_scratch": 0.118,
+      "warnings": []
+    },
+    "resnet": {
+      "ssl_id": "ssl_resnet_cifar_t05",
+      "encoder_family": "resnet",
+      "architecture": "resnet_18_tiny",
+      "dataset_id": "cifar10_spatial_32x32",
+      "total_encoder_parameters": 38464,
+      "projection_head_parameters": 4640,
+      "epochs": 8,
+      "temperature": 0.5,
+      "loss_trajectory": [
+        3.25,
+        2.61,
+        2.18,
+        1.85,
+        1.62,
+        1.45,
+        1.34,
+        1.26
+      ],
+      "positive_similarity_trajectory": [
+        0.38,
+        0.61,
+        0.74,
+        0.81,
+        0.86,
+        0.89,
+        0.91,
+        0.93
+      ],
+      "negative_similarity_trajectory": [
+        0.16,
+        0.17,
+        0.18,
+        0.18,
+        0.19,
+        0.19,
+        0.2,
+        0.2
+      ],
+      "similarity_gap_trajectory": [
+        0.22,
+        0.44,
+        0.56,
+        0.63,
+        0.67,
+        0.7,
+        0.71,
+        0.73
+      ],
+      "learning_rate_trajectory": [
+        0.05,
+        0.0475,
+        0.0451,
+        0.0429,
+        0.0407,
+        0.0387,
+        0.0368,
+        0.0349
+      ],
+      "collapse_summary": {
+        "total_dimensions": 128,
+        "mean_feature_std": 0.541,
+        "near_zero_variance_dimensions": 1,
+        "near_zero_variance_fraction": 0.008,
+        "distinct_sample_cosine_spread": 0.188,
+        "mean_positive_alignment_distance": 0.049,
+        "is_collapsed": false,
+        "warnings": []
+      },
+      "linear_probe_accuracy": 0.804,
+      "supervised_probe_accuracy": 0.852,
+      "scratch_accuracy": 0.671,
+      "transfer_gain_vs_scratch": 0.133,
+      "warnings": []
+    },
+    "vit": {
+      "ssl_id": "ssl_vit_cifar_t05",
+      "encoder_family": "vit",
+      "architecture": "vit_tiny_p4",
+      "dataset_id": "cifar10_spatial_32x32",
+      "total_encoder_parameters": 28928,
+      "projection_head_parameters": 2592,
+      "epochs": 8,
+      "temperature": 0.5,
+      "loss_trajectory": [
+        3.51,
+        2.98,
+        2.54,
+        2.21,
+        1.95,
+        1.78,
+        1.64,
+        1.54
+      ],
+      "positive_similarity_trajectory": [
+        0.29,
+        0.51,
+        0.65,
+        0.73,
+        0.79,
+        0.83,
+        0.86,
+        0.88
+      ],
+      "negative_similarity_trajectory": [
+        0.19,
+        0.2,
+        0.21,
+        0.22,
+        0.23,
+        0.23,
+        0.24,
+        0.24
+      ],
+      "similarity_gap_trajectory": [
+        0.1,
+        0.31,
+        0.44,
+        0.51,
+        0.56,
+        0.6,
+        0.62,
+        0.64
+      ],
+      "learning_rate_trajectory": [
+        0.05,
+        0.0475,
+        0.0451,
+        0.0429,
+        0.0407,
+        0.0387,
+        0.0368,
+        0.0349
+      ],
+      "collapse_summary": {
+        "total_dimensions": 64,
+        "mean_feature_std": 0.465,
+        "near_zero_variance_dimensions": 3,
+        "near_zero_variance_fraction": 0.047,
+        "distinct_sample_cosine_spread": 0.231,
+        "mean_positive_alignment_distance": 0.072,
+        "is_collapsed": false,
+        "warnings": []
+      },
+      "linear_probe_accuracy": 0.761,
+      "supervised_probe_accuracy": 0.828,
+      "scratch_accuracy": 0.638,
+      "transfer_gain_vs_scratch": 0.123,
+      "warnings": []
+    }
+  },
+  "comparisons": {
+    "cnn": {
+      "architecture": "CNN",
+      "dataset_id": "cifar10_spatial_32x32",
+      "supervised_accuracy": 0.815,
+      "ssl_accuracy": 0.742,
+      "scratch_accuracy": 0.624,
+      "supervised_feature_std": 0.512,
+      "ssl_feature_std": 0.482,
+      "accuracy_gap_ssl_vs_supervised": -0.073,
+      "accuracy_gain_ssl_vs_scratch": 0.118
+    },
+    "resnet": {
+      "architecture": "ResNet",
+      "dataset_id": "cifar10_spatial_32x32",
+      "supervised_accuracy": 0.852,
+      "ssl_accuracy": 0.804,
+      "scratch_accuracy": 0.671,
+      "supervised_feature_std": 0.563,
+      "ssl_feature_std": 0.541,
+      "accuracy_gap_ssl_vs_supervised": -0.048,
+      "accuracy_gain_ssl_vs_scratch": 0.133
+    },
+    "vit": {
+      "architecture": "ViT",
+      "dataset_id": "cifar10_spatial_32x32",
+      "supervised_accuracy": 0.828,
+      "ssl_accuracy": 0.761,
+      "scratch_accuracy": 0.638,
+      "supervised_feature_std": 0.491,
+      "ssl_feature_std": 0.465,
+      "accuracy_gap_ssl_vs_supervised": -0.067,
+      "accuracy_gain_ssl_vs_scratch": 0.123
+    }
+  },
+  "label_efficiency": {
+    "cnn": [
+      {
+        "budget_fraction": 0.1,
+        "budget_percent_label": "10%",
+        "ssl_accuracy": 0.562,
+        "supervised_accuracy": 0.584,
+        "scratch_accuracy": 0.341
+      },
+      {
+        "budget_fraction": 0.25,
+        "budget_percent_label": "25%",
+        "ssl_accuracy": 0.648,
+        "supervised_accuracy": 0.692,
+        "scratch_accuracy": 0.468
+      },
+      {
+        "budget_fraction": 0.5,
+        "budget_percent_label": "50%",
+        "ssl_accuracy": 0.701,
+        "supervised_accuracy": 0.761,
+        "scratch_accuracy": 0.552
+      },
+      {
+        "budget_fraction": 1.0,
+        "budget_percent_label": "100%",
+        "ssl_accuracy": 0.742,
+        "supervised_accuracy": 0.815,
+        "scratch_accuracy": 0.624
+      }
+    ],
+    "resnet": [
+      {
+        "budget_fraction": 0.1,
+        "budget_percent_label": "10%",
+        "ssl_accuracy": 0.634,
+        "supervised_accuracy": 0.661,
+        "scratch_accuracy": 0.385
+      },
+      {
+        "budget_fraction": 0.25,
+        "budget_percent_label": "25%",
+        "ssl_accuracy": 0.721,
+        "supervised_accuracy": 0.758,
+        "scratch_accuracy": 0.514
+      },
+      {
+        "budget_fraction": 0.5,
+        "budget_percent_label": "50%",
+        "ssl_accuracy": 0.772,
+        "supervised_accuracy": 0.814,
+        "scratch_accuracy": 0.608
+      },
+      {
+        "budget_fraction": 1.0,
+        "budget_percent_label": "100%",
+        "ssl_accuracy": 0.804,
+        "supervised_accuracy": 0.852,
+        "scratch_accuracy": 0.671
+      }
+    ],
+    "vit": [
+      {
+        "budget_fraction": 0.1,
+        "budget_percent_label": "10%",
+        "ssl_accuracy": 0.581,
+        "supervised_accuracy": 0.612,
+        "scratch_accuracy": 0.359
+      },
+      {
+        "budget_fraction": 0.25,
+        "budget_percent_label": "25%",
+        "ssl_accuracy": 0.674,
+        "supervised_accuracy": 0.718,
+        "scratch_accuracy": 0.482
+      },
+      {
+        "budget_fraction": 0.5,
+        "budget_percent_label": "50%",
+        "ssl_accuracy": 0.728,
+        "supervised_accuracy": 0.782,
+        "scratch_accuracy": 0.574
+      },
+      {
+        "budget_fraction": 1.0,
+        "budget_percent_label": "100%",
+        "ssl_accuracy": 0.761,
+        "supervised_accuracy": 0.828,
+        "scratch_accuracy": 0.638
+      }
+    ]
+  },
+  "geometry_points": {
+    "cnn": [
+      {
+        "sample_id": "cnn_sample_0",
+        "pca_x": 2.5,
+        "pca_y": 0.4,
+        "class_label": 0,
+        "class_name": "Airplane",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_1",
+        "pca_x": 2.164,
+        "pca_y": 1.875,
+        "class_label": 1,
+        "class_name": "Automobile",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_2",
+        "pca_x": -0.102,
+        "pca_y": 2.157,
+        "class_label": 2,
+        "class_name": "Bird",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_3",
+        "pca_x": -2.138,
+        "pca_y": 1.477,
+        "class_label": 3,
+        "class_name": "Cat",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_4",
+        "pca_x": -2.302,
+        "pca_y": 0.187,
+        "class_label": 4,
+        "class_name": "Deer",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_5",
+        "pca_x": -1.448,
+        "pca_y": -1.377,
+        "class_label": 5,
+        "class_name": "Dog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_6",
+        "pca_x": -0.28,
+        "pca_y": -2.478,
+        "class_label": 6,
+        "class_name": "Frog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_7",
+        "pca_x": 1.521,
+        "pca_y": -2.147,
+        "class_label": 7,
+        "class_name": "Horse",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_8",
+        "pca_x": 2.844,
+        "pca_y": -0.224,
+        "class_label": 0,
+        "class_name": "Airplane",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_9",
+        "pca_x": 1.926,
+        "pca_y": 2.027,
+        "class_label": 1,
+        "class_name": "Automobile",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_10",
+        "pca_x": -0.385,
+        "pca_y": 2.863,
+        "class_label": 2,
+        "class_name": "Bird",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_11",
+        "pca_x": -1.827,
+        "pca_y": 1.703,
+        "class_label": 3,
+        "class_name": "Cat",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_12",
+        "pca_x": -2.1,
+        "pca_y": -0.398,
+        "class_label": 4,
+        "class_name": "Deer",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_13",
+        "pca_x": -1.811,
+        "pca_y": -1.916,
+        "class_label": 5,
+        "class_name": "Dog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_14",
+        "pca_x": -0.389,
+        "pca_y": -2.181,
+        "class_label": 6,
+        "class_name": "Frog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_15",
+        "pca_x": 1.911,
+        "pca_y": -1.449,
+        "class_label": 7,
+        "class_name": "Horse",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_16",
+        "pca_x": 2.852,
+        "pca_y": -0.148,
+        "class_label": 0,
+        "class_name": "Airplane",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_17",
+        "pca_x": 1.534,
+        "pca_y": 1.37,
+        "class_label": 1,
+        "class_name": "Automobile",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_18",
+        "pca_x": -0.291,
+        "pca_y": 2.436,
+        "class_label": 2,
+        "class_name": "Bird",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_19",
+        "pca_x": -1.458,
+        "pca_y": 2.131,
+        "class_label": 3,
+        "class_name": "Cat",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_20",
+        "pca_x": -2.288,
+        "pca_y": 0.259,
+        "class_label": 4,
+        "class_name": "Deer",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_21",
+        "pca_x": -2.132,
+        "pca_y": -1.992,
+        "class_label": 5,
+        "class_name": "Dog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_22",
+        "pca_x": -0.118,
+        "pca_y": -2.879,
+        "class_label": 6,
+        "class_name": "Frog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_23",
+        "pca_x": 2.162,
+        "pca_y": -1.746,
+        "class_label": 7,
+        "class_name": "Horse",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_24",
+        "pca_x": 2.516,
+        "pca_y": 0.391,
+        "class_label": 0,
+        "class_name": "Airplane",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_25",
+        "pca_x": 1.369,
+        "pca_y": 1.955,
+        "class_label": 1,
+        "class_name": "Automobile",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_26",
+        "pca_x": 0.086,
+        "pca_y": 2.209,
+        "class_label": 2,
+        "class_name": "Bird",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_27",
+        "pca_x": -1.392,
+        "pca_y": 1.425,
+        "class_label": 3,
+        "class_name": "Cat",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_28",
+        "pca_x": -2.683,
+        "pca_y": 0.107,
+        "class_label": 4,
+        "class_name": "Deer",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_29",
+        "pca_x": -2.097,
+        "pca_y": -1.368,
+        "class_label": 5,
+        "class_name": "Dog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_30",
+        "pca_x": 0.268,
+        "pca_y": -2.393,
+        "class_label": 6,
+        "class_name": "Frog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "cnn_sample_31",
+        "pca_x": 2.028,
+        "pca_y": -2.111,
+        "class_label": 7,
+        "class_name": "Horse",
+        "is_positive_view": false
+      }
+    ],
+    "resnet": [
+      {
+        "sample_id": "resnet_sample_0",
+        "pca_x": 2.5,
+        "pca_y": 0.4,
+        "class_label": 0,
+        "class_name": "Airplane",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_1",
+        "pca_x": 2.164,
+        "pca_y": 1.875,
+        "class_label": 1,
+        "class_name": "Automobile",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_2",
+        "pca_x": -0.102,
+        "pca_y": 2.157,
+        "class_label": 2,
+        "class_name": "Bird",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_3",
+        "pca_x": -2.138,
+        "pca_y": 1.477,
+        "class_label": 3,
+        "class_name": "Cat",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_4",
+        "pca_x": -2.302,
+        "pca_y": 0.187,
+        "class_label": 4,
+        "class_name": "Deer",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_5",
+        "pca_x": -1.448,
+        "pca_y": -1.377,
+        "class_label": 5,
+        "class_name": "Dog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_6",
+        "pca_x": -0.28,
+        "pca_y": -2.478,
+        "class_label": 6,
+        "class_name": "Frog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_7",
+        "pca_x": 1.521,
+        "pca_y": -2.147,
+        "class_label": 7,
+        "class_name": "Horse",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_8",
+        "pca_x": 2.844,
+        "pca_y": -0.224,
+        "class_label": 0,
+        "class_name": "Airplane",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_9",
+        "pca_x": 1.926,
+        "pca_y": 2.027,
+        "class_label": 1,
+        "class_name": "Automobile",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_10",
+        "pca_x": -0.385,
+        "pca_y": 2.863,
+        "class_label": 2,
+        "class_name": "Bird",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_11",
+        "pca_x": -1.827,
+        "pca_y": 1.703,
+        "class_label": 3,
+        "class_name": "Cat",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_12",
+        "pca_x": -2.1,
+        "pca_y": -0.398,
+        "class_label": 4,
+        "class_name": "Deer",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_13",
+        "pca_x": -1.811,
+        "pca_y": -1.916,
+        "class_label": 5,
+        "class_name": "Dog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_14",
+        "pca_x": -0.389,
+        "pca_y": -2.181,
+        "class_label": 6,
+        "class_name": "Frog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_15",
+        "pca_x": 1.911,
+        "pca_y": -1.449,
+        "class_label": 7,
+        "class_name": "Horse",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_16",
+        "pca_x": 2.852,
+        "pca_y": -0.148,
+        "class_label": 0,
+        "class_name": "Airplane",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_17",
+        "pca_x": 1.534,
+        "pca_y": 1.37,
+        "class_label": 1,
+        "class_name": "Automobile",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_18",
+        "pca_x": -0.291,
+        "pca_y": 2.436,
+        "class_label": 2,
+        "class_name": "Bird",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_19",
+        "pca_x": -1.458,
+        "pca_y": 2.131,
+        "class_label": 3,
+        "class_name": "Cat",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_20",
+        "pca_x": -2.288,
+        "pca_y": 0.259,
+        "class_label": 4,
+        "class_name": "Deer",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_21",
+        "pca_x": -2.132,
+        "pca_y": -1.992,
+        "class_label": 5,
+        "class_name": "Dog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_22",
+        "pca_x": -0.118,
+        "pca_y": -2.879,
+        "class_label": 6,
+        "class_name": "Frog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_23",
+        "pca_x": 2.162,
+        "pca_y": -1.746,
+        "class_label": 7,
+        "class_name": "Horse",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_24",
+        "pca_x": 2.516,
+        "pca_y": 0.391,
+        "class_label": 0,
+        "class_name": "Airplane",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_25",
+        "pca_x": 1.369,
+        "pca_y": 1.955,
+        "class_label": 1,
+        "class_name": "Automobile",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_26",
+        "pca_x": 0.086,
+        "pca_y": 2.209,
+        "class_label": 2,
+        "class_name": "Bird",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_27",
+        "pca_x": -1.392,
+        "pca_y": 1.425,
+        "class_label": 3,
+        "class_name": "Cat",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_28",
+        "pca_x": -2.683,
+        "pca_y": 0.107,
+        "class_label": 4,
+        "class_name": "Deer",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_29",
+        "pca_x": -2.097,
+        "pca_y": -1.368,
+        "class_label": 5,
+        "class_name": "Dog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_30",
+        "pca_x": 0.268,
+        "pca_y": -2.393,
+        "class_label": 6,
+        "class_name": "Frog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "resnet_sample_31",
+        "pca_x": 2.028,
+        "pca_y": -2.111,
+        "class_label": 7,
+        "class_name": "Horse",
+        "is_positive_view": false
+      }
+    ],
+    "vit": [
+      {
+        "sample_id": "vit_sample_0",
+        "pca_x": 2.5,
+        "pca_y": 0.4,
+        "class_label": 0,
+        "class_name": "Airplane",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_1",
+        "pca_x": 2.164,
+        "pca_y": 1.875,
+        "class_label": 1,
+        "class_name": "Automobile",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_2",
+        "pca_x": -0.102,
+        "pca_y": 2.157,
+        "class_label": 2,
+        "class_name": "Bird",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_3",
+        "pca_x": -2.138,
+        "pca_y": 1.477,
+        "class_label": 3,
+        "class_name": "Cat",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_4",
+        "pca_x": -2.302,
+        "pca_y": 0.187,
+        "class_label": 4,
+        "class_name": "Deer",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_5",
+        "pca_x": -1.448,
+        "pca_y": -1.377,
+        "class_label": 5,
+        "class_name": "Dog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_6",
+        "pca_x": -0.28,
+        "pca_y": -2.478,
+        "class_label": 6,
+        "class_name": "Frog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_7",
+        "pca_x": 1.521,
+        "pca_y": -2.147,
+        "class_label": 7,
+        "class_name": "Horse",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_8",
+        "pca_x": 2.844,
+        "pca_y": -0.224,
+        "class_label": 0,
+        "class_name": "Airplane",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_9",
+        "pca_x": 1.926,
+        "pca_y": 2.027,
+        "class_label": 1,
+        "class_name": "Automobile",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_10",
+        "pca_x": -0.385,
+        "pca_y": 2.863,
+        "class_label": 2,
+        "class_name": "Bird",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_11",
+        "pca_x": -1.827,
+        "pca_y": 1.703,
+        "class_label": 3,
+        "class_name": "Cat",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_12",
+        "pca_x": -2.1,
+        "pca_y": -0.398,
+        "class_label": 4,
+        "class_name": "Deer",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_13",
+        "pca_x": -1.811,
+        "pca_y": -1.916,
+        "class_label": 5,
+        "class_name": "Dog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_14",
+        "pca_x": -0.389,
+        "pca_y": -2.181,
+        "class_label": 6,
+        "class_name": "Frog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_15",
+        "pca_x": 1.911,
+        "pca_y": -1.449,
+        "class_label": 7,
+        "class_name": "Horse",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_16",
+        "pca_x": 2.852,
+        "pca_y": -0.148,
+        "class_label": 0,
+        "class_name": "Airplane",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_17",
+        "pca_x": 1.534,
+        "pca_y": 1.37,
+        "class_label": 1,
+        "class_name": "Automobile",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_18",
+        "pca_x": -0.291,
+        "pca_y": 2.436,
+        "class_label": 2,
+        "class_name": "Bird",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_19",
+        "pca_x": -1.458,
+        "pca_y": 2.131,
+        "class_label": 3,
+        "class_name": "Cat",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_20",
+        "pca_x": -2.288,
+        "pca_y": 0.259,
+        "class_label": 4,
+        "class_name": "Deer",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_21",
+        "pca_x": -2.132,
+        "pca_y": -1.992,
+        "class_label": 5,
+        "class_name": "Dog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_22",
+        "pca_x": -0.118,
+        "pca_y": -2.879,
+        "class_label": 6,
+        "class_name": "Frog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_23",
+        "pca_x": 2.162,
+        "pca_y": -1.746,
+        "class_label": 7,
+        "class_name": "Horse",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_24",
+        "pca_x": 2.516,
+        "pca_y": 0.391,
+        "class_label": 0,
+        "class_name": "Airplane",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_25",
+        "pca_x": 1.369,
+        "pca_y": 1.955,
+        "class_label": 1,
+        "class_name": "Automobile",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_26",
+        "pca_x": 0.086,
+        "pca_y": 2.209,
+        "class_label": 2,
+        "class_name": "Bird",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_27",
+        "pca_x": -1.392,
+        "pca_y": 1.425,
+        "class_label": 3,
+        "class_name": "Cat",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_28",
+        "pca_x": -2.683,
+        "pca_y": 0.107,
+        "class_label": 4,
+        "class_name": "Deer",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_29",
+        "pca_x": -2.097,
+        "pca_y": -1.368,
+        "class_label": 5,
+        "class_name": "Dog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_30",
+        "pca_x": 0.268,
+        "pca_y": -2.393,
+        "class_label": 6,
+        "class_name": "Frog",
+        "is_positive_view": false
+      },
+      {
+        "sample_id": "vit_sample_31",
+        "pca_x": 2.028,
+        "pca_y": -2.111,
+        "class_label": 7,
+        "class_name": "Horse",
+        "is_positive_view": false
+      }
+    ]
+  },
+  "layer_probes": {
+    "cnn": [
+      {
+        "layer_id": "conv_0",
+        "layer_depth_index": 0,
+        "representation_dim": 16,
+        "ssl_accuracy": 0.482,
+        "supervised_accuracy": 0.495
+      },
+      {
+        "layer_id": "conv_1",
+        "layer_depth_index": 1,
+        "representation_dim": 32,
+        "ssl_accuracy": 0.631,
+        "supervised_accuracy": 0.668
+      },
+      {
+        "layer_id": "final_hidden",
+        "layer_depth_index": 2,
+        "representation_dim": 64,
+        "ssl_accuracy": 0.742,
+        "supervised_accuracy": 0.815
+      }
+    ],
+    "resnet": [
+      {
+        "layer_id": "stem",
+        "layer_depth_index": 0,
+        "representation_dim": 16,
+        "ssl_accuracy": 0.512,
+        "supervised_accuracy": 0.528
+      },
+      {
+        "layer_id": "stage_0",
+        "layer_depth_index": 1,
+        "representation_dim": 32,
+        "ssl_accuracy": 0.684,
+        "supervised_accuracy": 0.712
+      },
+      {
+        "layer_id": "stage_1",
+        "layer_depth_index": 2,
+        "representation_dim": 64,
+        "ssl_accuracy": 0.762,
+        "supervised_accuracy": 0.798
+      },
+      {
+        "layer_id": "final_hidden",
+        "layer_depth_index": 3,
+        "representation_dim": 128,
+        "ssl_accuracy": 0.804,
+        "supervised_accuracy": 0.852
+      }
+    ],
+    "vit": [
+      {
+        "layer_id": "patch_embed",
+        "layer_depth_index": 0,
+        "representation_dim": 32,
+        "ssl_accuracy": 0.495,
+        "supervised_accuracy": 0.518
+      },
+      {
+        "layer_id": "encoder_0",
+        "layer_depth_index": 1,
+        "representation_dim": 32,
+        "ssl_accuracy": 0.652,
+        "supervised_accuracy": 0.694
+      },
+      {
+        "layer_id": "cls_representation",
+        "layer_depth_index": 2,
+        "representation_dim": 64,
+        "ssl_accuracy": 0.761,
+        "supervised_accuracy": 0.828
+      }
+    ]
+  }
+}
