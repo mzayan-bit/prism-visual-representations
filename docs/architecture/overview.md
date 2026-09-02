@@ -204,6 +204,17 @@ TrainingResult & Completed Run Lifecycle
 - Target Label-Efficiency Trajectories (`SampleEfficiencyTransferSummary`): Measures target performance scaling across nested data budgets (10% to 100%) and normalized AUC.
 - PRISM Transfer Laboratory UI (`frontend/app/components/TransferLaboratoryView.tsx`): Interactive dashboard featuring parameter freeze maps, strategy comparison matrices, label-efficiency scaling charts, depth probe bars, and shared PCA drift vector fields.
 
+### 12. Self-Supervised Representation Learning Laboratory (`prism.ssl`, `prism.api`)
+- Deterministic Augmentation Engine (`AugmentationContext`, `AugmentationPolicy`): Reproducible, seed-derived visual augmentations (horizontal flip, random crop with padding, color jitter, grayscale) without global RNG dependencies.
+- Contrastive Sample Pairs & Batching (`ContrastiveSamplePair`, `ContrastiveBatchLoader`): Deterministic generation of 2N views with exact positive index mappings and complete metadata provenance.
+- Backbone Encoder Adapter (`RepresentationEncoder`): Adapts CNN, ResNet, and ViT models as pure representation encoders, extracting features $\mathbf{h} \in \mathbb{R}^D$ and backpropagating upstream gradients through backbones.
+- SimCLR Non-Linear Projection Head (`SimCLRProjectionHead`): 2-layer MLP projection $\mathbf{z} = \mathbf{W}_2 \cdot \text{ReLU}(\mathbf{W}_1 \mathbf{h} + \mathbf{b}_1) + \mathbf{b}_2$ with exact analytical backpropagation.
+- L2 Vector Normalization & Analytical Backward: Normalizes projected embeddings $\hat{\mathbf{z}} = \mathbf{z} / \|\mathbf{z}\|_2$ and computes exact derivatives.
+- NT-Xent Contrastive Loss (`ContrastiveNTXentLoss`): Normalized temperature-scaled cross-entropy loss with log-sum-exp stabilization and analytical gradients.
+- Representation Collapse Diagnostics (`RepresentationCollapseSummary`, `compute_collapse_diagnostics`): Monitors per-dimension feature variance, mean standard deviation, near-zero variance fraction, and distinct-sample angular spread.
+- Downstream Linear Probe Evaluation: Freezes SSL encoder, discards projection head, attaches newly initialized classification head, and evaluates transfer accuracy and label-efficiency scaling.
+- PRISM SSL Laboratory UI (`frontend/app/components/SelfSupervisedLaboratoryView.tsx`): Interactive dashboard featuring augmentation pair inspectors, pretraining dynamics curves, collapse diagnostics, Supervised vs SimCLR vs Scratch comparison matrices, label-efficiency charts, post-hoc 2D PCA geometry, and layer-wise transfer probes.
+
 ---
 
 ## Domain Subsystems
@@ -235,8 +246,11 @@ Declarative attribution contracts (`AttributionSpecification`, `AttributionResul
 ### `prism.transfer`
 Transfer learning specifications (`TransferLearningSpecification`), model state snapshots (`ModelStateSnapshot`), parameter freezing plans (`ParameterFreezePlan`), head replacement (`replace_classifier_head`), layer transferability probes (`LayerTransferProbeResult`), representation retention analysis (`TransferRepresentationDriftSummary`), transfer suite runner (`TransferTrainingRunner`), and comprehensive reports (`TransferLearningReport`).
 
+### `prism.ssl`
+Self-supervised contrastive learning specifications (`SelfSupervisedTrainingSpecification`), deterministic augmentation contexts (`AugmentationContext`, `AugmentationPolicy`), paired view generators (`ContrastiveViewGenerator`, `ContrastiveBatchLoader`), representation encoder adapters (`RepresentationEncoder`), SimCLR projection heads (`SimCLRProjectionHead`), NT-Xent loss (`ContrastiveNTXentLoss`), training engine (`SelfSupervisedTrainingEngine`), collapse diagnostics (`RepresentationCollapseSummary`), and comprehensive reporting (`SelfSupervisedLearningReport`).
+
 ### `prism.api`
-Research service layer (`GeometryService`, `RobustnessService`, `ExplainabilityService`, `TransferService`) providing experiment metadata, geometric queries, robustness evaluations, explainability payloads, transfer benchmarks, and dashboard demo data serving.
+Research service layer (`GeometryService`, `RobustnessService`, `ExplainabilityService`, `TransferService`, `SelfSupervisedService`) providing experiment metadata, geometric queries, robustness evaluations, explainability payloads, transfer benchmarks, SSL pretraining benchmarks, and dashboard demo data serving.
 
 ### `prism.experiments`
 Declarative experiment definitions (`ExperimentDefinition`), run lifecycle tracking (`ExperimentRun`), runtime harness (`ExperimentExecutionHarness`), and controlled comparison suites (`ArchitectureComparisonSuite`).

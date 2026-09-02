@@ -47,6 +47,39 @@ class SelfSupervisedTrainingEngine:
 
         return RepresentationEncoder(backbone=backbone, seed=spec.seed)
 
+    @staticmethod
+    def _zeros_like(v: Any) -> Any:
+        if isinstance(v, list):
+            return [SelfSupervisedTrainingEngine._zeros_like(x) for x in v]
+        return 0.0
+
+    @staticmethod
+    def _recursive_sgd_step(
+        p: Any,
+        g: Any,
+        vel: Any,
+        lr: float,
+        momentum: float,
+        weight_decay: float,
+    ) -> tuple[Any, Any]:
+        if isinstance(p, list):
+            new_p = []
+            new_vel = []
+            for p_elem, g_elem, vel_elem in zip(p, g, vel, strict=True):
+                np, nv = SelfSupervisedTrainingEngine._recursive_sgd_step(
+                    p_elem, g_elem, vel_elem, lr, momentum, weight_decay
+                )
+                new_p.append(np)
+                new_vel.append(nv)
+            return new_p, new_vel
+        elif isinstance(p, (int, float)):
+            grad_val = float(g) + weight_decay * float(p)
+            v = momentum * float(vel) + grad_val
+            updated_p = float(p) - lr * v
+            return updated_p, v
+        else:
+            return p, vel
+
     def _update_parameters(
         self,
         params: dict[str, Any],
@@ -58,33 +91,16 @@ class SelfSupervisedTrainingEngine:
     ) -> None:
         """Apply SGD update with momentum and weight decay."""
         for k, v in params.items():
-            if isinstance(v, list) and v and isinstance(v[0], list):
-                # 2D Matrix (weights)
-                if k not in velocities:
-                    velocities[k] = [
-                        [0.0 for _ in range(len(v[0]))] for _ in range(len(v))
-                    ]
-                g_mat = grads.get(k)
-                if g_mat is None:
-                    continue
-                for r in range(len(v)):
-                    for c in range(len(v[0])):
-                        g = g_mat[r][c] + weight_decay * v[r][c]
-                        vel = momentum * velocities[k][r][c] + g
-                        velocities[k][r][c] = vel
-                        v[r][c] -= lr * vel
-            elif isinstance(v, list) and v and isinstance(v[0], (int, float)):
-                # 1D Vector (bias)
-                if k not in velocities:
-                    velocities[k] = [0.0 for _ in range(len(v))]
-                g_vec = grads.get(k)
-                if g_vec is None:
-                    continue
-                for i in range(len(v)):
-                    g = float(g_vec[i])
-                    vel = momentum * float(velocities[k][i]) + g
-                    velocities[k][i] = vel
-                    v[i] -= lr * vel
+            g = grads.get(k)
+            if g is None:
+                continue
+            if k not in velocities:
+                velocities[k] = self._zeros_like(v)
+            new_v, new_vel = self._recursive_sgd_step(
+                v, g, velocities[k], lr, momentum, weight_decay
+            )
+            params[k] = new_v
+            velocities[k] = new_vel
 
     def train_ssl(
         self,

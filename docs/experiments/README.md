@@ -613,4 +613,50 @@ if report.representation_drift:
     )
 ```
 
+---
+
+## Self-Supervised Representation Learning & Contrastive Pretraining
+
+Phase 18 introduces self-supervised representation learning via SimCLR contrastive pretraining, non-linear projection heads, analytical NT-Xent gradient updates, and dimensional collapse diagnostics:
+
+```python
+from prism.core.enums import ModelFamily
+from prism.ssl.specification import SelfSupervisedTrainingSpecification
+from prism.ssl.engine import SelfSupervisedTrainingEngine
+
+# 1. Configure Self-Supervised Pretraining Specification (No Class Labels)
+ssl_spec = SelfSupervisedTrainingSpecification(
+    ssl_id="ssl_resnet_simclr_cifar",
+    encoder_family=ModelFamily.RESNET,
+    encoder_spec=resnet_model_spec,
+    dataset_id="cifar10_spatial_unlabeled",
+    projection_hidden_dim=128,
+    projection_out_dim=64,
+    temperature=0.5,
+    epochs=20,
+    batch_size=32,
+    learning_rate=0.05,
+    seed=42,
+)
+
+# 2. Train Self-Supervised Encoder
+engine = SelfSupervisedTrainingEngine()
+encoder, snapshot, ssl_report = engine.train_ssl(
+    specification=ssl_spec,
+    dataset=unlabeled_train_dataset,
+)
+
+# 3. Inspect Collapse Diagnostics
+collapse = ssl_report.collapse_summary
+print(f"Mean Feature Std: {collapse.mean_feature_std:.4f}")
+print(
+    f"Active Channels: {collapse.total_dimensions - collapse.near_zero_variance_dimensions}/{collapse.total_dimensions}"
+)
+print(f"Angular Spread: {collapse.distinct_sample_cosine_spread:.4f}")
+print(f"Collapse Status: {'COLLAPSED' if collapse.is_collapsed else 'HEALTHY'}")
+
+# 4. Downstream Linear Probe Transfer Evaluation
+# Discard projection head, freeze SSL backbone snapshot, attach linear classifier head
+```
+
 

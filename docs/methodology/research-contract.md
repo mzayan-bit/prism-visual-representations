@@ -181,6 +181,19 @@ When evaluating learned representation reuse and downstream adaptation across ta
 
 ---
 
+## 10. Self-Supervised Representation Learning Contracts
+
+- **Complete Class Label Exclusion**: Class labels must never contribute to the encoder pretraining objective or parameter update gradients. Labels are only attached during post-hoc linear evaluation or geometric clustering.
+- **Deterministic Paired Augmentations**: Two views $x_i, x_j$ derived from the same source image are transformed using deterministic, seed-derived augmentation policies with audited transform traces.
+- **Non-Linear Projection Head**: The projection head $g(\mathbf{h}) = \mathbf{W}_2 \text{ReLU}(\mathbf{W}_1 \mathbf{h} + \mathbf{b}_1) + \mathbf{b}_2$ is used solely during contrastive pretraining and discarded for downstream linear probing.
+- **Normalized Temperature-Scaled Cross-Entropy (NT-Xent)**:
+  $$\ell_{i,j} = -\log \frac{\exp(\text{sim}(\hat{\mathbf{z}}_i, \hat{\mathbf{z}}_j)/\tau)}{\sum_{k=1}^{2N} \mathbb{I}_{[k \neq i]} \exp(\text{sim}(\hat{\mathbf{z}}_i, \hat{\mathbf{z}}_k)/\tau)}$$
+  with exact analytical gradient backpropagation to both projection head and upstream encoder backbones.
+- **Representation Collapse Invariants**: Continuous monitoring of feature dimensional standard deviations $\sigma_d = \sqrt{\text{Var}(h_d)}$, active channel fractions, and distinct-sample angular spreads to detect complete or dimensional collapse.
+- **Evaluation Protocol**: Fixed linear probe on frozen SSL representations across matched target splits and data budgets compared against supervised pretraining and random initialization baselines.
+
+---
+
 ## Data and Artifact Policy
 
 ### Prohibited from Version Control:

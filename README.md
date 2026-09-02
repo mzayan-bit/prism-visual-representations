@@ -54,43 +54,8 @@ Baselines                  Residual Learning                Self-Supervision
 | **Phase 15** | Robustness Under Corruptions & Distribution Shifts | :white_check_mark: Completed |
 | **Phase 16** | Explainability & Visual Attribution Laboratory | :white_check_mark: Completed |
 | **Phase 17** | Transfer Learning & Representation Reuse Laboratory | :white_check_mark: Completed |
-| **Phase 18** | Self-Supervised Learning & Contrastive Pretraining | :hourglass_flowing_sand: Planned |
-
----
-
-## Research Paradigm Progression
-
-```
-Pixels and Linear Models
-       ↓
-Neural Networks & Backpropagation (MLPs)
-       ↓
-Optimization, Schedulers & Regularization
-       ↓
-Convolutional Architectures & Spatial Feature Maps (CNNs)
-       ↓
-Batch Normalization & Representation Distribution Stability
-       ↓
-Residual Learning, Explicit Skip Connections & Gradient Flow
-       ↓
-Learning Rate Scheduling & Optimization Control
-       ↓
-Vision Transformers & Attention Geometry
-       ↓
-Self-Supervised Learning (Contrastive / Masked)
-       ↓
-Representation Geometry & Manifold Analysis (CKA, Spectra, Probing)
-       ↓
-Robustness under Corruptions & Distribution Shifts
-       ↓
-Explainability across CNNs and Transformers
-       ↓
-Temporal & Video Understanding
-       ↓
-Generative-Data Experiments
-       ↓
-Dense Vision Transfer (Detection & Segmentation)
-```
+| **Phase 18** | Self-Supervised Learning & Contrastive Pretraining | :white_check_mark: Completed |
+| **Phase 19** | Temporal & Video Representation Learning | :hourglass_flowing_sand: Planned |
 
 ---
 
@@ -103,7 +68,7 @@ prism-visual-representations/
 ├── backend/                   # Python research engine and package
 │   ├── src/
 │   │   └── prism/             # Core library package
-│   │       ├── api/           # Future API serving layer
+│   │       ├── api/           # API serving layer and precomputed benchmarks
 │   │       ├── artifacts/     # Artifact contracts and references
 │   │       ├── core/          # Base enums, identifiers, errors, metadata
 │   │       ├── data/          # Samples, universes, materialization, ordering, batching
@@ -112,9 +77,10 @@ prism-visual-representations/
 │   │       ├── training/      # Training engine, losses, SGD, schedulers, gradient flow
 │   │       ├── evaluation/    # Evaluation engine, metrics, and structured reports
 │   │       ├── representations/# Representation descriptors, feature batches, summaries
+│   │       ├── transfer/      # Transfer specifications, freeze plans, linear probes, retention
+│   │       ├── ssl/           # SimCLR contrastive pretraining, projection heads, collapse diagnostics
 │   │       ├── robustness/    # Corruptions, distribution shifts, OOD tests
 │   │       ├── explainability/# Saliency, attention rollout, Grad-CAM
-│   │       ├── visualization/ # Projections (UMAP/t-SNE), figure generation
 │   │       └── utils/         # Seeding, hashing, structured logging
 │   └── tests/                 # Backend unit, smoke, and integration test suites
 │
