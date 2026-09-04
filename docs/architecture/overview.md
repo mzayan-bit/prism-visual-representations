@@ -228,6 +228,16 @@ TrainingResult & Completed Run Lifecycle
 - Cross-Objective Benchmark & Layer Transferability (`SpatialTransferService`): Cross-objective comparisons (Supervised vs SimCLR vs Reconstruction vs Scratch), depth-wise layer transferability curves, and annotation data efficiency scaling.
 - PRISM Spatial Transfer Laboratory UI (`frontend/app/components/SpatialTransferLaboratoryView.tsx`): Research dashboard featuring interactive bounding box visualizer, 4-way segmentation multi-view, objective comparison matrices, depth transferability plots, and data efficiency curves.
 
+### 15. Video & Temporal Representation Learning Laboratory (`prism.temporal`, `prism.api`)
+- Video Contracts & Trajectory Metadata (`VideoSample`, `VideoBatch`, `MotionTrajectory`, `FrameMetadata`): Canonical $[T, C, H, W]$ tensor shapes, frame identifiers, timestamps, and ground-truth motion coordinates.
+- Deterministic Synthetic Video Generator (`SyntheticVideoGenerator`): Pure-Python, seed-controlled generation of moving and stationary geometric objects across known trajectories, plus static-sequence controls ($h_t \equiv h_0$).
+- Shared Frame Encoder Adapter (`TemporalFrameEncoder`): Extracts multi-frame representation sequences $[N, T, D]$ using 100% shared weights across all frames for CNNs, ResNets, and ViTs.
+- Lightweight Aggregators & Vanilla RNN (`MeanTemporalPooling`, `MaxTemporalPooling`, `LastFramePooling`, `LearnedTemporalPooling`, `SimpleRNN`): Exact forward and analytical backward passes with full BPTT ($\mathbf{h}_t = \tanh(\mathbf{W}_x \mathbf{x}_t + \mathbf{W}_h \mathbf{h}_{t-1} + \mathbf{b})$).
+- Temporal Consistency & Motion Sensitivity Metrics (`compute_temporal_consistency`, `compute_temporal_drift_curve`, `compute_motion_sensitivity`): Adjacent Euclidean displacement, cosine similarity, max temporal jump, drift curves $d(\mathbf{h}_0, \mathbf{h}_t)$, and Pearson velocity correlation.
+- Deterministic Temporal Corruptions (`apply_frame_drop`, `apply_frame_duplication`, `apply_frame_shuffle`, `apply_temporal_subsampling`, `apply_spatial_composite`): Controlled temporal perturbations preserving full provenance.
+- Cross-Objective Temporal Transfer (`TemporalTrainingRunner`): Comparative transfer across Supervised, SimCLR, Reconstruction, and Scratch objectives under Frozen, Partial, and Full fine-tuning strategies.
+- PRISM Temporal Laboratory UI (`frontend/app/components/TemporalLaboratoryView.tsx`): Research workstation interface featuring interactive frame strip, representation timeline, aggregation view, 2D shared PCA trajectories, robustness perturbation card, layer transferability chart, and failure explorer.
+
 ---
 
 ## Domain Subsystems
@@ -268,8 +278,11 @@ Generative and reconstruction-based representation learning specifications (`Rec
 ### `prism.spatial`
 Spatial representation transfer contracts (`BoundingBox`, `DetectionAnnotation`, `DetectionSample`, `SegmentationSample`), deterministic synthetic generator (`generate_synthetic_spatial_dataset`), spatial representation adapter (`SpatialRepresentationAdapter`), grid detection and segmentation task heads (`GridDetectionHead`, `SegmentationHead`), analytical spatial loss functions (`GridDetectionLoss`, `PixelCrossEntropyLoss`), spatial evaluation metrics (`compute_iou_xyxy`, greedy matching, `SegmentationConfusionMatrix`), spatial transfer runner (`SpatialTransferRunner`), and reporting schemas (`SpatialTransferReport`).
 
+### `prism.temporal`
+Video and temporal representation learning contracts (`VideoSample`, `VideoBatch`, `MotionTrajectory`, `FrameMetadata`), deterministic synthetic generator (`SyntheticVideoGenerator`), temporal frame encoder adapter (`TemporalFrameEncoder`), pooling aggregators and SimpleRNN (`MeanTemporalPooling`, `MaxTemporalPooling`, `LastFramePooling`, `LearnedTemporalPooling`, `SimpleRNN`), temporal classifier heads (`TemporalClassificationHead`, `TemporalRepresentationModel`), consistency and motion metrics (`compute_temporal_consistency`, `compute_temporal_drift_curve`, `compute_motion_sensitivity`), temporal corruptions and robustness (`apply_temporal_corruption`, `TemporalRobustnessSummary`), temporal training runner (`TemporalTrainingRunner`), and structured reports (`TemporalRepresentationReport`).
+
 ### `prism.api`
-Research service layer (`GeometryService`, `RobustnessService`, `ExplainabilityService`, `TransferService`, `SelfSupervisedService`, `ReconstructionService`, `SpatialTransferService`) providing experiment metadata, geometric queries, robustness evaluations, explainability payloads, transfer benchmarks, SSL pretraining benchmarks, reconstruction learning benchmarks, spatial transfer benchmarks, and dashboard demo data serving.
+Research service layer (`GeometryService`, `RobustnessService`, `ExplainabilityService`, `TransferService`, `SelfSupervisedService`, `ReconstructionService`, `SpatialTransferService`, `TemporalRepresentationService`) providing experiment metadata, geometric queries, robustness evaluations, explainability payloads, transfer benchmarks, SSL pretraining benchmarks, reconstruction learning benchmarks, spatial transfer benchmarks, temporal representation benchmarks, and dashboard demo data serving.
 
 ### `prism.experiments`
 Declarative experiment definitions (`ExperimentDefinition`), run lifecycle tracking (`ExperimentRun`), runtime harness (`ExperimentExecutionHarness`), and controlled comparison suites (`ArchitectureComparisonSuite`).

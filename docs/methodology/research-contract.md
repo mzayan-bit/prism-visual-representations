@@ -219,6 +219,28 @@ When evaluating learned representation reuse and downstream adaptation across ta
 
 ---
 
+## 13. Video & Temporal Representation Learning Contracts
+
+- **Temporal Sample Identity & Canonical Tensor Shapes**: Video sequences are represented as canonical 4D tensors $T \times C \times H \times W$ with explicit frame IDs, sequential temporal indices, video-level categorical labels, and optional ground-truth motion trajectories (`MotionTrajectory`). Every frame preserves immutable lineage (`video_id`, `frame_index`, `frame_id`).
+- **Shared Frame Encoder Weight Discipline**: 100% of image encoder weights are shared across all timesteps. Instantiating separate encoder weights per frame is strictly prohibited. Frame features are extracted by flattening $[N \cdot T, C, H, W] \to [N, T, D]$.
+- **Lightweight Temporal Aggregators & Sequence Representations**:
+  - **Mean Temporal Pooling**: $\mathbf{z} = \frac{1}{T} \sum_{t=1}^T \mathbf{h}_t$, distributing upstream gradients equally ($d\mathbf{h}_t = \frac{1}{T} d\mathbf{z}$).
+  - **Max Temporal Pooling**: $z_d = \max_{t} h_{t, d}$, routing upstream gradient strictly to the deterministic argmax timestep (deterministic tie-breaking policy).
+  - **Last-Frame Baseline**: $\mathbf{z} = \mathbf{h}_T$, evaluating final-timestep representation sufficiency without temporal aggregation.
+  - **Learned Temporal Pooling**: $\alpha_t = \text{softmax}(\mathbf{w}^T \mathbf{h}_t + b)$, $\mathbf{z} = \sum_t \alpha_t \mathbf{h}_t$. Softmax weights are aggregation weights, NOT causal explanations.
+  - **Simple Recurrent Neural Network (SimpleRNN)**: $\mathbf{h}_t = \tanh(\mathbf{W}_x \mathbf{x}_t + \mathbf{W}_h \mathbf{h}_{t-1} + \mathbf{b})$ with initial hidden state $\mathbf{h}_0 = \mathbf{0}$ and exact analytical Backpropagation Through Time (BPTT).
+- **Temporal Consistency & Motion Sensitivity Metrics**:
+  - **Adjacent Distance & Cosine Similarity**: Measures frame-to-frame representation trajectory smoothness $\|\mathbf{h}_t - \mathbf{h}_{t-1}\|_2$ and cosine alignment $\frac{\mathbf{h}_t \cdot \mathbf{h}_{t-1}}{\|\mathbf{h}_t\|_2 \|\mathbf{h}_{t-1}\|_2}$.
+  - **Temporal Drift Curves**: Long-range representation drift $d(\mathbf{h}_0, \mathbf{h}_t)$ tracking representation displacement across the entire sequence length.
+  - **Motion-Drift Sensitivity**: Pearson correlation between spatial object displacement $\|\mathbf{p}_t - \mathbf{p}_{t-1}\|_2$ and representation feature delta $\|\mathbf{h}_t - \mathbf{h}_{t-1}\|_2$.
+- **Static-Sequence Control Invariant**: In identical-frame sequences ($\mathbf{x}_t \equiv \mathbf{x}_0$), frame representations must be identical in eval mode and temporal drift must equal zero ($d \approx 0.0$).
+- **Order Sensitivity Invariant**: Set-based pooling methods (Mean, Max, Learned Temporal Pooling without positional embeddings) are mathematically order-invariant. SimpleRNN is order-sensitive. Research reports must explicitly state order invariance properties.
+- **Deterministic Temporal Corruptions**: Robustness testing uses audited perturbations (`FRAME_DROP`, `FRAME_DUPLICATION`, `FRAME_SHUFFLE`, `TEMPORAL_SUBSAMPLING`, `SPATIAL_COMPOSITE`) with complete record lineage.
+- **Cross-Objective Pretraining Transfer**: Controlled comparison of Supervised, SimCLR, Reconstruction, and Scratch representations under identical downstream temporal classification tasks without altering the source representation structure.
+- **Strict Scope Boundaries & Non-Goals**: PRISM is not a production video analytics pipeline, multi-object tracker, action detector, or video captioner. The objective is fundamental representation learning across time.
+
+---
+
 ## Data and Artifact Policy
 
 ### Prohibited from Version Control:

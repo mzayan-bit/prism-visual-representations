@@ -157,26 +157,31 @@ class TemporalTrainingRunner:
 
         return total_p, trainable_p
 
+    @staticmethod
+    def _recursive_sgd_step(p: Any, g: Any, lr: float) -> Any:
+        """Recursively update nested parameter tensor with gradients."""
+        if isinstance(p, list) and isinstance(g, list):
+            return [
+                TemporalTrainingRunner._recursive_sgd_step(p_elem, g_elem, lr)
+                for p_elem, g_elem in zip(p, g, strict=True)
+            ]
+        elif isinstance(p, (int, float)) and isinstance(g, (int, float)):
+            return float(p) - lr * float(g)
+        return p
+
     def _sgd_step(
         self, params: dict[str, Any], grads: dict[str, Any], lr: float
     ) -> None:
-        """Apply vanilla SGD in-place parameter update."""
+        """Apply vanilla SGD parameter update across all tensor ranks."""
         for key in params:
-            if key not in grads:
+            g = grads.get(key)
+            if g is None:
+                g = grads.get(f"grad_{key}")
+            if g is None and key.startswith("grad_"):
+                g = grads.get(key.replace("grad_", "", 1))
+            if g is None:
                 continue
-            p_val = params[key]
-            g_val = grads[key]
-
-            if isinstance(p_val, list) and isinstance(g_val, list):
-                if p_val and isinstance(p_val[0], list):
-                    for r in range(len(p_val)):
-                        for c in range(len(p_val[r])):
-                            p_val[r][c] -= lr * g_val[r][c]
-                else:
-                    for i in range(len(p_val)):
-                        p_val[i] -= lr * g_val[i]
-            elif isinstance(p_val, float) and isinstance(g_val, float):
-                params[key] = p_val - lr * g_val
+            params[key] = self._recursive_sgd_step(params[key], g, lr)
 
     def _evaluate_model(
         self,

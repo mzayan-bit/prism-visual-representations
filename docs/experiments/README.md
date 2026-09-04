@@ -774,5 +774,78 @@ for obj_name, rep in comparison.reports_by_objective.items():
         )
 ```
 
+---
+
+## Video & Temporal Representation Learning
+
+Phase 21 extends PRISM from static-image representations into short-video and temporal sequence learning, comparing frame-independent baselines, temporal pooling methods, and SimpleRNN models across pretraining objectives (Supervised, SimCLR, Reconstruction, Scratch):
+
+```python
+from prism.temporal.enums import (
+    PretrainingObjective,
+    TemporalAggregationType,
+    TemporalCorruptionType,
+    TemporalTransferStrategy,
+)
+from prism.temporal.specification import TemporalTransferSpecification
+from prism.temporal.synthetic import SyntheticVideoGenerator
+from prism.temporal.runner import TemporalTrainingRunner
+from prism.temporal.corruptions import apply_temporal_corruption
+from prism.api.temporal_service import TemporalRepresentationService
+from prism.core.enums import ModelFamily, SplitName
+
+# 1. Generate Deterministic Synthetic Video Dataset
+gen = SyntheticVideoGenerator(num_frames=4, height=16, width=16, seed=42)
+train_videos = gen.generate_dataset(num_samples=8, split=SplitName.TRAIN)
+val_videos = gen.generate_dataset(num_samples=4, split=SplitName.VAL)
+
+# 2. Configure and Run Temporal Representation Transfer
+spec = TemporalTransferSpecification(
+    source_objective=PretrainingObjective.SUPERVISED,
+    architecture=ModelFamily.CNN,
+    selected_layer="final_hidden",
+    temporal_aggregator=TemporalAggregationType.SIMPLE_RNN,
+    transfer_strategy=TemporalTransferStrategy.FROZEN_FRAME_ENCODER,
+    rnn_hidden_dim=16,
+    epochs=5,
+    learning_rate=0.05,
+    seed=42,
+)
+
+service = TemporalRepresentationService(seed=42)
+runner = TemporalTrainingRunner(
+    spec=spec,
+    model=service._instantiate_backbone(ModelFamily.CNN),
+    train_samples=train_videos,
+    val_samples=val_videos,
+)
+report = runner.run_transfer()
+
+print(f"Video Accuracy: {report.video_accuracy * 100:.1f}%")
+print(f"Frame Baseline Accuracy: {report.frame_baseline_accuracy * 100:.1f}%")
+print(
+    f"Temporal Consistency (Mean Adjacent Dist): {report.temporal_consistency.mean_adjacent_distance:.4f}"
+)
+print(
+    f"Temporal Consistency (Mean Cosine Sim): {report.temporal_consistency.mean_adjacent_cosine_similarity:.4f}"
+)
+
+# 3. Evaluate Temporal Robustness under Corruptions
+drop_sample, drop_meta = apply_temporal_corruption(
+    val_videos[0],
+    TemporalCorruptionType.FRAME_DROP,
+    drop_fraction=0.5,
+)
+print(
+    f"Clean Frames: {val_videos[0].frame_count} -> Perturbed Frames: {drop_sample.frame_count}"
+)
+print(f"Dropped Frame IDs: {drop_meta.get('dropped_frame_ids')}")
+
+# 4. Cross-Objective Benchmarks & Layer Transferability via Service
+benchmarks = service.get_precomputed_benchmarks()
+print("Objective Comparisons:", list(benchmarks["objective_comparisons"].keys()))
+print("Layer Transferability Models:", list(benchmarks["layer_transferability"].keys()))
+```
+
 
 

@@ -20,16 +20,16 @@ Baselines                  Residual Learning                Self-Supervision
 ## Project Status
 
 > [!NOTE]
-> **Active Development**: PRISM has completed **Phase 20: Detection & Segmentation Representation Transfer**.
-> The platform provides a pure-Python, zero-dependency empirical laboratory for evaluating how visual representations learned through Supervised classification, SimCLR contrastive learning, Masked Reconstruction, and Scratch baselines transfer into spatial downstream localization and dense prediction tasks across CNNs, ResNets, and Vision Transformers:
-> - **Spatial Task Contracts & Annotations** (`BoundingBox`, `DetectionAnnotation`, `DetectionSample`, `SegmentationSample`) with canonical normalized $[x_{\min}, y_{\min}, x_{\max}, y_{\max}]$ coordinates and validated 2D pixel masks.
-> - **Deterministic Synthetic Spatial Dataset** (`generate_synthetic_spatial_dataset`) producing aligned geometric objects, bounding boxes, and pixel segmentation masks without external dependencies.
-> - **Spatial Representation Adapter** (`SpatialRepresentationAdapter`) exposing uniform 4D spatial feature maps $[N, C_f, H_f, W_f]$ from CNN conv stages, ResNet residual stages, and ViT patch tokens (unflattening $[N, T, D] \to [N, D, H_p, W_p]$ and stripping CLS tokens).
-> - **Lightweight Spatial Heads & Losses** (`GridDetectionHead`, `SegmentationHead`, `GridDetectionLoss`, `PixelCrossEntropyLoss`) with analytical gradient backpropagation and finite-difference gradient verification.
-> - **Exact Spatial Evaluation Metrics** (`compute_iou_xyxy`, greedy 1-to-1 matching, `SegmentationConfusionMatrix`, pixel accuracy, class IoU, mean IoU).
-> - **Spatial Transfer Strategies** (`FROZEN_SPATIAL_PROBE`, `PARTIAL_FINE_TUNE`, `FULL_FINE_TUNE`) with representation drift tracking (cosine distance & RMSE).
-> - **Cross-Objective Benchmark & Layer Transferability**: Comparative transfer evaluations across Supervised, SimCLR, Reconstruction, and Scratch objectives, depth-wise layer transferability curves, and annotation data-efficiency scaling.
-> - **Interactive Spatial Transfer Laboratory UI**: Real-time bounding box inspector, 4-way segmentation visualizer (Input, Ground Truth, Predicted, Error Map), cross-objective comparison cards, depth transferability curves, and data-efficiency plots.
+> **Active Development**: PRISM has completed **Phase 21: Video & Temporal Representation Learning**.
+> The platform extends beyond static-image representation analysis into controlled short-video and temporal representation research, investigating how visual representations change when information is aggregated across time:
+> - **Video & Temporal Contracts** (`VideoSample`, `VideoBatch`, `MotionTrajectory`, `FrameMetadata`) preserving frame identity $[T \times C \times H \times W]$ and trajectory metadata.
+> - **Deterministic Synthetic Video Dataset** (`SyntheticVideoGenerator`) producing horizontal, vertical, stationary, and static-sequence controls without external media files.
+> - **Temporal Frame Encoder Adapter** (`TemporalFrameEncoder`) sharing 100% of image encoder weights across timesteps $[N \cdot T, C, H, W] \to [N, T, D]$ for CNNs, ResNets, and ViTs.
+> - **Lightweight Aggregators & Vanilla RNN** (`MeanTemporalPooling`, `MaxTemporalPooling`, `LastFramePooling`, `LearnedTemporalPooling` with softmax attention, and `SimpleRNN` $h_t = \tanh(W_x x_t + W_h h_{t-1} + b)$ with exact analytical BPTT).
+> - **Temporal Consistency & Motion Sensitivity** (adjacent Euclidean drift, cosine similarity, max temporal jump, temporal drift curve $d(h_0, h_t)$, and correlation with ground-truth velocity).
+> - **Temporal Robustness & Corruptions** (`FRAME_DROP`, `FRAME_DUPLICATION`, `FRAME_SHUFFLE`, `TEMPORAL_SUBSAMPLING`, `SPATIAL_COMPOSITE`).
+> - **Cross-Objective Pretraining Transfer** (Supervised, SimCLR, Reconstruction, Scratch across Frozen, Partial, and Full fine-tuning).
+> - **Interactive Temporal Laboratory UI**: Frame strip, representation timeline, aggregation view / learned attention weights, shared PCA trajectory plot, robustness perturbation explorer, layer transferability panel, and failure explorer.
 
 ---
 
@@ -57,7 +57,8 @@ Baselines                  Residual Learning                Self-Supervision
 | **Phase 18** | Self-Supervised Learning & Contrastive Pretraining | :white_check_mark: Completed |
 | **Phase 19** | Generative / Reconstruction-Based Representation Learning | :white_check_mark: Completed |
 | **Phase 20** | Detection & Segmentation Representation Transfer | :white_check_mark: Completed |
-| **Phase 21** | Multi-Modal & Vision-Language Alignment | :hourglass_flowing_sand: Planned |
+| **Phase 21** | Video & Temporal Representation Learning | :white_check_mark: Completed |
+| **Phase 22** | Multi-Modal & Vision-Language Alignment | :hourglass_flowing_sand: Planned |
 
 ---
 
