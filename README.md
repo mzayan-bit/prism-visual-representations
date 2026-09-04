@@ -20,16 +20,16 @@ Baselines                  Residual Learning                Self-Supervision
 ## Project Status
 
 > [!NOTE]
-> **Active Development**: PRISM has completed **Phase 19: Generative / Reconstruction-Based Representation Learning**.
-> The platform provides a pure-Python, zero-dependency empirical laboratory for studying visual representations emerging from masked patch reconstruction and spatial denoising autoencoders across Vision Transformers (ViT), ResNets, and CNNs:
-> - **Deterministic Patch Masking & Context** (`MaskingContext`, `generate_patch_mask`) using SHA-256 seed hashing without global RNG side-effects.
-> - **Learnable Mask Tokens** (`LearnableMaskToken`) substituting masked patch embeddings ($1 \times D_{\text{model}}$) with analytical gradient accumulation.
-> - **Linear & Spatial Reconstruction Decoders** (`PatchReconstructionDecoder`, `SpatialReconstructionDecoder`) mapping latents to patch pixel space ($D_{\text{model}} \to D_{\text{patch}}$) and image space ($D_{\text{latent}} \to C \times H \times W$).
-> - **Masked MSE Loss** (`MaskedMSELoss`) computing analytical gradients $\frac{2}{M \cdot D}(\hat{y} - y)$ strictly over masked patches while visible patches receive exact zero gradient.
-> - **Label Independence Invariant**: Pretraining optimization operates strictly unsupervised without class labels.
-> - **Reconstruction Diagnostics & Failure Taxonomy** (`compute_reconstruction_diagnostics`) evaluating localized patch errors, latent variance, and five failure categories.
-> - **3-Way Benchmark Comparison**: Empirical comparisons among Supervised (Phase 13), SimCLR Contrastive (Phase 18), and Masked Reconstruction (Phase 19).
-> - **Interactive Next.js Reconstruction Laboratory**: Visual triplet viewer (Original, Masked, Reconstructed, Spatial Error Map), training dynamics, masking ratio studies, layer-wise probes, and failure explorer.
+> **Active Development**: PRISM has completed **Phase 20: Detection & Segmentation Representation Transfer**.
+> The platform provides a pure-Python, zero-dependency empirical laboratory for evaluating how visual representations learned through Supervised classification, SimCLR contrastive learning, Masked Reconstruction, and Scratch baselines transfer into spatial downstream localization and dense prediction tasks across CNNs, ResNets, and Vision Transformers:
+> - **Spatial Task Contracts & Annotations** (`BoundingBox`, `DetectionAnnotation`, `DetectionSample`, `SegmentationSample`) with canonical normalized $[x_{\min}, y_{\min}, x_{\max}, y_{\max}]$ coordinates and validated 2D pixel masks.
+> - **Deterministic Synthetic Spatial Dataset** (`generate_synthetic_spatial_dataset`) producing aligned geometric objects, bounding boxes, and pixel segmentation masks without external dependencies.
+> - **Spatial Representation Adapter** (`SpatialRepresentationAdapter`) exposing uniform 4D spatial feature maps $[N, C_f, H_f, W_f]$ from CNN conv stages, ResNet residual stages, and ViT patch tokens (unflattening $[N, T, D] \to [N, D, H_p, W_p]$ and stripping CLS tokens).
+> - **Lightweight Spatial Heads & Losses** (`GridDetectionHead`, `SegmentationHead`, `GridDetectionLoss`, `PixelCrossEntropyLoss`) with analytical gradient backpropagation and finite-difference gradient verification.
+> - **Exact Spatial Evaluation Metrics** (`compute_iou_xyxy`, greedy 1-to-1 matching, `SegmentationConfusionMatrix`, pixel accuracy, class IoU, mean IoU).
+> - **Spatial Transfer Strategies** (`FROZEN_SPATIAL_PROBE`, `PARTIAL_FINE_TUNE`, `FULL_FINE_TUNE`) with representation drift tracking (cosine distance & RMSE).
+> - **Cross-Objective Benchmark & Layer Transferability**: Comparative transfer evaluations across Supervised, SimCLR, Reconstruction, and Scratch objectives, depth-wise layer transferability curves, and annotation data-efficiency scaling.
+> - **Interactive Spatial Transfer Laboratory UI**: Real-time bounding box inspector, 4-way segmentation visualizer (Input, Ground Truth, Predicted, Error Map), cross-objective comparison cards, depth transferability curves, and data-efficiency plots.
 
 ---
 
@@ -56,7 +56,8 @@ Baselines                  Residual Learning                Self-Supervision
 | **Phase 17** | Transfer Learning & Representation Reuse Laboratory | :white_check_mark: Completed |
 | **Phase 18** | Self-Supervised Learning & Contrastive Pretraining | :white_check_mark: Completed |
 | **Phase 19** | Generative / Reconstruction-Based Representation Learning | :white_check_mark: Completed |
-| **Phase 20** | Multi-Modal & Vision-Language Alignment | :hourglass_flowing_sand: Planned |
+| **Phase 20** | Detection & Segmentation Representation Transfer | :white_check_mark: Completed |
+| **Phase 21** | Multi-Modal & Vision-Language Alignment | :hourglass_flowing_sand: Planned |
 
 ---
 

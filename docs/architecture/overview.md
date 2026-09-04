@@ -217,11 +217,16 @@ TrainingResult & Completed Run Lifecycle
 - Learnable Mask Tokens (`LearnableMaskToken`): $1 \times D_{\text{model}}$ learnable vector replacing masked patch embeddings during forward propagation and accumulating analytical gradients during backpropagation.
 - Linear Patch Decoder (`PatchReconstructionDecoder`): Maps transformer patch tokens to pixel space $\mathbf{p} \in \mathbb{R}^{D_{\text{patch}}}$ with exact analytical transpose projection.
 - Spatial Reconstruction Decoder (`SpatialReconstructionDecoder`): Maps bottleneck latent representations $\mathbf{h} \in \mathbb{R}^D$ to reconstructed spatial images $\hat{\mathbf{x}} \in \mathbb{R}^{C \times H \times W}$.
-- Masked MSE Loss (`MaskedMSELoss`): $\mathcal{L} = \frac{1}{M \cdot D} \sum_{i \in \mathcal{M}} \|\hat{\mathbf{p}}_i - \mathbf{p}_i\|_2^2$ with analytical gradient $\frac{2}{M \cdot D}(\hat{\mathbf{p}}_i - \mathbf{p}_i)$ strictly over masked patches (visible patches receive 0.0 gradient).
-- Label Independence Invariant: Pretraining loss, gradients, and masking operate in complete independence of target class labels.
-- Reconstruction Diagnostics & Failure Taxonomy (`compute_reconstruction_diagnostics`): Measures mean reconstruction error, per-sample error distributions, latent representation variance/std dev, and classifies 5 failure modes (`HIGH_RECONSTRUCTION_ERROR`, `LOCALIZED_PATCH_FAILURE`, `LOW_LATENT_VARIANCE`, `OVER_SMOOTH_RECONSTRUCTION`, `CORRUPTION_RECOVERY_FAILURE`).
-- Downstream Linear Probing: Freezes pretrained reconstruction backbone and trains a linear probe on frozen features to quantify downstream classification utility.
-- PRISM Reconstruction Laboratory UI (`frontend/app/components/ReconstructionLaboratoryView.tsx`): Interactive dashboard featuring visual triplet inspectors (Original, Masked, Reconstructed, Spatial Error Map), training dynamics curves, 3-way benchmark comparisons (Supervised vs SimCLR vs Reconstruction), masking-ratio studies, layer-wise probes, and failure case exploration.
+### 14. Detection & Segmentation Representation Transfer Laboratory (`prism.spatial`, `prism.api`)
+- Spatial Task Contracts & Annotations (`BoundingBox`, `DetectionAnnotation`, `DetectionSample`, `SegmentationSample`): Strict bounding box geometries in normalized $[0.0, 1.0]$ space and validated integer class pixel segmentation masks.
+- Deterministic Synthetic Spatial Dataset (`generate_synthetic_spatial_dataset`): Pure-Python, seed-reproducible generation of geometric objects, bounding boxes, and masks for rigorous validation.
+- Spatial Representation Adapter (`SpatialRepresentationAdapter`): Uniformly extracts 4D spatial feature maps $[N, C_f, H_f, W_f]$ from CNN stages, ResNet stages, and Vision Transformers (unflattening $[N, T, D] \to [N, D, H_p, W_p]$ and stripping CLS tokens).
+- Lightweight Detection Head & Loss (`GridDetectionHead`, `GridDetectionLoss`): $1 \times 1$ conv predicting objectness, classification logits, and bounding box offsets per grid cell with combined BCE, Softmax CE, and MSE regression losses.
+- Lightweight Segmentation Head & Loss (`SegmentationHead`, `PixelCrossEntropyLoss`): $1 \times 1$ conv channel projection and deterministic upsampling (nearest / bilinear) with numerically stabilized pixel cross-entropy loss.
+- Exact Spatial Metrics (`compute_iou_xyxy`, greedy 1-to-1 matching, `SegmentationConfusionMatrix`, pixel accuracy, per-class IoU, mean IoU).
+- Spatial Transfer Runner (`SpatialTransferRunner`): Parameter freeze plans (`FROZEN_SPATIAL_PROBE`, `PARTIAL_FINE_TUNE`, `FULL_FINE_TUNE`), spatial feature caching, and spatial representation drift calculation (cosine distance & RMSE).
+- Cross-Objective Benchmark & Layer Transferability (`SpatialTransferService`): Cross-objective comparisons (Supervised vs SimCLR vs Reconstruction vs Scratch), depth-wise layer transferability curves, and annotation data efficiency scaling.
+- PRISM Spatial Transfer Laboratory UI (`frontend/app/components/SpatialTransferLaboratoryView.tsx`): Research dashboard featuring interactive bounding box visualizer, 4-way segmentation multi-view, objective comparison matrices, depth transferability plots, and data efficiency curves.
 
 ---
 
@@ -260,12 +265,16 @@ Self-supervised contrastive learning specifications (`SelfSupervisedTrainingSpec
 ### `prism.reconstruction`
 Generative and reconstruction-based representation learning specifications (`ReconstructionLearningSpecification`), deterministic masking contexts (`MaskingContext`), patch masks (`PatchMask`), learnable mask tokens (`LearnableMaskToken`), reconstruction decoders (`PatchReconstructionDecoder`, `SpatialReconstructionDecoder`), masked MSE loss (`MaskedMSELoss`), training engine (`ReconstructionTrainingEngine`), diagnostics reports (`ReconstructionDiagnosticsReport`), and benchmark reporting (`ReconstructionLearningReport`).
 
+### `prism.spatial`
+Spatial representation transfer contracts (`BoundingBox`, `DetectionAnnotation`, `DetectionSample`, `SegmentationSample`), deterministic synthetic generator (`generate_synthetic_spatial_dataset`), spatial representation adapter (`SpatialRepresentationAdapter`), grid detection and segmentation task heads (`GridDetectionHead`, `SegmentationHead`), analytical spatial loss functions (`GridDetectionLoss`, `PixelCrossEntropyLoss`), spatial evaluation metrics (`compute_iou_xyxy`, greedy matching, `SegmentationConfusionMatrix`), spatial transfer runner (`SpatialTransferRunner`), and reporting schemas (`SpatialTransferReport`).
+
 ### `prism.api`
-Research service layer (`GeometryService`, `RobustnessService`, `ExplainabilityService`, `TransferService`, `SelfSupervisedService`, `ReconstructionService`) providing experiment metadata, geometric queries, robustness evaluations, explainability payloads, transfer benchmarks, SSL pretraining benchmarks, reconstruction learning benchmarks, and dashboard demo data serving.
+Research service layer (`GeometryService`, `RobustnessService`, `ExplainabilityService`, `TransferService`, `SelfSupervisedService`, `ReconstructionService`, `SpatialTransferService`) providing experiment metadata, geometric queries, robustness evaluations, explainability payloads, transfer benchmarks, SSL pretraining benchmarks, reconstruction learning benchmarks, spatial transfer benchmarks, and dashboard demo data serving.
 
 ### `prism.experiments`
 Declarative experiment definitions (`ExperimentDefinition`), run lifecycle tracking (`ExperimentRun`), runtime harness (`ExperimentExecutionHarness`), and controlled comparison suites (`ArchitectureComparisonSuite`).
 
 ### `prism.artifacts`
 Artifact tracking contracts (`ArtifactReference`) storing logical keys, storage URIs, checksums, and generating run IDs.
+
 

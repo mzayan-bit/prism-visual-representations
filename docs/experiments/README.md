@@ -713,4 +713,66 @@ if report.downstream_linear_probe_accuracy is not None:
     )
 ```
 
+---
+
+## Detection & Segmentation Representation Transfer
+
+Phase 20 enables evaluating visual representations transferred to spatial downstream localization (lightweight object detection) and dense prediction (semantic segmentation) across Supervised, SimCLR, Reconstruction, and Scratch pretraining objectives:
+
+```python
+from prism.spatial.enums import (
+    PretrainingObjective,
+    SpatialTaskType,
+    SpatialTransferStrategy,
+)
+from prism.spatial.specification import SpatialTransferSpecification
+from prism.spatial.runner import SpatialTransferRunner
+from prism.spatial.synthetic import generate_synthetic_spatial_dataset
+from prism.api.spatial_service import get_default_model_spec, SpatialTransferService
+
+# 1. Generate Deterministic Synthetic Spatial Benchmark Data
+det_train, seg_train = generate_synthetic_spatial_dataset(
+    num_samples=16, image_shape=(3, 16, 16), num_classes=3, seed=42
+)
+det_val, seg_val = generate_synthetic_spatial_dataset(
+    num_samples=8, image_shape=(3, 16, 16), num_classes=3, seed=84
+)
+
+# 2. Configure and Run Frozen Spatial Probe on Object Detection
+model_spec = get_default_model_spec("vit")
+det_spec = SpatialTransferSpecification.create(
+    source_objective=PretrainingObjective.RECONSTRUCTION,
+    source_experiment_id="recon_vit_mim",
+    model_spec=model_spec,
+    task_type=SpatialTaskType.OBJECT_DETECTION,
+    spatial_layer="final_spatial",
+    transfer_strategy=SpatialTransferStrategy.FROZEN_SPATIAL_PROBE,
+    num_classes=3,
+    epochs=5,
+    learning_rate=0.01,
+)
+
+runner = SpatialTransferRunner(det_spec)
+report = runner.train_and_evaluate(train_samples=det_train, eval_samples=det_val)
+
+if report.detection_metrics:
+    print(f"Detection Mean IoU: {report.detection_metrics.mean_iou:.4f}")
+    print(f"Detection Precision: {report.detection_metrics.precision:.4f}")
+    print(f"Detection Recall: {report.detection_metrics.recall:.4f}")
+
+# 3. Cross-Objective & Layer Transferability Benchmarking via API Service
+service = SpatialTransferService(seed=42)
+comparison = service.generate_objective_comparison(
+    architecture="cnn",
+    task_type=SpatialTaskType.SEMANTIC_SEGMENTATION,
+)
+for obj_name, rep in comparison.reports_by_objective.items():
+    if rep.segmentation_metrics:
+        print(
+            f"[{obj_name.upper()}] mIoU: {rep.segmentation_metrics.mean_iou:.4f}, "
+            f"Pixel Acc: {rep.segmentation_metrics.pixel_accuracy:.4f}"
+        )
+```
+
+
 

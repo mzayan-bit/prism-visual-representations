@@ -154,7 +154,9 @@ class DetectionSample(BaseModel):
         default_factory=list,
         description="List of target annotations (empty indicates background)",
     )
-    dataset_fingerprint: str = Field(..., description="Deterministic dataset digest")
+    dataset_fingerprint: str = Field(
+        default="synthetic_fp", description="Deterministic dataset digest"
+    )
     split: str = Field(default="train", description="Dataset split (train, val, test)")
     metadata: dict[str, Any] = Field(
         default_factory=dict, description="Arbitrary sample metadata"
@@ -209,8 +211,8 @@ class SegmentationSample(BaseModel):
     mask: list[list[int]] = Field(
         ..., description="2D pixel mask of shape [H, W] containing integer class IDs"
     )
-    image_shape: tuple[int, int, int] = Field(
-        ..., description="Canonical (channels, height, width)"
+    image_shape: tuple[int, int, int] | None = Field(
+        default=None, description="Canonical (channels, height, width)"
     )
     num_classes: int = Field(
         ..., gt=0, description="Total number of valid semantic classes"
@@ -218,7 +220,9 @@ class SegmentationSample(BaseModel):
     ignore_index: int | None = Field(
         default=None, description="Optional class ID to ignore in loss/metrics"
     )
-    dataset_fingerprint: str = Field(..., description="Deterministic dataset digest")
+    dataset_fingerprint: str = Field(
+        default="synthetic_fp", description="Deterministic dataset digest"
+    )
     split: str = Field(default="train", description="Dataset split (train, val, test)")
     metadata: dict[str, Any] = Field(
         default_factory=dict, description="Arbitrary sample metadata"
@@ -227,15 +231,14 @@ class SegmentationSample(BaseModel):
     @model_validator(mode="after")
     def validate_mask_and_image(self) -> SegmentationSample:
         """Validate mask shape matches image shape and mask values are valid."""
-        c, h, w = self.image_shape
-        if (
-            len(self.image) != c
-            or len(self.image[0]) != h
-            or len(self.image[0][0]) != w
-        ):
+        if not self.image or not self.image[0] or not self.image[0][0]:
+            raise ValidationError("Image tensor cannot be empty.")
+        c = len(self.image)
+        h = len(self.image[0])
+        w = len(self.image[0][0])
+        if self.image_shape is not None and self.image_shape != (c, h, w):
             raise ValidationError(
-                f"Image shape {len(self.image)}x{len(self.image[0])}x"
-                f"{len(self.image[0][0])} does not match declared {self.image_shape}."
+                f"Image shape {c}x{h}x{w} does not match declared {self.image_shape}."
             )
         if len(self.mask) != h:
             raise ValidationError(
@@ -292,3 +295,24 @@ class DetectionPrediction(BaseModel):
     iou_with_target: float | None = Field(
         default=None, description="IoU with matched target annotation"
     )
+
+    @model_validator(mode="after")
+    def validate_prediction_lengths(self) -> DetectionPrediction:
+        """Validate list lengths are consistent."""
+        n = len(self.boxes)
+        if len(self.class_ids) != n:
+            raise ValidationError(
+                f"Length of class_ids ({len(self.class_ids)}) must match "
+                f"length of boxes ({n})."
+            )
+        if len(self.confidences) != n:
+            raise ValidationError(
+                f"Length of confidences ({len(self.confidences)}) must match "
+                f"length of boxes ({n})."
+            )
+        if self.objectness_scores and len(self.objectness_scores) != n:
+            raise ValidationError(
+                f"Length of objectness_scores ({len(self.objectness_scores)}) "
+                f"must match length of boxes ({n})."
+            )
+        return self

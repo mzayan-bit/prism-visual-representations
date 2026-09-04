@@ -207,6 +207,18 @@ When evaluating learned representation reuse and downstream adaptation across ta
 
 ---
 
+## 12. Spatial Transfer Contracts (Detection & Segmentation)
+
+- **Canonical Coordinate Format**: All bounding boxes are represented as normalized coordinates $(x_{\min}, y_{\min}, x_{\max}, y_{\max}) \in [0.0, 1.0]^4$ satisfying $0.0 \le x_{\min} < x_{\max} \le 1.0$ and $0.0 \le y_{\min} < y_{\max} \le 1.0$. Malformed coordinates, negative areas, inverted coordinates, and non-finite values are strictly rejected at the schema boundary.
+- **2D Pixel Segmentation Masks**: Segmentation ground truths are 2D integer arrays $H \times W$ with $M(y, x) \in \{0, 1, \dots, K-1\}$. Spatial dimensions must match the source image dimensions.
+- **ViT Patch-Spatial Unflattening Invariant**: ViT patch tokens $\mathbf{T} \in \mathbb{R}^{N \times T \times D}$ (excluding CLS token) are reshaped into 4D spatial feature maps $[N, D, H_p, W_p]$ using the explicit patch geometry descriptor ($T = H_p \cdot W_p$). CLS tokens are strictly excluded from the spatial feature grid.
+- **Lightweight Spatial Head Design**: Spatial probing uses $1 \times 1$ conv projections directly on 4D feature maps without anchor pyramids, Region Proposal Networks (RPN), non-maximum suppression (NMS) dependencies, or multi-scale feature pyramids (FPN).
+- **Exact Evaluation Protocols vs Production Baselines**: Detection transfer is evaluated using exact bounding box IoU and deterministic greedy 1-to-1 matching at configured IoU thresholds. Reports must NOT claim COCO mAP unless full COCO-style PR curves and area-tiered AP are computed. Segmentation transfer is evaluated using full confusion matrices, pixel accuracy, per-class IoU, and mean IoU.
+- **Parameter Freeze Fidelity**: Frozen spatial probes (`FROZEN_SPATIAL_PROBE`) must leave encoder parameters bitwise identical throughout training. Upstream encoder gradients propagate only under partial or full fine-tuning.
+- **Representation Drift Tracking**: Spatial fine-tuning drift is quantified via normalized cosine distance and RMSE between spatial features extracted before vs after transfer.
+
+---
+
 ## Data and Artifact Policy
 
 ### Prohibited from Version Control:
