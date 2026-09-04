@@ -13,6 +13,7 @@ import { PCAScatterPlot } from "./components/PCAScatterPlot";
 import { ReconstructionLaboratoryView } from "./components/ReconstructionLaboratoryView";
 import RobustnessLaboratoryView from "./components/RobustnessLaboratoryView";
 import { SelfSupervisedLaboratoryView } from "./components/SelfSupervisedLaboratoryView";
+import { SpatialTransferLaboratoryView } from "./components/SpatialTransferLaboratoryView";
 import { TransferLaboratoryView } from "./components/TransferLaboratoryView";
 import {
   getCrossArchitectureComparison,
@@ -28,8 +29,14 @@ import {
 
 export default function PRISMDashboardPage() {
   const [appMode, setAppMode] = useState<
-    "reconstruction" | "ssl" | "transfer" | "explainability" | "robustness" | "observatory"
-  >("reconstruction");
+    | "spatial"
+    | "reconstruction"
+    | "ssl"
+    | "transfer"
+    | "explainability"
+    | "robustness"
+    | "observatory"
+  >("spatial");
 
   // Observatory state
   const metadata = useMemo(() => getObservatoryMetadata(), []);
@@ -86,6 +93,17 @@ export default function PRISMDashboardPage() {
         </div>
 
         <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 overflow-x-auto">
+          <button
+            id="nav-mode-spatial"
+            onClick={() => setAppMode("spatial")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              appMode === "spatial"
+                ? "bg-amber-600 text-white shadow-md shadow-amber-500/20"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <span>🎯</span> Spatial Lab (Phase 20)
+          </button>
           <button
             id="nav-mode-reconstruction"
             onClick={() => setAppMode("reconstruction")}
@@ -154,6 +172,9 @@ export default function PRISMDashboardPage() {
           </button>
         </div>
       </nav>
+
+      {/* Phase 20: Spatial Representation Transfer Laboratory */}
+      {appMode === "spatial" && <SpatialTransferLaboratoryView />}
 
       {/* Phase 19: Reconstruction & Masked Representation Learning Laboratory */}
       {appMode === "reconstruction" && <ReconstructionLaboratoryView />}

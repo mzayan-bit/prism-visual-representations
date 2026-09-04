@@ -874,3 +874,129 @@ export interface ReconstructionDatasetPayload {
   failure_cases: ReconstructionFailureCasePayload[];
 }
 
+// ==========================================
+// Phase 20: Spatial Transfer Types
+// ==========================================
+
+export type SpatialTaskType = "object_detection" | "semantic_segmentation";
+export type PretrainingObjectiveType = "supervised" | "simclr" | "reconstruction" | "scratch";
+export type SpatialTransferStrategyType =
+  | "frozen_spatial_probe"
+  | "partial_fine_tune"
+  | "full_fine_tune";
+
+export interface SpatialDetectionAnnotationPayload {
+  class_id: number;
+  class_name?: string;
+  box: [number, number, number, number];
+}
+
+export interface SpatialDetectionPredictionBoxPayload {
+  class_id: number;
+  confidence: number;
+  box: [number, number, number, number];
+}
+
+export interface SpatialDetectionSamplePayload {
+  sample_id: string;
+  image: number[][][];
+  image_shape: [number, number, number];
+  ground_truth_boxes: SpatialDetectionAnnotationPayload[];
+  predicted_boxes: SpatialDetectionPredictionBoxPayload[];
+}
+
+export interface SpatialSegmentationSamplePayload {
+  sample_id: string;
+  image: number[][][];
+  ground_truth_mask: number[][];
+  predicted_mask: number[][];
+  num_classes: number;
+}
+
+export interface SpatialDetectionMetricsPayload {
+  total_samples: number;
+  total_targets: number;
+  total_predictions: number;
+  matched_objects: number;
+  mean_iou: number;
+  precision: number;
+  recall: number;
+  class_accuracy: number;
+  mean_localization_error: number;
+  iou_threshold: number;
+}
+
+export interface SpatialSegmentationMetricsPayload {
+  num_classes: number;
+  total_pixels: number;
+  pixel_accuracy: number;
+  mean_iou: number;
+  per_class_iou: Record<number, number>;
+  per_class_dice: Record<number, number>;
+  confusion_matrix: number[][];
+}
+
+export interface SpatialTransferReportPayload {
+  report_id: string;
+  specification: {
+    specification_id: string;
+    source_objective: PretrainingObjectiveType;
+    source_experiment_id: string;
+    task_type: SpatialTaskType;
+    spatial_layer: string;
+    transfer_strategy: SpatialTransferStrategyType;
+    num_classes: number;
+    learning_rate: number;
+    epochs: number;
+    batch_size: number;
+    data_budget_fraction: number;
+  };
+  total_parameters: number;
+  frozen_parameters: number;
+  trainable_parameters: number;
+  head_parameters: number;
+  trainable_fraction: number;
+  feature_shape: [number, number, number];
+  feature_resolution: string;
+  training_loss_trajectory: number[];
+  epochs_completed: number;
+  detection_metrics?: SpatialDetectionMetricsPayload | null;
+  segmentation_metrics?: SpatialSegmentationMetricsPayload | null;
+  spatial_representation_drift_cosine: number;
+  spatial_representation_drift_rmse: number;
+  warnings: string[];
+}
+
+export interface SpatialLayerTransferabilityRecord {
+  layer: string;
+  depth_index: number;
+  feature_resolution: string;
+  detection_mean_iou: number;
+  segmentation_mean_iou: number;
+  feature_channels: number;
+}
+
+export interface SpatialDataEfficiencyRecord {
+  budget_fraction: number;
+  supervised_iou: number;
+  simclr_iou: number;
+  reconstruction_iou: number;
+  scratch_iou: number;
+}
+
+export interface SpatialDatasetPayload {
+  meta: {
+    generated_by: string;
+    version: string;
+    architectures: string[];
+    objectives: string[];
+    tasks: string[];
+  };
+  reports: SpatialTransferReportPayload[];
+  layer_transferability: Record<string, SpatialLayerTransferabilityRecord[]>;
+  data_efficiency: Record<string, SpatialDataEfficiencyRecord[]>;
+  detection_samples: SpatialDetectionSamplePayload[];
+  segmentation_samples: SpatialSegmentationSamplePayload[];
+}
+
+
