@@ -7,6 +7,7 @@ import { ExplainabilityLaboratoryView } from "./components/ExplainabilityLaborat
 import { FailureExplorerPanel } from "./components/FailureExplorerPanel";
 import { LayerEvolutionPanel } from "./components/LayerEvolutionPanel";
 import { MetricOverviewStrip } from "./components/MetricOverviewStrip";
+import { MultimodalLaboratoryView } from "./components/MultimodalLaboratoryView";
 import { NeighborhoodPanel } from "./components/NeighborhoodPanel";
 import { ObservatoryHeader } from "./components/ObservatoryHeader";
 import { PCAScatterPlot } from "./components/PCAScatterPlot";
@@ -30,6 +31,7 @@ import {
 
 export default function PRISMDashboardPage() {
   const [appMode, setAppMode] = useState<
+    | "multimodal"
     | "temporal"
     | "spatial"
     | "reconstruction"
@@ -38,7 +40,7 @@ export default function PRISMDashboardPage() {
     | "explainability"
     | "robustness"
     | "observatory"
-  >("temporal");
+  >("multimodal");
 
   // Observatory state
   const metadata = useMemo(() => getObservatoryMetadata(), []);
@@ -95,6 +97,17 @@ export default function PRISMDashboardPage() {
         </div>
 
         <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 overflow-x-auto">
+          <button
+            id="nav-mode-multimodal"
+            onClick={() => setAppMode("multimodal")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              appMode === "multimodal"
+                ? "bg-cyan-600 text-white shadow-md shadow-cyan-500/20"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <span>🌌</span> Vision-Language (Phase 22)
+          </button>
           <button
             id="nav-mode-temporal"
             onClick={() => setAppMode("temporal")}
@@ -185,6 +198,9 @@ export default function PRISMDashboardPage() {
           </button>
         </div>
       </nav>
+
+      {/* Phase 22: Vision-Language Representation Alignment Laboratory */}
+      {appMode === "multimodal" && <MultimodalLaboratoryView />}
 
       {/* Phase 21: Video & Temporal Representation Learning Laboratory */}
       {appMode === "temporal" && <TemporalLaboratoryView />}

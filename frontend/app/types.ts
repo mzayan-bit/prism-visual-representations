@@ -1153,5 +1153,163 @@ export interface TemporalDatasetPayload {
   candidate_failures: TemporalCandidateFailurePayload[];
 }
 
+export interface TokenizedTextPayload {
+  original_text: string;
+  token_strings: string[];
+  token_ids: number[];
+  sequence_length: number;
+  attention_mask: number[];
+}
 
+export interface RetrievalCandidatePayload {
+  sample_id: string;
+  similarity: number;
+}
+
+export interface MultimodalSamplePayload {
+  sample_id: string;
+  text: string;
+  captions: string[];
+  class_label: number | null;
+  class_name: string | null;
+  split: string;
+  pair_identity: string;
+  image: number[][][];
+  tokenized: TokenizedTextPayload;
+  paired_cosine: number;
+  paired_distance: number;
+  image_pca: number[];
+  text_pca: number[];
+  i2t_rank: number;
+  t2i_rank: number;
+  top_text_candidates: RetrievalCandidatePayload[];
+  top_image_candidates: RetrievalCandidatePayload[];
+}
+
+export interface CrossModalRetrievalSummaryPayload {
+  image_to_text_r1: number;
+  image_to_text_r3: number;
+  image_to_text_r5: number;
+  image_to_text_mrr: number;
+  text_to_image_r1: number;
+  text_to_image_r3: number;
+  text_to_image_r5: number;
+  text_to_image_mrr: number;
+  sample_count: number;
+  candidate_count: number;
+}
+
+export interface ZeroShotClassificationSummaryPayload {
+  prompt_template: string;
+  class_count: number;
+  accuracy: number;
+  per_class_accuracy: Record<string, number>;
+  confusion_matrix: number[][];
+  class_names: string[];
+  top_3_accuracy: number | null;
+}
+
+export interface PromptSensitivityPayload {
+  templates: string[];
+  results: Record<string, ZeroShotClassificationSummaryPayload>;
+  pairwise_agreements: Record<string, number>;
+}
+
+export interface CentroidAlignmentPayload {
+  class_name: string;
+  image_centroid: number[];
+  text_centroid: number[];
+  euclidean_distance: number;
+  cosine_similarity: number;
+}
+
+export interface MultimodalCollapseSummaryPayload {
+  visual_dim_variance: number;
+  visual_feature_std: number;
+  visual_pairwise_similarity: number;
+  text_dim_variance: number;
+  text_feature_std: number;
+  text_pairwise_similarity: number;
+  matched_similarity: number;
+  unmatched_similarity: number;
+  similarity_gap: number;
+  is_collapsed: boolean;
+}
+
+export interface MultimodalObjectiveComparisonPayload {
+  objective: string;
+  linear_probe_accuracy: number | null;
+  zero_shot_accuracy: number | null;
+  image_to_text_r1: number | null;
+  text_to_image_r1: number | null;
+  effective_dimensionality: number;
+  robustness_retention: number;
+  label_supervision: string;
+}
+
+export interface MultimodalArchitectureComparisonPayload {
+  architecture: string;
+  i2t_r1: number;
+  t2i_r1: number;
+  zero_shot_acc: number;
+  mean_paired_cosine: number;
+  probe_acc: number;
+}
+
+export interface MultimodalCandidateFailurePayload {
+  failure_type: string;
+  sample_id: string;
+  description: string;
+  severity: "low" | "medium" | "high";
+  paired_cosine?: number;
+  matched_rank?: number;
+  confidence_delta?: number;
+  cosine_drop?: number;
+}
+
+export interface MultimodalDatasetPayload {
+  metadata: {
+    phase: number;
+    title: string;
+    dataset_fingerprint: string;
+    num_classes: number;
+    class_names: string[];
+    prompt_templates: string[];
+    architectures: string[];
+    pretraining_objectives: string[];
+  };
+  samples: MultimodalSamplePayload[];
+  training_history: Array<Record<string, number>>;
+  retrieval_summary: CrossModalRetrievalSummaryPayload;
+  zero_shot_summary: ZeroShotClassificationSummaryPayload;
+  prompt_sensitivity: PromptSensitivityPayload;
+  shared_geometry: {
+    explained_variance_ratio: number[];
+    mean_paired_distance: number;
+    mean_paired_cosine: number;
+    centroid_alignments: CentroidAlignmentPayload[];
+  };
+  collapse_summary: MultimodalCollapseSummaryPayload;
+  robustness_benchmarks: {
+    corruptions: string[];
+    results: Record<
+      string,
+      {
+        corruption: string;
+        severity: number;
+        mean_paired_cosine: number;
+        cosine_drop: number;
+        mean_visual_drift: number;
+        mean_alignment_drift: number;
+        image_to_text_r1: number;
+        image_to_text_r3: number;
+        image_to_text_mrr: number;
+        zero_shot_accuracy: number | null;
+      }
+    >;
+  };
+  objective_comparisons: MultimodalObjectiveComparisonPayload[];
+  architecture_comparisons: MultimodalArchitectureComparisonPayload[];
+  candidate_failures: MultimodalCandidateFailurePayload[];
+}
 
