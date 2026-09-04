@@ -17,6 +17,7 @@ from prism.api.robustness_service import (
     RobustnessService,
     generate_robustness_demo_data,
 )
+from prism.api.temporal_service import TemporalRepresentationService
 
 __all__ = [
     "ExplainabilityDemoPayload",
@@ -27,6 +28,7 @@ __all__ = [
     "ObservatoryExperimentMeta",
     "RobustnessExperimentMeta",
     "RobustnessService",
+    "TemporalRepresentationService",
     "generate_explainability_demo_data",
     "generate_observatory_demo_data",
     "generate_robustness_demo_data",

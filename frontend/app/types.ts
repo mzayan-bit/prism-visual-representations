@@ -999,4 +999,159 @@ export interface SpatialDatasetPayload {
   segmentation_samples: SpatialSegmentationSamplePayload[];
 }
 
+// ---------------------------------------------------------------------------
+// Phase 21: Video & Temporal Representation Learning Types
+// ---------------------------------------------------------------------------
+
+export type TemporalTaskType =
+  | "video_classification"
+  | "temporal_representation_analysis"
+  | "frame_classification";
+
+export type TemporalAggregationType =
+  | "simple_rnn"
+  | "learned_temporal_pooling"
+  | "mean_pool"
+  | "max_pool"
+  | "last_frame";
+
+export type TemporalTransferStrategyType =
+  | "frozen_frame_encoder"
+  | "partial_fine_tune"
+  | "full_fine_tune"
+  | "frame_independent";
+
+export type TemporalCorruptionType =
+  | "frame_drop"
+  | "frame_duplication"
+  | "frame_shuffle"
+  | "temporal_subsampling"
+  | "spatial_composite";
+
+export interface TemporalTrajectoryPayload {
+  start_pos: [number, number];
+  end_pos: [number, number];
+  per_frame_positions: [number, number][];
+  direction: string;
+  velocity_magnitude: number;
+  is_stationary: boolean;
+}
+
+export interface TemporalPCATrajectoryPayload {
+  timestep: number;
+  pca_1: number;
+  pca_2: number;
+}
+
+export interface TemporalTimelineMetricPayload {
+  timestep: number;
+  representation_norm: number;
+  adjacent_drift: number;
+  adjacent_cosine_similarity: number;
+  motion_displacement: number;
+}
+
+export interface TemporalVideoSamplePayload {
+  video_id: string;
+  frame_tensors: number[][][][]; // T x C x H x W
+  frame_ids: string[];
+  frame_indices: number[];
+  label: number;
+  frame_count: number;
+  frame_shape: [number, number, number];
+  motion_trajectory: TemporalTrajectoryPayload | null;
+  dataset_fingerprint: string;
+  split: string;
+  metadata: Record<string, unknown>;
+  pca_trajectory: TemporalPCATrajectoryPayload[];
+  timeline_metrics: TemporalTimelineMetricPayload[];
+  hidden_norms: number[];
+  attention_weights: number[];
+}
+
+export interface TemporalObjectiveComparisonPayload {
+  objective: string;
+  label: string;
+  frozen_accuracy: number;
+  finetune_accuracy: number;
+  temporal_consistency: number;
+  sequence_drift: number;
+  trainable_fraction: number;
+  description: string;
+}
+
+export interface TemporalLayerProfileRecord {
+  layer_name: string;
+  depth_fraction: number;
+  feature_dim: number;
+  accuracy: number;
+  consistency: number;
+}
+
+export interface TemporalAggregatorComparisonPayload {
+  aggregator: TemporalAggregationType;
+  label: string;
+  accuracy: number;
+  order_sensitive: boolean;
+  temporal_params: number;
+  notes: string;
+}
+
+export interface TemporalRobustnessBenchmarkPayload {
+  corruption_type: TemporalCorruptionType;
+  label: string;
+  clean_accuracy: number;
+  perturbed_accuracy: number;
+  accuracy_delta: number;
+  representation_drift: number;
+  description: string;
+}
+
+export interface TemporalDataEfficiencyRecord {
+  budget_fraction: number;
+  samples: number;
+  reconstruction: number;
+  supervised: number;
+  simclr: number;
+  scratch: number;
+}
+
+export interface TemporalSequenceLengthRecord {
+  num_frames: number;
+  accuracy: number;
+  temporal_consistency: number;
+  mean_drift: number;
+}
+
+export interface TemporalCandidateFailurePayload {
+  failure_type: string;
+  sample_id: string;
+  direction: string;
+  description: string;
+  severity: "low" | "medium" | "high";
+}
+
+export interface TemporalDatasetPayload {
+  metadata: {
+    phase: number;
+    title: string;
+    dataset_fingerprint: string;
+    num_classes: number;
+    class_names: string[];
+    architectures: string[];
+    pretraining_objectives: string[];
+    aggregators: TemporalAggregationType[];
+    transfer_strategies: TemporalTransferStrategyType[];
+  };
+  samples: TemporalVideoSamplePayload[];
+  objective_comparisons: TemporalObjectiveComparisonPayload[];
+  layer_profiles: Record<string, TemporalLayerProfileRecord[]>;
+  aggregator_comparisons: TemporalAggregatorComparisonPayload[];
+  robustness_benchmarks: TemporalRobustnessBenchmarkPayload[];
+  data_efficiency_curves: TemporalDataEfficiencyRecord[];
+  sequence_length_studies: TemporalSequenceLengthRecord[];
+  candidate_failures: TemporalCandidateFailurePayload[];
+}
+
+
 

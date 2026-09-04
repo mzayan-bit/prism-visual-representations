@@ -14,6 +14,7 @@ import { ReconstructionLaboratoryView } from "./components/ReconstructionLaborat
 import RobustnessLaboratoryView from "./components/RobustnessLaboratoryView";
 import { SelfSupervisedLaboratoryView } from "./components/SelfSupervisedLaboratoryView";
 import { SpatialTransferLaboratoryView } from "./components/SpatialTransferLaboratoryView";
+import { TemporalLaboratoryView } from "./components/TemporalLaboratoryView";
 import { TransferLaboratoryView } from "./components/TransferLaboratoryView";
 import {
   getCrossArchitectureComparison,
@@ -29,6 +30,7 @@ import {
 
 export default function PRISMDashboardPage() {
   const [appMode, setAppMode] = useState<
+    | "temporal"
     | "spatial"
     | "reconstruction"
     | "ssl"
@@ -36,7 +38,7 @@ export default function PRISMDashboardPage() {
     | "explainability"
     | "robustness"
     | "observatory"
-  >("spatial");
+  >("temporal");
 
   // Observatory state
   const metadata = useMemo(() => getObservatoryMetadata(), []);
@@ -93,6 +95,17 @@ export default function PRISMDashboardPage() {
         </div>
 
         <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 overflow-x-auto">
+          <button
+            id="nav-mode-temporal"
+            onClick={() => setAppMode("temporal")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              appMode === "temporal"
+                ? "bg-amber-600 text-white shadow-md shadow-amber-500/20"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <span>🎬</span> Temporal Lab (Phase 21)
+          </button>
           <button
             id="nav-mode-spatial"
             onClick={() => setAppMode("spatial")}
@@ -172,6 +185,9 @@ export default function PRISMDashboardPage() {
           </button>
         </div>
       </nav>
+
+      {/* Phase 21: Video & Temporal Representation Learning Laboratory */}
+      {appMode === "temporal" && <TemporalLaboratoryView />}
 
       {/* Phase 20: Spatial Representation Transfer Laboratory */}
       {appMode === "spatial" && <SpatialTransferLaboratoryView />}
