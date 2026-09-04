@@ -847,5 +847,100 @@ print("Objective Comparisons:", list(benchmarks["objective_comparisons"].keys())
 print("Layer Transferability Models:", list(benchmarks["layer_transferability"].keys()))
 ```
 
+---
+
+## Multimodal Vision-Language Representation Alignment
+
+Phase 22 introduces multimodal dual-encoder contrastive alignment, enabling shared metric embedding space learning between vision backbones and text encoders without external dependencies:
+
+```python
+from prism.core.enums import ModelFamily
+from prism.models.specifications import ModelSpecification
+from prism.multimodal.runner import MultimodalTrainingEngine
+from prism.multimodal.specification import VisionLanguageTrainingSpecification
+from prism.multimodal.synthetic import (
+    build_synthetic_vocabulary,
+    generate_synthetic_multimodal_dataset,
+)
+from prism.multimodal.tokenizer import SimpleTokenizer
+from prism.api.multimodal_service import MultimodalAlignmentService
+
+# 1. Generate Deterministic Synthetic Vision-Language Dataset & Tokenizer
+vocab = build_synthetic_vocabulary()
+tokenizer = SimpleTokenizer(vocab, max_length=12)
+train_samples = generate_synthetic_multimodal_dataset(
+    num_samples=24, image_shape=(3, 16, 16), seed=42
+)
+eval_samples = generate_synthetic_multimodal_dataset(
+    num_samples=12, image_shape=(3, 16, 16), seed=84
+)
+
+# 2. Configure Dual-Encoder Training Specification
+vis_spec = ModelSpecification(
+    model_id="cnn_multimodal_backbone",
+    name="CNN Multimodal Backbone",
+    family=ModelFamily.CNN,
+    architecture="cnn",
+    compatible_tasks=[],
+    input_shape=(3, 16, 16),
+    num_classes=3,
+    hyperparameters={
+        "conv_channels": [8],
+        "kernel_sizes": [3],
+        "strides": [1],
+        "paddings": [1],
+        "pool_types": ["max"],
+        "pool_sizes": [2],
+        "pool_strides": [2],
+        "hidden_dims": [16],
+        "activation": "relu",
+    },
+)
+
+train_spec = VisionLanguageTrainingSpecification(
+    visual_family=ModelFamily.CNN,
+    visual_spec=vis_spec,
+    text_dim=16,
+    shared_dim=16,
+    temperature=0.2,
+    use_mlp_projection=False,
+    learning_rate=0.05,
+    epochs=10,
+    batch_size=8,
+    seed=42,
+)
+
+# 3. Train Dual-Encoder Multimodal Engine
+engine = MultimodalTrainingEngine(
+    spec=train_spec,
+    train_samples=train_samples,
+    eval_samples=eval_samples,
+    tokenizer=tokenizer,
+    vocab=vocab,
+)
+report = engine.train()
+
+# 4. Inspect Cross-Modal Retrieval & Zero-Shot Classification
+print(f"I2T R@1: {report.retrieval_summary.image_to_text_r1 * 100:.1f}%")
+print(f"T2I R@1: {report.retrieval_summary.text_to_image_r1 * 100:.1f}%")
+print(f"Zero-Shot Accuracy: {report.zero_shot_summary.top1_accuracy * 100:.1f}%")
+print(
+    f"Mean Paired Cosine Alignment: {report.geometry_summary['mean_paired_cosine']:.4f}"
+)
+print(
+    f"Multimodal Collapse Status: {'COLLAPSED' if report.collapse_summary.is_collapsed else 'HEALTHY'}"
+)
+
+# 5. Access Precomputed Multimodal Benchmarks via API Service
+service = MultimodalAlignmentService(seed=42)
+benchmarks = service.get_precomputed_benchmarks()
+print(
+    "Multimodal Pretraining Objectives:",
+    list(benchmarks["objective_comparisons"].keys()),
+)
+print("Prompt Sensitivity Templates:", list(benchmarks["prompt_sensitivity"].keys()))
+```
+
+
 
 

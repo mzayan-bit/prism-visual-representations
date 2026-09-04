@@ -20,16 +20,15 @@ Baselines                  Residual Learning                Self-Supervision
 ## Project Status
 
 > [!NOTE]
-> **Active Development**: PRISM has completed **Phase 21: Video & Temporal Representation Learning**.
-> The platform extends beyond static-image representation analysis into controlled short-video and temporal representation research, investigating how visual representations change when information is aggregated across time:
-> - **Video & Temporal Contracts** (`VideoSample`, `VideoBatch`, `MotionTrajectory`, `FrameMetadata`) preserving frame identity $[T \times C \times H \times W]$ and trajectory metadata.
-> - **Deterministic Synthetic Video Dataset** (`SyntheticVideoGenerator`) producing horizontal, vertical, stationary, and static-sequence controls without external media files.
-> - **Temporal Frame Encoder Adapter** (`TemporalFrameEncoder`) sharing 100% of image encoder weights across timesteps $[N \cdot T, C, H, W] \to [N, T, D]$ for CNNs, ResNets, and ViTs.
-> - **Lightweight Aggregators & Vanilla RNN** (`MeanTemporalPooling`, `MaxTemporalPooling`, `LastFramePooling`, `LearnedTemporalPooling` with softmax attention, and `SimpleRNN` $h_t = \tanh(W_x x_t + W_h h_{t-1} + b)$ with exact analytical BPTT).
-> - **Temporal Consistency & Motion Sensitivity** (adjacent Euclidean drift, cosine similarity, max temporal jump, temporal drift curve $d(h_0, h_t)$, and correlation with ground-truth velocity).
-> - **Temporal Robustness & Corruptions** (`FRAME_DROP`, `FRAME_DUPLICATION`, `FRAME_SHUFFLE`, `TEMPORAL_SUBSAMPLING`, `SPATIAL_COMPOSITE`).
-> - **Cross-Objective Pretraining Transfer** (Supervised, SimCLR, Reconstruction, Scratch across Frozen, Partial, and Full fine-tuning).
-> - **Interactive Temporal Laboratory UI**: Frame strip, representation timeline, aggregation view / learned attention weights, shared PCA trajectory plot, robustness perturbation explorer, layer transferability panel, and failure explorer.
+> **Active Development**: PRISM has completed **Phase 22: Multimodal Vision-Language Representation Alignment**.
+> The platform extends into controlled multimodal representation research, investigating how visual representations align with language in a shared metric embedding space:
+> - **Vision-Language Dual-Encoder Contracts** (`VisionLanguageSample`, `TokenizedText`, `VisionLanguageBatch`, `ClassPrompt`, `RetrievalResult`, `CrossModalRetrievalSummary`, `ZeroShotClassificationSummary`, `CrossModalCentroidAlignment`, `MultimodalCollapseSummary`).
+> - **Deterministic Synthetic Multimodal Dataset & Tokenizer** (`Vocabulary` with pinned special tokens 0..3 and alphabetical sorting, `SimpleTokenizer`, `generate_synthetic_multimodal_dataset` with compositionally structured captions).
+> - **Dual-Encoder Architecture & Symmetric Contrastive Loss** (`TokenEmbeddingTable`, `MaskedMeanPooling`, `VisualProjectionHead`, `TextProjectionHead`, `TextEncoder`, `SymmetricContrastiveLoss` with exact analytical backpropagation through L2 normalization and temperature scaling).
+> - **Multimodal Representation Evaluation** (Cross-modal retrieval R@1, R@3, R@5, MRR across I2T and T2I; Zero-shot open-vocabulary classification and confusion matrices; Prompt template sensitivity analysis).
+> - **Shared Metric Geometry & Multimodal Collapse Diagnostics** (Joint PCA basis fitting on $[V, T]$, paired Euclidean and cosine distance distributions, cross-modal centroid alignment, and dimensional variance tracking).
+> - **Multimodal Robustness Under Corruptions** (Paired visual drift vs alignment drift under Gaussian noise, blur, brightness, and occlusion perturbations).
+> - **Interactive Multimodal Laboratory UI**: Paired sample viewer, token & embedding inspector, bidirectional retrieval explorer, shared 2D PCA embedding space, zero-shot classification card, prompt sensitivity panel, cross-objective comparison, robustness degradation card, and multimodal failure taxonomy explorer.
 
 ---
 
@@ -58,7 +57,8 @@ Baselines                  Residual Learning                Self-Supervision
 | **Phase 19** | Generative / Reconstruction-Based Representation Learning | :white_check_mark: Completed |
 | **Phase 20** | Detection & Segmentation Representation Transfer | :white_check_mark: Completed |
 | **Phase 21** | Video & Temporal Representation Learning | :white_check_mark: Completed |
-| **Phase 22** | Multi-Modal & Vision-Language Alignment | :hourglass_flowing_sand: Planned |
+| **Phase 22** | Multimodal Vision-Language Representation Alignment | :white_check_mark: Completed |
+| **Phase 23** | Generative Diffusion & Representation Dynamics | :hourglass_flowing_sand: Planned |
 
 ---
 
@@ -81,7 +81,9 @@ prism-visual-representations/
 │   │       ├── evaluation/    # Evaluation engine, metrics, and structured reports
 │   │       ├── representations/# Representation descriptors, feature batches, summaries
 │   │       ├── transfer/      # Transfer specifications, freeze plans, linear probes, retention
-│   │       ├── ssl/           # SimCLR contrastive pretraining, projection heads, collapse diagnostics
+│   │       ├── spatial/       # Detection and segmentation spatial transfer
+│   │       ├── temporal/      # Video and temporal representation learning
+│   │       ├── multimodal/    # Dual-encoder vision-language alignment, tokenizer, symmetric loss
 │   │       ├── robustness/    # Corruptions, distribution shifts, OOD tests
 │   │       ├── explainability/# Saliency, attention rollout, Grad-CAM
 │   │       └── utils/         # Seeding, hashing, structured logging

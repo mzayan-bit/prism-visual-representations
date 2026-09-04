@@ -238,6 +238,16 @@ TrainingResult & Completed Run Lifecycle
 - Cross-Objective Temporal Transfer (`TemporalTrainingRunner`): Comparative transfer across Supervised, SimCLR, Reconstruction, and Scratch objectives under Frozen, Partial, and Full fine-tuning strategies.
 - PRISM Temporal Laboratory UI (`frontend/app/components/TemporalLaboratoryView.tsx`): Research workstation interface featuring interactive frame strip, representation timeline, aggregation view, 2D shared PCA trajectories, robustness perturbation card, layer transferability chart, and failure explorer.
 
+### 16. Multimodal Vision-Language Representation Alignment Laboratory (`prism.multimodal`, `prism.api`)
+- Vision-Language Contracts & Metadata (`VisionLanguageSample`, `TokenizedText`, `VisionLanguageBatch`, `ClassPrompt`, `RetrievalResult`, `CrossModalRetrievalSummary`, `ZeroShotClassificationSummary`, `CrossModalCentroidAlignment`, `MultimodalCollapseSummary`): Canonical paired sample representation, structured captions, and multimodal evaluation telemetry.
+- Deterministic Tokenizer & Vocabulary (`Vocabulary`, `SimpleTokenizer`, `build_synthetic_vocabulary`): Pinned special tokens (PAD=0, UNK=1, BOS=2, EOS=3) and deterministic alphabetical vocabulary sorting with SHA-256 fingerprinting.
+- Dual-Encoder Architecture & Embedding Projections (`TokenEmbeddingTable`, `MaskedMeanPooling`, `VisualProjectionHead`, `TextProjectionHead`, `TextEncoder`): Learnable token embedding table with sequence-gradient routing, padding-masked mean pooling, linear/MLP projection heads, and L2 embedding normalization.
+- Symmetric Contrastive Loss (`SymmetricContrastiveLoss`): Row-wise and column-wise temperature-scaled cross-entropy on cosine similarity matrix $\mathbf{S} = \frac{\mathbf{v} \mathbf{t}^T}{\tau}$ with exact analytical derivatives backpropagated through L2 vector normalization.
+- Cross-Modal Retrieval & Zero-Shot Classification (`evaluate_cross_modal_retrieval`, `evaluate_zero_shot_classification`, `evaluate_prompt_sensitivity`): Bidirectional Recall@K (R@1, R@3, R@5) and MRR, open-vocabulary prompt embedding class matching, confusion matrices, and prompt template invariance auditing.
+- Shared Metric Geometry & Collapse Diagnostics (`compute_shared_multimodal_geometry`, `compute_multimodal_collapse_diagnostics`): Joint PCA basis fitted on concatenated visual and textual embeddings $[\mathbf{V}, \mathbf{T}]$, paired displacement distributions, cross-modal centroid alignment, and dimensional variance tracking.
+- Multimodal Robustness Evaluation (`evaluate_multimodal_alignment_robustness`): Paired visual drift vs alignment drift under Gaussian noise, blur, brightness, and occlusion perturbations with fixed textual captions.
+- PRISM Multimodal Laboratory UI (`frontend/app/components/MultimodalLaboratoryView.tsx`): Research workstation interface featuring paired sample viewer, token/embedding inspector, bidirectional retrieval explorer, 2D shared PCA space, zero-shot classification card, prompt sensitivity panel, cross-objective comparison, robustness degradation card, and failure taxonomy explorer.
+
 ---
 
 ## Domain Subsystems
@@ -281,13 +291,17 @@ Spatial representation transfer contracts (`BoundingBox`, `DetectionAnnotation`,
 ### `prism.temporal`
 Video and temporal representation learning contracts (`VideoSample`, `VideoBatch`, `MotionTrajectory`, `FrameMetadata`), deterministic synthetic generator (`SyntheticVideoGenerator`), temporal frame encoder adapter (`TemporalFrameEncoder`), pooling aggregators and SimpleRNN (`MeanTemporalPooling`, `MaxTemporalPooling`, `LastFramePooling`, `LearnedTemporalPooling`, `SimpleRNN`), temporal classifier heads (`TemporalClassificationHead`, `TemporalRepresentationModel`), consistency and motion metrics (`compute_temporal_consistency`, `compute_temporal_drift_curve`, `compute_motion_sensitivity`), temporal corruptions and robustness (`apply_temporal_corruption`, `TemporalRobustnessSummary`), temporal training runner (`TemporalTrainingRunner`), and structured reports (`TemporalRepresentationReport`).
 
+### `prism.multimodal`
+Multimodal vision-language alignment contracts (`VisionLanguageSample`, `TokenizedText`, `ClassPrompt`, `RetrievalResult`, `CrossModalRetrievalSummary`), deterministic vocabulary and tokenizer (`Vocabulary`, `SimpleTokenizer`), dual-encoder embeddings and projections (`TokenEmbeddingTable`, `MaskedMeanPooling`, `TextEncoder`, `VisualProjectionHead`, `TextProjectionHead`), symmetric contrastive loss (`SymmetricContrastiveLoss`), cross-modal retrieval and zero-shot evaluators, multimodal geometry analysis, and multimodal training engine (`MultimodalTrainingEngine`).
+
 ### `prism.api`
-Research service layer (`GeometryService`, `RobustnessService`, `ExplainabilityService`, `TransferService`, `SelfSupervisedService`, `ReconstructionService`, `SpatialTransferService`, `TemporalRepresentationService`) providing experiment metadata, geometric queries, robustness evaluations, explainability payloads, transfer benchmarks, SSL pretraining benchmarks, reconstruction learning benchmarks, spatial transfer benchmarks, temporal representation benchmarks, and dashboard demo data serving.
+Research service layer (`GeometryService`, `RobustnessService`, `ExplainabilityService`, `TransferService`, `SelfSupervisedService`, `ReconstructionService`, `SpatialTransferService`, `TemporalRepresentationService`, `MultimodalAlignmentService`) providing experiment metadata, geometric queries, robustness evaluations, explainability payloads, transfer benchmarks, SSL pretraining benchmarks, reconstruction learning benchmarks, spatial transfer benchmarks, temporal representation benchmarks, multimodal alignment benchmarks, and dashboard demo data serving.
 
 ### `prism.experiments`
 Declarative experiment definitions (`ExperimentDefinition`), run lifecycle tracking (`ExperimentRun`), runtime harness (`ExperimentExecutionHarness`), and controlled comparison suites (`ArchitectureComparisonSuite`).
 
 ### `prism.artifacts`
 Artifact tracking contracts (`ArtifactReference`) storing logical keys, storage URIs, checksums, and generating run IDs.
+
 
 

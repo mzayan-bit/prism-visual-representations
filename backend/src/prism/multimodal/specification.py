@@ -56,7 +56,7 @@ class VisionLanguageTrainingSpecification:
         """Serialize training specification."""
         return {
             "visual_family": self.visual_family.value,
-            "visual_spec": self.visual_spec.to_dict(),
+            "visual_spec": self.visual_spec.model_dump(),
             "text_dim": self.text_dim,
             "shared_dim": self.shared_dim,
             "temperature": self.temperature,

@@ -241,6 +241,27 @@ When evaluating learned representation reuse and downstream adaptation across ta
 
 ---
 
+## 14. Multimodal Vision-Language Representation Alignment Contracts
+
+- **Dual-Encoder Architecture & Shared Metric Space**: Visual representations $\mathbf{v} \in \mathbb{R}^D$ and textual representations $\mathbf{t} \in \mathbb{R}^D$ are mapped into a shared, unit-normalized metric space via dedicated projection heads $g_v(\mathbf{h}_v)$ and $g_t(\mathbf{h}_t)$, where $\|\hat{\mathbf{v}}\|_2 = 1.0$ and $\|\hat{\mathbf{t}}\|_2 = 1.0$.
+- **Symmetric Dual Contrastive Loss**:
+  $$\mathcal{L} = \frac{1}{2N} \left( \sum_{i=1}^N -\log \frac{\exp(\hat{\mathbf{v}}_i \cdot \hat{\mathbf{t}}_i / \tau)}{\sum_{j=1}^N \exp(\hat{\mathbf{v}}_i \cdot \hat{\mathbf{t}}_j / \tau)} + \sum_{j=1}^N -\log \frac{\exp(\hat{\mathbf{v}}_j \cdot \hat{\mathbf{t}}_j / \tau)}{\sum_{i=1}^N \exp(\hat{\mathbf{v}}_i \cdot \hat{\mathbf{t}}_j / \tau)} \right)$$
+  Analytical derivatives are evaluated with exact gradient backpropagation through L2 vector normalization.
+- **Strict Unsupervised Label Independence Invariant**: Contrastive alignment is learned strictly through paired image-text association. Class labels are completely excluded from the contrastive forward loss and backward gradient computation graphs.
+- **Deterministic Vocabulary & Tokenizer Governance**:
+  - Special tokens are immutably pinned to indices: `<PAD>` = 0, `<UNK>` = 1, `<BOS>` = 2, `<EOS>` = 3.
+  - Lexical tokens are deterministically sorted alphabetically starting at index 4.
+  - Tokenizers enforce explicit padding and attention masks without reliance on external NLP tokenization libraries.
+- **Bidirectional Cross-Modal Retrieval Metrics**: Retrieval evaluation reports Recall@1, Recall@3, Recall@5, and Mean Reciprocal Rank (MRR) for both Image-to-Text ($I \to T$) and Text-to-Image ($T \to I$) directions.
+- **Zero-Shot Classification Protocol**: Open-vocabulary classification is performed by embedding class prompt texts ("a photo of a {class}"), measuring cosine similarity with image embeddings, and predicting class via $\arg\max_c (\hat{\mathbf{v}} \cdot \hat{\mathbf{t}}_c)$.
+- **Shared Geometry & Multimodal Collapse Invariants**:
+  - Joint PCA is fitted on the concatenated embedding matrix $[\mathbf{V}, \mathbf{T}]$, projecting both visual and textual points into a shared 2D coordinate basis.
+  - Multimodal collapse diagnostics track dimensional standard deviation ($\sigma_d > 0.05$), non-zero variance fractions, and paired similarity gaps to detect complete, dimensional, or modality collapse.
+- **Multimodal Robustness Evaluation**: Visual corruptions are applied to image inputs while holding textual captions fixed, measuring paired Euclidean visual drift, cosine degradation, and alignment retention.
+- **Strict Scientific Boundaries**: PRISM does not download OpenAI CLIP weights, call external LLM APIs, train chatbots, or scrape internet datasets. All alignment research is conducted within controlled, reproducible synthetic or benchmark settings.
+
+---
+
 ## Data and Artifact Policy
 
 ### Prohibited from Version Control:
