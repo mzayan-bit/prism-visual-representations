@@ -18,6 +18,7 @@ import { SpatialTransferLaboratoryView } from "./components/SpatialTransferLabor
 import { TemporalLaboratoryView } from "./components/TemporalLaboratoryView";
 import { TransferLaboratoryView } from "./components/TransferLaboratoryView";
 import { UncertaintyLaboratoryView } from "./components/UncertaintyLaboratoryView";
+import { BenchmarkObservatoryView } from "./components/benchmark/BenchmarkObservatoryView";
 import {
   getCrossArchitectureComparison,
   getLayerGeometryProfile,
@@ -32,6 +33,7 @@ import {
 
 export default function PRISMDashboardPage() {
   const [appMode, setAppMode] = useState<
+    | "benchmark"
     | "uncertainty"
     | "multimodal"
     | "temporal"
@@ -42,7 +44,7 @@ export default function PRISMDashboardPage() {
     | "explainability"
     | "robustness"
     | "observatory"
-  >("uncertainty");
+  >("benchmark");
 
   // Observatory state
   const metadata = useMemo(() => getObservatoryMetadata(), []);
@@ -99,6 +101,17 @@ export default function PRISMDashboardPage() {
         </div>
 
         <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 overflow-x-auto">
+          <button
+            id="nav-mode-benchmark"
+            onClick={() => setAppMode("benchmark")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              appMode === "benchmark"
+                ? "bg-cyan-500 text-slate-950 font-black shadow-md shadow-cyan-500/20"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <span>🏛️</span> Benchmark Observatory (Phase 24)
+          </button>
           <button
             id="nav-mode-uncertainty"
             onClick={() => setAppMode("uncertainty")}
@@ -211,6 +224,9 @@ export default function PRISMDashboardPage() {
           </button>
         </div>
       </nav>
+
+      {/* Phase 24: Cross-Paradigm Benchmark Orchestration & Evidence Synthesis Observatory */}
+      {appMode === "benchmark" && <BenchmarkObservatoryView />}
 
       {/* Phase 23: Uncertainty, Calibration & Out-of-Distribution Representation Laboratory */}
       {appMode === "uncertainty" && <UncertaintyLaboratoryView />}

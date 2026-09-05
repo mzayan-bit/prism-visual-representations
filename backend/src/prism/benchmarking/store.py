@@ -74,6 +74,10 @@ class BenchmarkResultStore:
         """Return all registered benchmark cells."""
         return list(self._cells.values())
 
+    def all_cells(self) -> list[BenchmarkResultCell]:
+        """Alias for get_all: return all registered benchmark cells."""
+        return self.get_all()
+
     def count(self) -> int:
         """Total number of registered result cells."""
         return len(self._cells)
@@ -87,10 +91,16 @@ class BenchmarkResultStore:
         task: str | None = None,
         seed: int | None = None,
         status: ResultStatus | None = None,
+        factors: dict[str, Any] | None = None,
         factor_filters: dict[str, Any] | None = None,
     ) -> list[BenchmarkResultCell]:
         """Query benchmark result cells by metrics, factors, or lifecycle status."""
         results: list[BenchmarkResultCell] = []
+        combined_filters: dict[str, Any] = {}
+        if factors:
+            combined_filters.update(factors)
+        if factor_filters:
+            combined_filters.update(factor_filters)
 
         for cell in self._cells.values():
             if metric_id is not None and cell.metric_id != metric_id:
@@ -102,21 +112,24 @@ class BenchmarkResultStore:
             if seed is not None and cell.seed != seed:
                 continue
 
-            factors = cell.factors
-            if architecture is not None and factors.get("architecture") != architecture:
+            cell_factors = cell.factors
+            if (
+                architecture is not None
+                and cell_factors.get("architecture") != architecture
+            ):
                 continue
             if (
                 pretraining_objective is not None
-                and factors.get("pretraining_objective") != pretraining_objective
+                and cell_factors.get("pretraining_objective") != pretraining_objective
             ):
                 continue
-            if task is not None and factors.get("task") != task:
+            if task is not None and cell_factors.get("task") != task:
                 continue
 
-            if factor_filters:
+            if combined_filters:
                 match = True
-                for k, v in factor_filters.items():
-                    if factors.get(k) != v:
+                for k, v in combined_filters.items():
+                    if cell_factors.get(k) != v:
                         match = False
                         break
                 if not match:
