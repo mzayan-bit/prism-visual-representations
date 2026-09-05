@@ -1308,8 +1308,215 @@ export interface MultimodalDatasetPayload {
       }
     >;
   };
-  objective_comparisons: MultimodalObjectiveComparisonPayload[];
-  architecture_comparisons: MultimodalArchitectureComparisonPayload[];
-  candidate_failures: MultimodalCandidateFailurePayload[];
+  objective_comparisons?: MultimodalObjectiveComparisonPayload[];
+  architecture_comparisons?: MultimodalArchitectureComparisonPayload[];
+  candidate_failures?: MultimodalCandidateFailurePayload[];
 }
+
+// ==========================================
+// Phase 23: Uncertainty, Calibration & OOD Types
+// ==========================================
+
+export interface ReliabilityBinPayload {
+  bin_index: number;
+  lower_bound: number;
+  upper_bound: number;
+  sample_count: number;
+  mean_confidence: number;
+  empirical_accuracy: number;
+  calibration_gap: number;
+}
+
+export interface ConfidenceSubsetSummaryPayload {
+  sample_count: number;
+  mean_max_probability: number;
+  median_max_probability: number;
+  mean_entropy: number;
+  mean_normalized_entropy: number;
+}
+
+export interface ClassCalibrationSummaryPayload {
+  class_id: number;
+  class_name: string;
+  sample_count: number;
+  accuracy: number;
+  mean_confidence: number;
+  mean_entropy: number;
+  ece: number | null;
+  warning: string | null;
+}
+
+export interface CalibrationReportPayload {
+  sample_count: number;
+  accuracy: number;
+  mean_confidence: number;
+  ece: number;
+  mce: number | null;
+  brier_score: number;
+  nll: number;
+  negative_log_likelihood?: number;
+  mean_predictive_entropy: number;
+  mean_normalized_entropy: number;
+  bin_count: number;
+  binning_strategy: string;
+  reliability_bins: ReliabilityBinPayload[];
+  correct_predictions_summary?: ConfidenceSubsetSummaryPayload;
+  incorrect_predictions_summary?: ConfidenceSubsetSummaryPayload;
+  error_subset_summary?: ConfidenceSubsetSummaryPayload;
+  correct_subset_summary?: ConfidenceSubsetSummaryPayload;
+  class_summaries?: ClassCalibrationSummaryPayload[];
+  warnings?: string[];
+}
+
+export interface TemperatureScalingResultPayload {
+  fitted_temperature: number;
+  validation_nll_before: number;
+  validation_nll_after: number;
+  ece_before: number;
+  ece_after: number;
+  search_range: [number, number];
+  fitting_method: string;
+  iterations: number;
+  warnings: string[];
+}
+
+export interface OODBinaryEvaluationSummaryPayload {
+  score_method: string;
+  auroc: number;
+  aupr: number | null;
+  threshold: number;
+  threshold_policy: string;
+  tpr_at_threshold: number;
+  fpr_at_threshold: number;
+  detection_accuracy_at_threshold: number;
+  id_sample_count: number;
+  ood_sample_count: number;
+  mean_id_score: number;
+  mean_ood_score: number;
+  score_separation_gap: number;
+}
+
+export interface CorruptionUncertaintyCurvePayload {
+  corruption_type: string;
+  severities: number[];
+  accuracies: number[];
+  mean_confidences: number[];
+  mean_entropies: number[];
+  eces: number[];
+  mean_representation_drifts: number[];
+  mean_ood_scores: number[];
+  confidence_slope: number;
+  entropy_slope: number;
+  is_monotonic_entropy: boolean;
+}
+
+export interface PredictionFlipUncertaintyPayload {
+  sample_id: string;
+  corruption_type: string;
+  severity: number;
+  clean_prediction: number;
+  corrupted_prediction: number;
+  clean_confidence: number;
+  corrupted_confidence: number;
+  clean_entropy: number;
+  corrupted_entropy: number;
+  representation_drift: number;
+}
+
+export interface RepresentationConfidenceRelationshipPayload {
+  centroid_distance_pearson_correlation: number | null;
+  knn_distance_pearson_correlation: number | null;
+  correct_mean_centroid_distance: number;
+  incorrect_mean_centroid_distance: number;
+  correct_mean_knn_distance: number;
+  incorrect_mean_knn_distance: number;
+}
+
+export interface UncertaintyAnalysisReportPayload {
+  model_id: string;
+  architecture: string;
+  source_objective: string;
+  dataset_fingerprint: string;
+  split: string;
+  representation_layer: string;
+  seed: number;
+  calibration_report: CalibrationReportPayload;
+  temperature_scaling: TemperatureScalingResultPayload | null;
+  calibrated_report: CalibrationReportPayload | null;
+  ood_evaluations: Record<string, OODBinaryEvaluationSummaryPayload>;
+  representation_relationship: RepresentationConfidenceRelationshipPayload | null;
+  corruption_curves: CorruptionUncertaintyCurvePayload[];
+  prediction_flips: PredictionFlipUncertaintyPayload[];
+  failure_counts: Record<string, number>;
+  warnings: string[];
+}
+
+export interface UncertaintySampleItemPayload {
+  sample_id: string;
+  category: string;
+  predicted_class: number;
+  true_class: number | null;
+  is_correct: boolean;
+  confidence: number;
+  entropy: number;
+  nearest_centroid_class: string;
+  centroid_distance: number;
+  knn_distance: number;
+  msp_score: number;
+  is_ood_detected: boolean;
+}
+
+export interface UncertaintyObjectiveComparisonPayload {
+  objective: string;
+  architecture: string;
+  accuracy: number;
+  ece: number;
+  brier_score: number;
+  nll: number;
+  mean_entropy: number;
+  ood_msp_auroc: number;
+  ood_centroid_auroc: number;
+  ood_knn_auroc: number;
+  temperature: number;
+}
+
+export interface UncertaintyArchitectureComparisonPayload {
+  architecture: string;
+  accuracy: number;
+  ece: number;
+  brier_score: number;
+  nll: number;
+  mean_entropy: number;
+  ood_msp_auroc: number;
+  ood_centroid_auroc: number;
+  ood_knn_auroc: number;
+}
+
+export interface UncertaintyDatasetPayload {
+  meta: {
+    phase: number;
+    title: string;
+    model_id: string;
+    architecture: string;
+    source_objective: string;
+    dataset_fingerprint: string;
+    split: string;
+    representation_layer: string;
+    seed: number;
+    num_classes: number;
+    class_names: string[];
+    architectures: string[];
+    pretraining_objectives: string[];
+    calibration_modes: string[];
+    ood_score_methods: string[];
+    corruptions: string[];
+  };
+  report: UncertaintyAnalysisReportPayload;
+  reference_set: Record<string, unknown>;
+  samples: UncertaintySampleItemPayload[];
+  objective_comparisons: UncertaintyObjectiveComparisonPayload[];
+  architecture_comparisons: UncertaintyArchitectureComparisonPayload[];
+  ood_spec: Record<string, unknown>;
+}
+
 

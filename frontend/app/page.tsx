@@ -17,6 +17,7 @@ import { SelfSupervisedLaboratoryView } from "./components/SelfSupervisedLaborat
 import { SpatialTransferLaboratoryView } from "./components/SpatialTransferLaboratoryView";
 import { TemporalLaboratoryView } from "./components/TemporalLaboratoryView";
 import { TransferLaboratoryView } from "./components/TransferLaboratoryView";
+import { UncertaintyLaboratoryView } from "./components/UncertaintyLaboratoryView";
 import {
   getCrossArchitectureComparison,
   getLayerGeometryProfile,
@@ -31,6 +32,7 @@ import {
 
 export default function PRISMDashboardPage() {
   const [appMode, setAppMode] = useState<
+    | "uncertainty"
     | "multimodal"
     | "temporal"
     | "spatial"
@@ -40,7 +42,7 @@ export default function PRISMDashboardPage() {
     | "explainability"
     | "robustness"
     | "observatory"
-  >("multimodal");
+  >("uncertainty");
 
   // Observatory state
   const metadata = useMemo(() => getObservatoryMetadata(), []);
@@ -97,6 +99,17 @@ export default function PRISMDashboardPage() {
         </div>
 
         <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 overflow-x-auto">
+          <button
+            id="nav-mode-uncertainty"
+            onClick={() => setAppMode("uncertainty")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              appMode === "uncertainty"
+                ? "bg-amber-600 text-white shadow-md shadow-amber-500/20"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <span>🎲</span> Uncertainty & OOD (Phase 23)
+          </button>
           <button
             id="nav-mode-multimodal"
             onClick={() => setAppMode("multimodal")}
@@ -198,6 +211,9 @@ export default function PRISMDashboardPage() {
           </button>
         </div>
       </nav>
+
+      {/* Phase 23: Uncertainty, Calibration & Out-of-Distribution Representation Laboratory */}
+      {appMode === "uncertainty" && <UncertaintyLaboratoryView />}
 
       {/* Phase 22: Vision-Language Representation Alignment Laboratory */}
       {appMode === "multimodal" && <MultimodalLaboratoryView />}
