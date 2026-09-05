@@ -941,6 +941,131 @@ print(
 print("Prompt Sensitivity Templates:", list(benchmarks["prompt_sensitivity"].keys()))
 ```
 
+---
+
+## Running Uncertainty, Calibration & Out-of-Distribution Representation Experiments (Phase 23)
+
+Phase 23 provides a pure Python research framework for analyzing predictive confidence, probability calibration, and out-of-distribution (OOD) representation geometry:
+
+```python
+from prism.uncertainty.calibration import (
+    compute_calibration_report,
+    compute_expected_calibration_error,
+    compute_reliability_bins,
+)
+from prism.uncertainty.contracts import OODCategory
+from prism.uncertainty.corruptions import evaluate_corruption_uncertainty
+from prism.uncertainty.enums import BinningStrategy, OODScoreMethod, ThresholdPolicy
+from prism.uncertainty.failures import detect_uncertainty_failures
+from prism.uncertainty.metrics import compute_auroc, evaluate_ood_binary_classification
+from prism.uncertainty.ood_scores import score_ood_sample
+from prism.uncertainty.probabilities import batch_predictive_distributions
+from prism.uncertainty.reference_set import build_ood_reference_set
+from prism.uncertainty.reports import compile_uncertainty_analysis_report
+from prism.uncertainty.synthetic import (
+    SyntheticOODSpec,
+    generate_synthetic_ood_dataset,
+)
+from prism.uncertainty.temperature import (
+    evaluate_calibrated_predictions,
+    fit_temperature_scaling,
+)
+
+# 1. Generate Synthetic OOD Benchmark Dataset
+spec = SyntheticOODSpec(
+    dataset_name="synth-ood-v1",
+    num_samples=100,
+    image_shape=(3, 16, 16),
+    seed=42,
+)
+ood_samples, ood_meta = generate_synthetic_ood_dataset(spec)
+
+# 2. Extract In-Distribution Test Distributions and Compute Calibration Report
+test_dists = batch_predictive_distributions(
+    sample_ids=[f"test_{i}" for i in range(len(test_logits))],
+    logits_matrix=test_logits,
+    true_classes=test_targets,
+)
+uncal_report = compute_calibration_report(
+    distributions=test_dists,
+    bin_count=10,
+    strategy=BinningStrategy.EQUAL_WIDTH,
+)
+print(f"Uncalibrated Accuracy: {uncal_report.accuracy * 100:.1f}%")
+print(f"Uncalibrated ECE: {uncal_report.ece * 100:.2f}%")
+print(f"Uncalibrated NLL: {uncal_report.nll:.4f}")
+
+# 3. Post-Hoc Scalar Temperature Scaling on Validation Set
+temp_scaling = fit_temperature_scaling(
+    val_logits=val_logits,
+    val_targets=val_targets,
+    search_range=(0.05, 10.0),
+)
+print(f"Fitted Temperature T*: {temp_scaling.fitted_temperature:.3f}")
+
+cal_report = evaluate_calibrated_predictions(
+    test_distributions=test_dists,
+    fitted_temperature=temp_scaling.fitted_temperature,
+    bin_count=10,
+)
+print(f"Calibrated ECE: {cal_report.ece * 100:.2f}%")
+print(f"Calibrated NLL: {cal_report.nll:.4f}")
+
+# 4. Build Reference Representation Set and Score OOD Samples
+ref_set = build_ood_reference_set(
+    sample_ids=[f"ref_{i}" for i in range(len(train_vectors))],
+    vectors=train_vectors,
+    labels=train_targets,
+    source_experiment="cnn_supervised_baseline",
+    representation_layer="backbone.encoder",
+)
+
+ood_scores_msp = [
+    score_ood_sample(
+        sample_id=s.sample_id,
+        category=s.category,
+        distribution=d,
+        score_method=OODScoreMethod.MAX_SOFTMAX_PROBABILITY,
+    ).normalized_ood_score
+    for s, d in zip(ood_samples, ood_dists, strict=True)
+]
+
+ood_scores_centroid = [
+    score_ood_sample(
+        sample_id=s.sample_id,
+        category=s.category,
+        distribution=d,
+        score_method=OODScoreMethod.NEAREST_CLASS_CENTROID_DISTANCE,
+        representation=rep,
+        reference_set=ref_set,
+    ).normalized_ood_score
+    for s, d, rep in zip(ood_samples, ood_dists, ood_reps, strict=True)
+]
+
+# 5. Evaluate Binary OOD Discrimination (AUROC & Operating Point)
+eval_centroid = evaluate_ood_binary_classification(
+    id_scores=id_centroid_scores,
+    ood_scores=ood_scores_centroid,
+    score_method=OODScoreMethod.NEAREST_CLASS_CENTROID_DISTANCE,
+    threshold_policy=ThresholdPolicy.TARGET_ID_TPR,
+    target_id_tpr=0.95,
+)
+print(f"Centroid Distance AUROC: {eval_centroid.auroc * 100:.2f}%")
+print(
+    f"Detection Accuracy @ 95% ID TPR: {eval_centroid.detection_accuracy_at_threshold * 100:.1f}%"
+)
+
+# 6. Access Precomputed Uncertainty Benchmarks via API Service
+from prism.api.uncertainty_service import UncertaintyAnalysisService
+
+service = UncertaintyAnalysisService(seed=42)
+payload = service.generate_demo_payload()
+print(
+    "Evaluated Objectives in Benchmark:", list(payload["objective_comparisons"].keys())
+)
+```
+
+
 
 
 

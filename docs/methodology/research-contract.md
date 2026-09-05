@@ -262,6 +262,46 @@ When evaluating learned representation reuse and downstream adaptation across ta
 
 ---
 
+## 15. Uncertainty, Calibration & Out-of-Distribution Representation Analysis Contracts
+
+- **Predictive Confidence vs Correctness Distinction**: Model confidence (e.g. max softmax probability $\max_i p_i$) is an uncalibrated network output descriptor, NOT an objective probability of ground-truth correctness. Research documentation and reports must never equate high confidence with verified correctness.
+- **Numerically Stable Softmax & Finite Probability Invariants**:
+  $$p_i = \frac{\exp(z_i - \max(z))}{\sum_{j=1}^K \exp(z_j - \max(z))}$$
+  All probabilities must satisfy $\sum_{i=1}^K p_i \approx 1.0$ within floating point tolerance ($| \sum p_i - 1.0 | < 10^{-4}$), $p_i \in [0.0, 1.0]$, and strictly reject non-finite (NaN/Inf) logits.
+- **Predictive Shannon Entropy & Normalization**:
+  $$H(p) = -\sum_{i=1}^K p_i \ln(p_i + \epsilon), \quad H_{\text{norm}}(p) = \frac{H(p)}{\ln(K)}$$
+  Normalized entropy is bounded in $[0.0, 1.0]$, reaching 0.0 for deterministic one-hot distributions and 1.0 for uniform distributions over $K$ classes.
+- **Reliability Diagram Binning & ECE / MCE Invariants**:
+  - Equal-width binning partitions $[0, 1]$ into $B$ intervals $[l_b, u_b)$. Confidence $1.0$ is strictly mapped into the final bin.
+  - Empty bins ($n_b = 0$) are preserved explicitly and do NOT contribute to Expected Calibration Error (ECE) or Maximum Calibration Error (MCE).
+  - Expected Calibration Error must use sample-weighted bin gaps:
+    $$\text{ECE} = \sum_{b=1}^B \frac{n_b}{N} |\text{acc}_b - \text{conf}_b|$$
+    Unweighted bin averaging is strictly prohibited.
+  - Multiclass Brier Score is evaluated as $\frac{1}{N}\sum_{n=1}^N \sum_{k=1}^K (p_{nk} - y_{nk})^2$ and Negative Log-Likelihood as $-\frac{1}{N}\sum_{n=1}^N \ln(p_{n, y_n} + \epsilon)$.
+- **Temperature Scaling Optimization & Invariance**:
+  - Scalar temperature $T^* > 0$ is optimized exclusively on held-out **validation** data to minimize validation NLL. Test partitions and test labels must NEVER be used to fit $T^*$.
+  - Model weights, convolutional filters, and backbone representations remain strictly unchanged during temperature scaling.
+  - **Argmax Class Invariance**: For any scalar $T > 0$, $\arg\max_k (z_k / T) = \arg\max_k (z_k)$. Classification accuracy before and after temperature scaling must be bitwise identical.
+- **Out-of-Distribution (OOD) Scoring & Consistent Polarity**:
+  - All normalized OOD scoring methods adhere to the polarity invariant: **higher score = more OOD-like**.
+  - Maximum Softmax Probability: $\text{score}_{\text{MSP}} = 1.0 - \max_i p_i$.
+  - Normalized Entropy: $\text{score}_{\text{Entropy}} = H_{\text{norm}}(p)$.
+  - Class-Centroid Distance: $\text{score}_{\text{Centroid}} = \min_{c} d(\mathbf{h}, \boldsymbol{\mu}_c)$ with nearest class $\arg\min_c d(\mathbf{h}, \boldsymbol{\mu}_c)$.
+  - Deterministic $k\text{NN}$ Distance: $\text{score}_{k\text{NN}} = \frac{1}{k}\sum_{j=1}^k d(\mathbf{h}, \mathbf{r}_j)$ using in-distribution reference vectors.
+  - Free Energy Score: $\text{score}_{\text{Energy}} = -T \ln \sum_{i=1}^K \exp(z_i / T)$.
+- **Exact AUROC & Threshold Selection Contracts**:
+  - AUROC is evaluated using exact Mann-Whitney $U$ rank-sum integration with fractional average ranks for tied score pairs. Crude threshold approximation is prohibited.
+  - Decision threshold selection ($\theta$) is calibrated on in-distribution validation/reference scores (e.g. target 95% ID TPR $\theta_{0.95}$). Tuning decision thresholds on test OOD labels is strictly prohibited.
+- **Corruption Uncertainty Trajectories & Non-Monotonicity**:
+  - Uncertainty metrics (accuracy, mean confidence, predictive entropy, ECE, representation drift, prediction flips) are tracked across corruption severities 1..5.
+  - Confidence is NOT assumed to decrease monotonically with corruption severity. Non-monotonic overconfidence under corruption is explicitly measured and flagged as a diagnostic failure.
+- **Representation Novelty vs Confidence Relationships**:
+  - Pearson correlations between geometric distance (centroid / $k\text{NN}$) and predictive confidence are reported descriptively. Causation must NOT be claimed without interventional evidence.
+- **Multimodal & Cosine Disclaimers**: Raw cosine similarity in vision-language models or representation geometry is a geometric alignment score, NOT a calibrated probability.
+- **Scope & Non-Goals**: PRISM is not Bayesian deep learning (no Monte Carlo Dropout or Bayes-by-Backprop), not deep ensembles, and not production anomaly detection. All analyses investigate core deterministic representation properties.
+
+---
+
 ## Data and Artifact Policy
 
 ### Prohibited from Version Control:

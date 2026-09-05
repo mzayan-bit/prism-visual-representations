@@ -20,15 +20,15 @@ Baselines                  Residual Learning                Self-Supervision
 ## Project Status
 
 > [!NOTE]
-> **Active Development**: PRISM has completed **Phase 22: Multimodal Vision-Language Representation Alignment**.
-> The platform extends into controlled multimodal representation research, investigating how visual representations align with language in a shared metric embedding space:
-> - **Vision-Language Dual-Encoder Contracts** (`VisionLanguageSample`, `TokenizedText`, `VisionLanguageBatch`, `ClassPrompt`, `RetrievalResult`, `CrossModalRetrievalSummary`, `ZeroShotClassificationSummary`, `CrossModalCentroidAlignment`, `MultimodalCollapseSummary`).
-> - **Deterministic Synthetic Multimodal Dataset & Tokenizer** (`Vocabulary` with pinned special tokens 0..3 and alphabetical sorting, `SimpleTokenizer`, `generate_synthetic_multimodal_dataset` with compositionally structured captions).
-> - **Dual-Encoder Architecture & Symmetric Contrastive Loss** (`TokenEmbeddingTable`, `MaskedMeanPooling`, `VisualProjectionHead`, `TextProjectionHead`, `TextEncoder`, `SymmetricContrastiveLoss` with exact analytical backpropagation through L2 normalization and temperature scaling).
-> - **Multimodal Representation Evaluation** (Cross-modal retrieval R@1, R@3, R@5, MRR across I2T and T2I; Zero-shot open-vocabulary classification and confusion matrices; Prompt template sensitivity analysis).
-> - **Shared Metric Geometry & Multimodal Collapse Diagnostics** (Joint PCA basis fitting on $[V, T]$, paired Euclidean and cosine distance distributions, cross-modal centroid alignment, and dimensional variance tracking).
-> - **Multimodal Robustness Under Corruptions** (Paired visual drift vs alignment drift under Gaussian noise, blur, brightness, and occlusion perturbations).
-> - **Interactive Multimodal Laboratory UI**: Paired sample viewer, token & embedding inspector, bidirectional retrieval explorer, shared 2D PCA embedding space, zero-shot classification card, prompt sensitivity panel, cross-objective comparison, robustness degradation card, and multimodal failure taxonomy explorer.
+> **Active Development**: PRISM has completed **Phase 23: Uncertainty, Calibration & Out-of-Distribution Representation Analysis**.
+> The platform provides a rigorous foundation for probing predictive confidence, probability calibration, and out-of-distribution (OOD) representation geometry in visual models:
+> - **Uncertainty & Calibration Foundations** (`compute_stable_softmax`, `compute_predictive_entropy`, `compute_normalized_entropy`, `compute_logit_margin`, `compute_probability_margin`, `compute_reliability_bins`, `compute_expected_calibration_error`, `compute_maximum_calibration_error`, `compute_brier_score`, `compute_negative_log_likelihood`).
+> - **Post-Hoc Scalar Temperature Scaling** (`apply_temperature_scaling`, `fit_temperature_scaling` via deterministic coarse-fine grid search on validation NLL with invariant test classification accuracy).
+> - **OOD Scoring & Reference Geometry** (`compute_max_softmax_ood_score`, `compute_entropy_ood_score`, `compute_class_centroid_ood_score`, `compute_knn_ood_score`, `compute_energy_ood_score`, `build_ood_reference_set`, `compute_class_centroids`, `compute_intra_class_radii`).
+> - **OOD Discrimination Evaluation** (`compute_auroc` via exact Mann-Whitney U rank-sum integration, `compute_aupr` trapezoidal integration, `select_ood_threshold` with fixed/quantile/target-TPR policies).
+> - **Corruption Uncertainty Trajectories** (`evaluate_corruption_uncertainty`, `CorruptionUncertaintyCurve`, `PredictionFlipUncertainty` tracking confidence decay, entropy dynamics, and representation drift).
+> - **Uncertainty Failure Taxonomy** (`detect_uncertainty_failures` flagging `HIGH_CONFIDENCE_ERROR`, `LOW_CONFIDENCE_CORRECT`, `HIGH_CONFIDENCE_OOD`, `CALIBRATION_OUTLIER`, `CORRUPTION_OVERCONFIDENCE`, `OOD_NEAR_KNOWN_STRUCTURE`, `ID_REPRESENTATION_OUTLIER`, `NON_MONOTONIC_UNCERTAINTY`).
+> - **Interactive Uncertainty Laboratory UI**: Reliability diagram with equal-width binning, confidence histogram by correctness, temperature scaling before/after panel, OOD score distribution inspector, AUROC curve, representation novelty scatter, OOD sample explorer, corruption uncertainty curves, cross-objective comparison, and failure taxonomy explorer.
 
 ---
 
@@ -58,7 +58,8 @@ Baselines                  Residual Learning                Self-Supervision
 | **Phase 20** | Detection & Segmentation Representation Transfer | :white_check_mark: Completed |
 | **Phase 21** | Video & Temporal Representation Learning | :white_check_mark: Completed |
 | **Phase 22** | Multimodal Vision-Language Representation Alignment | :white_check_mark: Completed |
-| **Phase 23** | Generative Diffusion & Representation Dynamics | :hourglass_flowing_sand: Planned |
+| **Phase 23** | Uncertainty, Calibration & Out-of-Distribution Representation Analysis | :white_check_mark: Completed |
+| **Phase 24** | Cross-Paradigm Representation Benchmark & Diagnostic Synthesis | :hourglass_flowing_sand: Planned |
 
 ---
 
@@ -84,6 +85,7 @@ prism-visual-representations/
 │   │       ├── spatial/       # Detection and segmentation spatial transfer
 │   │       ├── temporal/      # Video and temporal representation learning
 │   │       ├── multimodal/    # Dual-encoder vision-language alignment, tokenizer, symmetric loss
+│   │       ├── uncertainty/   # Probabilities, calibration, temperature scaling, OOD scores, corruptions
 │   │       ├── robustness/    # Corruptions, distribution shifts, OOD tests
 │   │       ├── explainability/# Saliency, attention rollout, Grad-CAM
 │   │       └── utils/         # Seeding, hashing, structured logging
