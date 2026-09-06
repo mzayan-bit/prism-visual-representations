@@ -43,6 +43,7 @@ from prism.benchmarking.contracts import (
     ResearchFinding,
     ResearchQuestion,
     ResearchReportSpecification,
+    TradeoffPoint,
     compute_campaign_fingerprint,
 )
 from prism.benchmarking.coverage import (
@@ -137,6 +138,7 @@ __all__ = [
     "ResearchQuestion",
     "ResearchReportSpecification",
     "ResultStatus",
+    "TradeoffPoint",
     "adapt_any_report",
     "adapt_architecture_comparison_report",
     "adapt_explainability_report",

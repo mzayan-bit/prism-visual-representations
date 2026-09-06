@@ -139,6 +139,8 @@ class BenchmarkResultStore:
 
         return results
 
+    query_cells = query
+
     def list_provenance(self, result_id: str) -> dict[str, Any] | None:
         """Get complete provenance metadata for a result cell."""
         cell = self.get(result_id)

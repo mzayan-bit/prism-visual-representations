@@ -1,4 +1,4 @@
-"""Script to generate comprehensive, publication-grade benchmark data for PRISM Observatory."""
+"""Generate comprehensive, publication-grade benchmark data for PRISM Observatory."""
 
 import json
 from pathlib import Path
@@ -368,9 +368,7 @@ def generate_benchmark_dataset() -> None:
     out_file = Path("frontend/app/data/benchmarkDataset.json")
     out_file.parent.mkdir(parents=True, exist_ok=True)
     out_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    print(
-        f"Generated {len(store.all_cells())} benchmark cells in {out_file.resolve()}"
-    )
+    print(f"Generated {len(store.all_cells())} benchmark cells in {out_file.resolve()}")
 
 
 if __name__ == "__main__":

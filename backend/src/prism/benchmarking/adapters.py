@@ -845,3 +845,7 @@ def adapt_any_report(report: Any) -> list[BenchmarkResultCell]:
         raise ValidationError(
             f"Unsupported report type for benchmarking adapter: {cls_name}"
         )
+
+
+# Alias for backward compatibility
+adapt_multimodal_alignment_report = adapt_multimodal_report

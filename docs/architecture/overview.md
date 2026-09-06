@@ -308,14 +308,14 @@ Multimodal vision-language alignment contracts (`VisionLanguageSample`, `Tokeniz
 ### `prism.uncertainty`
 Uncertainty, probability calibration, and out-of-distribution representation contracts (`PredictiveDistribution`, `CalibrationReport`, `TemperatureScalingResult`, `OODReferenceSet`, `OODBinaryEvaluationSummary`, `CorruptionUncertaintyCurve`, `UncertaintyAnalysisReport`), stable softmax, entropy, reliability diagrams, ECE/MCE, Brier score, NLL, post-hoc temperature scaling, OOD scoring (MSP, entropy, centroid distance, kNN, energy), exact AUROC/AUPR discrimination, corruption trajectories, representation novelty relationships, and diagnostic failure detection.
 
+### `prism.benchmarking`
+Orchestration of cross-paradigm benchmark campaigns, result synthesis, research report compilation, evidence gap tracking, reproducibility manifests, and canonical metric registration.
+
 ### `prism.api`
-Research service layer (`GeometryService`, `RobustnessService`, `ExplainabilityService`, `TransferService`, `SelfSupervisedService`, `ReconstructionService`, `SpatialTransferService`, `TemporalRepresentationService`, `MultimodalAlignmentService`, `UncertaintyAnalysisService`) providing experiment metadata, geometric queries, robustness evaluations, explainability payloads, transfer benchmarks, SSL pretraining benchmarks, reconstruction learning benchmarks, spatial transfer benchmarks, temporal representation benchmarks, multimodal alignment benchmarks, uncertainty and calibration reports, and dashboard demo data serving.
+Research service layer (`GeometryService`, `RobustnessService`, `ExplainabilityService`, `TransferService`, `SelfSupervisedService`, `ReconstructionService`, `SpatialTransferService`, `TemporalRepresentationService`, `MultimodalAlignmentService`, `UncertaintyAnalysisService`, `BenchmarkService`) providing experiment metadata, geometric queries, robustness evaluations, explainability payloads, transfer benchmarks, SSL pretraining benchmarks, reconstruction learning benchmarks, spatial transfer benchmarks, temporal representation benchmarks, multimodal alignment benchmarks, uncertainty and calibration reports, cross-paradigm benchmark synthesis, and dashboard demo data serving.
 
 ### `prism.experiments`
 Declarative experiment definitions (`ExperimentDefinition`), run lifecycle tracking (`ExperimentRun`), runtime harness (`ExperimentExecutionHarness`), and controlled comparison suites (`ArchitectureComparisonSuite`).
 
 ### `prism.artifacts`
 Artifact tracking contracts (`ArtifactReference`) storing logical keys, storage URIs, checksums, and generating run IDs.
-
-
-

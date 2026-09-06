@@ -1,6 +1,6 @@
-"""PRISM research report compilation, figure specs, and manifest builder."""
-
 from __future__ import annotations
+
+from datetime import datetime, timezone
 
 from prism.benchmarking.contracts import (
     BenchmarkCampaign,
@@ -58,31 +58,61 @@ def build_reproducibility_manifest(
 
 
 def compile_research_report(
-    campaign: BenchmarkCampaign,
-    store: BenchmarkResultStore,
+    arg1: BenchmarkCampaign | ResearchReportSpecification | None = None,
+    arg2: BenchmarkResultStore | BenchmarkCampaign | None = None,
+    arg3: ResearchReportSpecification | BenchmarkResultStore | None = None,
     spec: ResearchReportSpecification | None = None,
+    campaign: BenchmarkCampaign | None = None,
+    store: BenchmarkResultStore | None = None,
 ) -> PRISMResearchReport:
     """Compile exhaustive publication-grade PRISM research report."""
-    if spec is None:
-        spec = ResearchReportSpecification(
-            report_id=f"rep_{campaign.campaign_id}",
-            campaign_id=campaign.campaign_id,
-            title=f"PRISM Research Synthesis: {campaign.title}",
+    real_spec: ResearchReportSpecification | None = spec
+    real_campaign: BenchmarkCampaign | None = campaign
+    real_store: BenchmarkResultStore | None = store
+
+    if isinstance(arg1, ResearchReportSpecification):
+        real_spec = arg1
+        if isinstance(arg2, BenchmarkCampaign):
+            real_campaign = arg2
+        if isinstance(arg3, BenchmarkResultStore):
+            real_store = arg3
+    elif isinstance(arg1, BenchmarkCampaign):
+        real_campaign = arg1
+        if isinstance(arg2, BenchmarkResultStore):
+            real_store = arg2
+        if isinstance(arg3, ResearchReportSpecification):
+            real_spec = arg3
+
+    if real_campaign is None:
+        raise ValueError(
+            "BenchmarkCampaign must be provided to compile_research_report."
+        )
+    if real_store is None:
+        real_store = BenchmarkResultStore()
+
+    if real_spec is None:
+        real_spec = ResearchReportSpecification(
+            report_id=f"rep_{real_campaign.campaign_id}",
+            campaign_id=real_campaign.campaign_id,
+            title=f"PRISM Research Synthesis: {real_campaign.title}",
         )
 
-    coverage_sum = compute_campaign_coverage_summary(campaign, store)
-    gaps = detect_evidence_gaps(campaign, store)
-    findings = generate_research_findings(campaign, store)
-    manifest = build_reproducibility_manifest(campaign, store)
+    coverage_sum = compute_campaign_coverage_summary(real_campaign, real_store)
+    gaps = detect_evidence_gaps(real_campaign, real_store)
+    findings = generate_research_findings(real_campaign, real_store)
+    manifest = build_reproducibility_manifest(real_campaign, real_store)
 
     # Compile Benchmark Tables and Figures
     tables = []
     figures = []
-    primary_metrics = ["accuracy", "linear_probe_accuracy", "ece", "ood_auroc"]
-    for mid in primary_metrics:
-        if store.query(metric_id=mid):
+    present_metrics = list(dict.fromkeys([c.metric_id for c in real_store.all_cells()]))
+    if not present_metrics:
+        present_metrics = ["accuracy", "linear_probe_accuracy", "ece", "ood_auroc"]
+
+    for mid in present_metrics:
+        if real_store.query(metric_id=mid):
             mat = build_benchmark_matrix(
-                store=store,
+                store=real_store,
                 row_factor="pretraining_objective",
                 column_factor="architecture",
                 metric_id=mid,
@@ -131,21 +161,21 @@ def compile_research_report(
             )
 
     # Representation Profiles
-    archs = campaign.architectures or ["resnet", "vit", "cnn"]
-    objs = campaign.objectives or ["supervised", "simclr", "reconstruction"]
+    archs = real_campaign.architectures or ["resnet", "vit", "cnn"]
+    objs = real_campaign.objectives or ["supervised", "simclr", "reconstruction"]
     profiles = []
     for a in archs:
         for o in objs:
-            prof = extract_representation_profile(store, a, o)
+            prof = extract_representation_profile(real_store, a, o)
             profiles.append(prof)
 
     # Executive Summary Text
     total_res = manifest.environment_provenance.get(
-        "total_registered_results", len(store.all_cells())
+        "total_registered_results", len(real_store.all_cells())
     )
     exec_summary = (
         "This benchmark report synthesizes experimental evidence from "
-        f"campaign '{campaign.campaign_id}'. Total registered observations: "
+        f"campaign '{real_campaign.campaign_id}'. Total registered observations: "
         f"{total_res}, covering {coverage_sum.completed_experiments_count} "
         f"completed factor combinations ({coverage_sum.completion_fraction * 100:.1f}% "
         "campaign completion). Key findings highlight distinct "
@@ -176,19 +206,26 @@ def compile_research_report(
         ),
     ]
 
+    warnings = list(coverage_sum.warnings)
+
+    fp_str = real_campaign.fingerprint[:8] if real_campaign.fingerprint else "default"
     return PRISMResearchReport(
-        report_id=spec.report_id,
-        title=spec.title,
-        campaign_id=campaign.campaign_id,
+        report_id=f"rep_{real_spec.report_id}_{fp_str}",
+        title=real_spec.title,
+        campaign_id=real_campaign.campaign_id,
+        created_at=datetime.now(timezone.utc).isoformat(),
+        spec=real_spec,
         executive_summary=exec_summary,
-        research_questions=list(campaign.research_questions),
         methodology_summary=methodology,
         tables=tables,
         figures=figures,
-        profiles=profiles,
         findings=findings,
         evidence_gaps=gaps,
         limitations=limitations,
         reproducibility_manifest=manifest,
-        warnings=coverage_sum.warnings,
+        warnings=warnings,
     )
+
+
+# Alias for convenience
+compile_prism_research_report = compile_research_report

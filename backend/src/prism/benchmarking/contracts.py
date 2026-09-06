@@ -237,6 +237,10 @@ class ComparisonControlAudit(BaseModel):
     comparison_id: str = Field(description="Unique comparison identifier")
     factors_expected_equal: list[str] = Field(description="Factors required to match")
     factors_actually_equal: list[str] = Field(description="Factors verified matching")
+    varied_factors: list[str] = Field(
+        default_factory=list,
+        description="Factors intentionally or unintentionally varied",
+    )
     mismatches: dict[str, tuple[Any, Any]] = Field(
         default_factory=dict, description="Factor mismatches {factor: (val_a, val_b)}"
     )
@@ -244,6 +248,17 @@ class ComparisonControlAudit(BaseModel):
     warnings: list[str] = Field(
         default_factory=list, description="Audit warnings and caveats"
     )
+
+    @property
+    def is_strictly_controlled(self) -> bool:
+        return self.status == ComparisonControlStatus.STRICTLY_CONTROLLED
+
+    @property
+    def is_controlled(self) -> bool:
+        return self.status in (
+            ComparisonControlStatus.STRICTLY_CONTROLLED,
+            ComparisonControlStatus.PARTIALLY_CONTROLLED,
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return self.model_dump(mode="json")
@@ -439,6 +454,26 @@ class FigureSpecification(BaseModel):
         return self.model_dump(mode="json")
 
 
+class TradeoffPoint(BaseModel):
+    """Paired metric data point for tradeoff analysis."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    experiment_id: str = Field(description="Experiment identifier")
+    factors: dict[str, Any] = Field(default_factory=dict, description="Factor settings")
+    x_metric: str = Field(description="X-axis metric")
+    x_value: float = Field(description="X-axis value")
+    y_metric: str = Field(description="Y-axis metric")
+    y_value: float = Field(description="Y-axis value")
+    note: str = Field(
+        default="Descriptive tradeoff pair; does not imply causal relationship.",
+        description="Descriptive note",
+    )
+
+    def to_dict(self) -> dict[str, Any]:
+        return self.model_dump(mode="json")
+
+
 class EvidenceGap(BaseModel):
     """Structured record of missing experimental evidence."""
 
@@ -576,6 +611,10 @@ class PRISMResearchReport(BaseModel):
     report_id: str = Field(description="Report identifier")
     title: str = Field(description="Report display title")
     campaign_id: str = Field(description="Campaign identifier")
+    created_at: str = Field(default="", description="ISO timestamp of report creation")
+    spec: ResearchReportSpecification | None = Field(
+        default=None, description="Optional report specification"
+    )
     executive_summary: str = Field(description="High-level synthesis summary")
     research_questions: list[ResearchQuestion] = Field(
         default_factory=list, description="Evaluated research questions"

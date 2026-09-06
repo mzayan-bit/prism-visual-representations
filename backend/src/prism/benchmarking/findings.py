@@ -30,7 +30,33 @@ def generate_research_findings(
     findings: list[ResearchFinding] = []
     finding_idx = 0
 
-    for q in campaign.research_questions:
+    rqs = campaign.research_questions
+    if not rqs:
+        from prism.benchmarking.contracts import ResearchQuestion
+
+        rqs = [
+            ResearchQuestion(
+                question_id="rq_arch_accuracy",
+                natural_language_question=(
+                    "How do visual representation architectures"
+                    " compare on task accuracy?"
+                ),
+                independent_variables=["architecture"],
+                dependent_metrics=["accuracy"],
+                controlled_factors={"dataset": "cifar10", "task": "classification"},
+            ),
+            ResearchQuestion(
+                question_id="rq_obj_robustness",
+                natural_language_question=(
+                    "How do pretraining objectives affect representation robustness?"
+                ),
+                independent_variables=["pretraining_objective"],
+                dependent_metrics=["robustness_accuracy_drop"],
+                controlled_factors={"dataset": "cifar10", "task": "classification"},
+            ),
+        ]
+
+    for q in rqs:
         for metric_id in q.dependent_metrics:
             m_def = (
                 metric_registry.get(metric_id)
@@ -99,8 +125,13 @@ def generate_research_findings(
 
                 sample_cell_a = groups[best_variant][0]
                 sample_cell_b = groups[second_variant][0]
+                ctrl_factors = [
+                    k for k in sample_cell_a.factors if k != var_name and k != "seed"
+                ]
                 audit = audit_comparison_control(
-                    sample_cell_a.factors, sample_cell_b.factors
+                    sample_cell_a.factors,
+                    sample_cell_b.factors,
+                    expected_equal=ctrl_factors,
                 )
 
                 if (

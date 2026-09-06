@@ -17,6 +17,7 @@ from prism.benchmarking.contracts import (
     ResearchFinding,
     ResearchQuestion,
     ResearchReportSpecification,
+    TradeoffPoint,
     compute_campaign_fingerprint,
 )
 from prism.benchmarking.coverage import (
@@ -182,25 +183,41 @@ class BenchmarkService:
 
     def get_matrix(
         self,
-        row_factor: str,
-        column_factor: str,
         metric_id: str,
+        row_factor: str = "pretraining_objective",
+        column_factor: str = "architecture",
     ) -> BenchmarkMatrix:
-        return build_benchmark_matrix(self._store, row_factor, column_factor, metric_id)
+        return build_benchmark_matrix(
+            self._store,
+            row_factor=row_factor,
+            column_factor=column_factor,
+            metric_id=metric_id,
+        )
 
     def get_table(
         self,
-        row_factor: str,
-        column_factor: str,
         metric_id: str,
+        row_factor: str = "pretraining_objective",
+        column_factor: str = "architecture",
     ) -> BenchmarkTable:
-        mat = self.get_matrix(row_factor, column_factor, metric_id)
+        mat = self.get_matrix(
+            metric_id=metric_id, row_factor=row_factor, column_factor=column_factor
+        )
         m_def = (
             canonical_metric_registry.get(metric_id)
             if canonical_metric_registry.has(metric_id)
             else None
         )
         return build_benchmark_table(mat, m_def)
+
+    def get_profile(
+        self,
+        architecture: str,
+        objective: str = "supervised",
+    ) -> RepresentationProfile:
+        return extract_representation_profile(
+            self._store, architecture=architecture, pretraining_objective=objective
+        )
 
     def get_profiles(self) -> list[RepresentationProfile]:
         profiles = []
@@ -240,7 +257,7 @@ class BenchmarkService:
         self,
         metric_x: str = "accuracy",
         metric_y: str = "robustness_accuracy_drop",
-    ) -> list[dict[str, Any]]:
+    ) -> list[TradeoffPoint]:
         return extract_tradeoff_pairs(self._store, metric_x, metric_y)
 
     def get_findings(self) -> list[ResearchFinding]:

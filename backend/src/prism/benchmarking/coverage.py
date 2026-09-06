@@ -58,22 +58,50 @@ class CampaignCoverageSummary(BaseModel):
 
 
 def compute_coverage_matrix(
-    campaign: BenchmarkCampaign,
-    store: BenchmarkResultStore,
+    campaign_or_store: BenchmarkCampaign | BenchmarkResultStore,
+    store_or_campaign: BenchmarkResultStore | BenchmarkCampaign | None = None,
     row_factor: str = "pretraining_objective",
     column_factor: str = "architecture",
+    row_values: Sequence[str] | None = None,
+    column_values: Sequence[str] | None = None,
 ) -> ExperimentCoverageMatrix:
     """Compute 2D coverage status breakdown for planned factor combinations."""
-    row_vals = sorted(
-        getattr(campaign, f"{row_factor}s", [])
-        or getattr(campaign, row_factor, [])
-        or ["supervised", "simclr", "reconstruction"]
-    )
-    col_vals = sorted(
-        getattr(campaign, f"{column_factor}s", [])
-        or getattr(campaign, column_factor, [])
-        or ["cnn", "resnet", "vit"]
-    )
+    if isinstance(campaign_or_store, BenchmarkCampaign):
+        campaign = campaign_or_store
+        store = (
+            store_or_campaign
+            if isinstance(store_or_campaign, BenchmarkResultStore)
+            else BenchmarkResultStore()
+        )
+    else:
+        store = campaign_or_store
+        campaign = (
+            store_or_campaign
+            if isinstance(store_or_campaign, BenchmarkCampaign)
+            else BenchmarkCampaign(
+                campaign_id="default_campaign",
+                title="Default Campaign",
+                description="Auto-generated",
+            )
+        )
+
+    if row_values is not None:
+        row_vals = list(row_values)
+    else:
+        row_vals = sorted(
+            getattr(campaign, f"{row_factor}s", [])
+            or getattr(campaign, row_factor, [])
+            or ["supervised", "simclr", "reconstruction"]
+        )
+
+    if column_values is not None:
+        col_vals = list(column_values)
+    else:
+        col_vals = sorted(
+            getattr(campaign, f"{column_factor}s", [])
+            or getattr(campaign, column_factor, [])
+            or ["cnn", "resnet", "vit"]
+        )
 
     grid: dict[str, dict[str, dict[str, int]]] = {}
 
@@ -325,14 +353,23 @@ def build_missing_experiment_plan(
             }
         )
 
-    return MissingExperimentPlan(
-        plan_id=f"plan_gaps_{campaign.campaign_id}",
-        campaign_id=campaign.campaign_id,
-        missing_experiments=plan_items,
-        estimated_work_units=len(plan_items),
-        warnings=(
-            ["Gaps detected requiring additional experimental runs."]
-            if plan_items
-            else []
-        ),
+    missing_experiments = plan_items
+    work_units = len(missing_experiments)
+    warnings = (
+        ["Gaps detected requiring additional experimental runs."]
+        if missing_experiments
+        else []
     )
+
+    return MissingExperimentPlan(
+        plan_id=f"plan_{campaign.campaign_id}",
+        campaign_id=campaign.campaign_id,
+        missing_experiments=missing_experiments,
+        estimated_work_units=work_units,
+        warnings=warnings,
+    )
+
+
+# Aliases for convenience
+build_coverage_matrix = compute_coverage_matrix
+generate_missing_experiment_plan = build_missing_experiment_plan

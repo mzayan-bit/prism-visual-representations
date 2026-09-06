@@ -15,11 +15,15 @@ from prism.benchmarking.enums import ComparisonControlStatus, MetricDirection
 
 
 def audit_comparison_control(
-    factors_a: dict[str, Any],
-    factors_b: dict[str, Any],
+    factors_a: dict[str, Any] | None = None,
+    factors_b: dict[str, Any] | None = None,
     expected_equal: Sequence[str] | None = None,
+    factor_a: dict[str, Any] | None = None,
+    factor_b: dict[str, Any] | None = None,
 ) -> ComparisonControlAudit:
     """Audit factor consistency between two benchmark candidates."""
+    fa = factors_a if factors_a is not None else (factor_a or {})
+    fb = factors_b if factors_b is not None else (factor_b or {})
     required = list(
         expected_equal
         if expected_equal is not None
@@ -31,10 +35,11 @@ def audit_comparison_control(
     warnings: list[str] = []
 
     for f in required:
-        val_a = factors_a.get(f)
-        val_b = factors_b.get(f)
-        if val_a == val_b and val_a is not None:
-            equal_factors.append(f)
+        val_a = fa.get(f)
+        val_b = fb.get(f)
+        if val_a == val_b:
+            if val_a is not None:
+                equal_factors.append(f)
         else:
             mismatches[f] = (val_a, val_b)
             warnings.append(
@@ -57,10 +62,14 @@ def audit_comparison_control(
         status = ComparisonControlStatus.INVALID_COMPARISON
         warnings.append("Severe factor divergence; scientific comparison is invalid.")
 
+    all_keys = set(fa.keys()) | set(fb.keys())
+    varied_factors = [k for k in sorted(all_keys) if fa.get(k) != fb.get(k)]
+
     return ComparisonControlAudit(
-        comparison_id=f"audit_{abs(hash(str(factors_a) + str(factors_b))) % 1000000}",
+        comparison_id=f"audit_{abs(hash(str(fa) + str(fb))) % 1000000}",
         factors_expected_equal=required,
         factors_actually_equal=equal_factors,
+        varied_factors=varied_factors,
         mismatches=mismatches,
         status=status,
         warnings=warnings,
@@ -68,15 +77,38 @@ def audit_comparison_control(
 
 
 def compute_pairwise_comparison(
-    cell_a: BenchmarkResultCell,
-    cell_b: BenchmarkResultCell,
+    cell_a: BenchmarkResultCell | None = None,
+    cell_b: BenchmarkResultCell | None = None,
     metric_def: MetricDefinition | None = None,
     expected_equal_factors: Sequence[str] | None = None,
+    store: Any = None,
+    metric_id: str | None = None,
+    factor_a: dict[str, Any] | None = None,
+    factor_b: dict[str, Any] | None = None,
 ) -> PairwiseComparisonResult:
     """Compute structured descriptive comparison between two benchmark result cells."""
+    if (
+        (cell_a is None or cell_b is None)
+        and store is not None
+        and metric_id is not None
+    ):
+        cells_a = store.query(metric_id=metric_id, factors=factor_a or {})
+        cells_b = store.query(metric_id=metric_id, factors=factor_b or {})
+        if not cells_a or not cells_b:
+            raise ValueError(
+                f"Could not find matching cells for metric '{metric_id}' in store."
+            )
+        cell_a = cells_a[0]
+        cell_b = cells_b[0]
+
+    if cell_a is None or cell_b is None:
+        raise ValueError(
+            "Both cell_a and cell_b must be provided or resolved via store."
+        )
+
     val_a = cell_a.value
     val_b = cell_b.value
-    metric_id = cell_a.metric_id
+    target_metric_id = cell_a.metric_id
 
     direction = (
         metric_def.direction
@@ -121,14 +153,14 @@ def compute_pairwise_comparison(
 
         interpretation = (
             f"{name_b} achieved {val_b:.4f} compared to {name_a} at {val_a:.4f} "
-            f"(absolute delta {abs_delta:+.4f}) on {metric_id}."
+            f"(absolute delta {abs_delta:+.4f}) on {target_metric_id}."
         )
     else:
-        interpretation = f"Incomplete data for comparison on {metric_id}."
+        interpretation = f"Incomplete data for comparison on {target_metric_id}."
 
     return PairwiseComparisonResult(
         comparison_id=f"pair_{cell_a.result_id}_vs_{cell_b.result_id}",
-        metric_id=metric_id,
+        metric_id=target_metric_id,
         cell_a_id=cell_a.result_id,
         cell_b_id=cell_b.result_id,
         value_a=val_a,

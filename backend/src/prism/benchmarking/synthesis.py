@@ -10,6 +10,7 @@ from prism.benchmarking.contracts import (
     AggregatedBenchmarkResult,
     ParetoAnalysisResult,
     RepresentationProfile,
+    TradeoffPoint,
 )
 from prism.benchmarking.enums import MetricDirection, ResultStatus
 from prism.benchmarking.registry import canonical_metric_registry
@@ -19,13 +20,15 @@ from prism.benchmarking.store import BenchmarkResultStore
 def extract_representation_profile(
     store: BenchmarkResultStore,
     architecture: str,
-    pretraining_objective: str,
+    pretraining_objective: str | None = None,
+    objective: str | None = None,
 ) -> RepresentationProfile:
     """Extract multi-dimensional representation profile across independent axes."""
+    obj = objective or pretraining_objective or "supervised"
     query_cells = store.query(
         factors={
             "architecture": architecture,
-            "pretraining_objective": pretraining_objective,
+            "pretraining_objective": obj,
         }
     )
 
@@ -93,11 +96,11 @@ def extract_representation_profile(
     elif cat_map["robustness"]:
         rob_score = _mean_or_none(cat_map["robustness"])
 
-    profile_id = f"prof_{architecture}_{pretraining_objective}"
+    profile_id = f"prof_{architecture}_{obj}"
     return RepresentationProfile(
         profile_id=profile_id,
         architecture=architecture,
-        objective=pretraining_objective,
+        objective=obj,
         semantic_performance=cat_map["semantic_performance"].get(
             "accuracy", _mean_or_none(cat_map["semantic_performance"])
         ),
@@ -127,9 +130,10 @@ def extract_representation_profile(
 
 
 def compute_pareto_front(
-    candidates: Sequence[dict[str, Any]],
+    candidates_or_store: BenchmarkResultStore | Sequence[dict[str, Any]],
     metric_ids: Sequence[str],
     metric_registry: Any = canonical_metric_registry,
+    metric_directions: dict[str, MetricDirection] | None = None,
 ) -> ParetoAnalysisResult:
     """Compute non-dominated Pareto frontier across multiple target metrics."""
     analysis_id = f"pareto_{'_'.join(metric_ids) if metric_ids else 'empty'}"
@@ -144,10 +148,29 @@ def compute_pareto_front(
             missing_metric_warnings=["No metric IDs provided for Pareto optimization."],
         )
 
+    # Convert BenchmarkResultStore if provided
+    if isinstance(candidates_or_store, BenchmarkResultStore):
+        exp_groups: dict[str, dict[str, Any]] = {}
+        for c in candidates_or_store.all_cells():
+            if c.value is not None and c.status == ResultStatus.OBSERVED:
+                exp_id = c.experiment_id
+                if exp_id not in exp_groups:
+                    exp_groups[exp_id] = {
+                        "experiment_id": exp_id,
+                        "factors": dict(c.factors),
+                        "metrics": {},
+                    }
+                exp_groups[exp_id]["metrics"][c.metric_id] = float(c.value)
+        candidates = list(exp_groups.values())
+    else:
+        candidates = list(candidates_or_store)
+
     # Resolve metric directions
     directions: dict[str, MetricDirection] = {}
     for mid in metric_ids:
-        if metric_registry.has(mid):
+        if metric_directions and mid in metric_directions:
+            directions[mid] = metric_directions[mid]
+        elif metric_registry.has(mid):
             directions[mid] = metric_registry.get(mid).direction
         else:
             directions[mid] = MetricDirection.HIGHER_IS_BETTER
@@ -234,13 +257,18 @@ def compute_pareto_front(
 
 def extract_tradeoff_pairs(
     store: BenchmarkResultStore,
-    metric_x: str,
-    metric_y: str,
+    metric_x: str | None = None,
+    metric_y: str | None = None,
+    x_metric_id: str | None = None,
+    y_metric_id: str | None = None,
     group_factors: Sequence[str] = ("architecture", "pretraining_objective"),
-) -> list[dict[str, Any]]:
+) -> list[TradeoffPoint]:
     """Extract paired observation points for scatter-ready tradeoff analysis."""
-    cells_x = store.query(metric_id=metric_x)
-    cells_y = store.query(metric_id=metric_y)
+    mx = metric_x or x_metric_id or "accuracy"
+    my = metric_y or y_metric_id or "loss"
+
+    cells_x = store.query(metric_id=mx)
+    cells_y = store.query(metric_id=my)
 
     map_x: dict[tuple[str, ...], float] = {}
     map_y: dict[tuple[str, ...], float] = {}
@@ -262,22 +290,20 @@ def extract_tradeoff_pairs(
                 factor_meta[key] = dict(c.factors)
                 exp_ids[key] = c.experiment_id
 
-    tradeoff_points: list[dict[str, Any]] = []
+    tradeoff_points: list[TradeoffPoint] = []
     common_keys = sorted(set(map_x.keys()).intersection(set(map_y.keys())))
 
     for k in common_keys:
         tradeoff_points.append(
-            {
-                "experiment_id": exp_ids[k],
-                "factors": factor_meta[k],
-                "x_metric": metric_x,
-                "x_value": map_x[k],
-                "y_metric": metric_y,
-                "y_value": map_y[k],
-                "note": (
-                    "Descriptive tradeoff pair; does not imply causal relationship."
-                ),
-            }
+            TradeoffPoint(
+                experiment_id=exp_ids[k],
+                factors=factor_meta[k],
+                x_metric=mx,
+                x_value=map_x[k],
+                y_metric=my,
+                y_value=map_y[k],
+                note="Descriptive tradeoff pair; does not imply causal relationship.",
+            )
         )
 
     return tradeoff_points

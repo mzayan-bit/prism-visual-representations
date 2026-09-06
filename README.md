@@ -20,15 +20,16 @@ Baselines                  Residual Learning                Self-Supervision
 ## Project Status
 
 > [!NOTE]
-> **Active Development**: PRISM has completed **Phase 23: Uncertainty, Calibration & Out-of-Distribution Representation Analysis**.
-> The platform provides a rigorous foundation for probing predictive confidence, probability calibration, and out-of-distribution (OOD) representation geometry in visual models:
-> - **Uncertainty & Calibration Foundations** (`compute_stable_softmax`, `compute_predictive_entropy`, `compute_normalized_entropy`, `compute_logit_margin`, `compute_probability_margin`, `compute_reliability_bins`, `compute_expected_calibration_error`, `compute_maximum_calibration_error`, `compute_brier_score`, `compute_negative_log_likelihood`).
-> - **Post-Hoc Scalar Temperature Scaling** (`apply_temperature_scaling`, `fit_temperature_scaling` via deterministic coarse-fine grid search on validation NLL with invariant test classification accuracy).
-> - **OOD Scoring & Reference Geometry** (`compute_max_softmax_ood_score`, `compute_entropy_ood_score`, `compute_class_centroid_ood_score`, `compute_knn_ood_score`, `compute_energy_ood_score`, `build_ood_reference_set`, `compute_class_centroids`, `compute_intra_class_radii`).
-> - **OOD Discrimination Evaluation** (`compute_auroc` via exact Mann-Whitney U rank-sum integration, `compute_aupr` trapezoidal integration, `select_ood_threshold` with fixed/quantile/target-TPR policies).
-> - **Corruption Uncertainty Trajectories** (`evaluate_corruption_uncertainty`, `CorruptionUncertaintyCurve`, `PredictionFlipUncertainty` tracking confidence decay, entropy dynamics, and representation drift).
-> - **Uncertainty Failure Taxonomy** (`detect_uncertainty_failures` flagging `HIGH_CONFIDENCE_ERROR`, `LOW_CONFIDENCE_CORRECT`, `HIGH_CONFIDENCE_OOD`, `CALIBRATION_OUTLIER`, `CORRUPTION_OVERCONFIDENCE`, `OOD_NEAR_KNOWN_STRUCTURE`, `ID_REPRESENTATION_OUTLIER`, `NON_MONOTONIC_UNCERTAINTY`).
-> - **Interactive Uncertainty Laboratory UI**: Reliability diagram with equal-width binning, confidence histogram by correctness, temperature scaling before/after panel, OOD score distribution inspector, AUROC curve, representation novelty scatter, OOD sample explorer, corruption uncertainty curves, cross-objective comparison, and failure taxonomy explorer.
+> **Active Development**: PRISM has completed **Phase 24: Cross-Paradigm Benchmark Orchestration & Research Synthesis**.
+> The platform integrates all prior PRISM visual representation learning paradigms into a unified, controlled benchmark orchestration, evidence synthesis, reporting, and experiment-gap analysis layer:
+> - **Unified Benchmark Schema & Registries** (`MetricDefinition`, `FactorRegistry`, `MetricRegistry` covering 25 canonical metrics across 10 evaluation axes with methodological safeguards).
+> - **Pure Functional Report Adapters** (Bridging all 11 prior PRISM report schemas into standard `BenchmarkResultCell` instances).
+> - **Multi-Seed Statistical Aggregation & Rigorous Provenance** (`aggregate_repeated_seeds` computing sample mean, variance, min/max, median, and strict $N=1$ warning attachment; provenance conflict detection).
+> - **Controlled Comparison & Audit Engine** (`audit_comparison_control` enforcing strict factor matching; `compute_pairwise_comparison` with direction-aware effect sizes).
+> - **Matrix, Table & Coverage Generators** (`build_benchmark_matrix`, `build_benchmark_table`, `build_coverage_matrix`, `compute_campaign_coverage_summary`, `detect_evidence_gaps`, `generate_missing_experiment_plan`).
+> - **Cross-Paradigm Synthesis & Pareto Frontiers** (`synthesize_cross_architecture`, `synthesize_cross_objective`, `extract_representation_profile` across 10 orthogonal axes, `compute_pareto_front`, `extract_tradeoff_pairs`).
+> - **Grounded Research Findings & Formal Reports** (`generate_research_findings` with evidence strength ratings and caveats; `compile_prism_research_report` with reproducibility manifest, figure specifications, and JSON/Markdown/CSV export).
+> - **Interactive Research Benchmark Observatory UI**: Coverage matrix, benchmark tables, architecture synthesis, objective synthesis, multi-dimensional profile radar, Pareto frontier explorer, tradeoff scatter, grounded findings panel, evidence gap planner, provenance drawer, custom report builder, and report preview modal.
 
 ---
 
@@ -59,7 +60,7 @@ Baselines                  Residual Learning                Self-Supervision
 | **Phase 21** | Video & Temporal Representation Learning | :white_check_mark: Completed |
 | **Phase 22** | Multimodal Vision-Language Representation Alignment | :white_check_mark: Completed |
 | **Phase 23** | Uncertainty, Calibration & Out-of-Distribution Representation Analysis | :white_check_mark: Completed |
-| **Phase 24** | Cross-Paradigm Representation Benchmark & Diagnostic Synthesis | :hourglass_flowing_sand: Planned |
+| **Phase 24** | Cross-Paradigm Representation Benchmark & Diagnostic Synthesis | :white_check_mark: Completed |
 
 ---
 
@@ -86,6 +87,7 @@ prism-visual-representations/
 │   │       ├── temporal/      # Video and temporal representation learning
 │   │       ├── multimodal/    # Dual-encoder vision-language alignment, tokenizer, symmetric loss
 │   │       ├── uncertainty/   # Probabilities, calibration, temperature scaling, OOD scores, corruptions
+│   │       ├── benchmarking/  # Cross-paradigm orchestration, synthesis, reports, coverage, registry
 │   │       ├── robustness/    # Corruptions, distribution shifts, OOD tests
 │   │       ├── explainability/# Saliency, attention rollout, Grad-CAM
 │   │       └── utils/         # Seeding, hashing, structured logging

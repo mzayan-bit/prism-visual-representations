@@ -300,6 +300,19 @@ When evaluating learned representation reuse and downstream adaptation across ta
 - **Multimodal & Cosine Disclaimers**: Raw cosine similarity in vision-language models or representation geometry is a geometric alignment score, NOT a calibrated probability.
 - **Scope & Non-Goals**: PRISM is not Bayesian deep learning (no Monte Carlo Dropout or Bayes-by-Backprop), not deep ensembles, and not production anomaly detection. All analyses investigate core deterministic representation properties.
 
+### 12. Cross-Paradigm Benchmark Orchestration & Evidence Synthesis Standards
+When synthesizing experimental results across learning paradigms (Phase 24):
+- **Strict No-Fake-Result Policy**:
+  Every cell in a benchmark matrix or table must carry an explicit scientific status (`OBSERVED`, `AGGREGATED`, `MISSING`, `FAILED`, `NOT_APPLICABLE`). Missing or unexecuted experiments must NEVER be imputed, interpolated, or defaulted to `0.0`.
+- **Controlled Factor Auditing**:
+  Pairwise comparisons and factor sweeps must verify that shared factors (`dataset`, `task`, `data_budget`, `seed`) are strictly aligned. Deviations must be flagged as `PARTIALLY_CONTROLLED`, `DESCRIPTIVE_ONLY`, or `INVALID_COMPARISON`.
+- **Repeated Seed Requirement for Strong Claims**:
+  Claims of statistical superiority or ranking require $N \ge 3$ random seeds with reported sample standard deviations. Single-seed observations must carry explicit `SINGLE_SEED_RESULT` caveats and are rated as `SUPPORTED_BY_SINGLE_RUN` or `DESCRIPTIVE_ONLY`.
+- **Multi-Objective Tradeoffs**:
+  Visual representation quality is fundamentally multi-dimensional (spanning semantic accuracy, robustness, calibration, efficiency, geometry, attribution, and multimodal alignment). Compressing representation quality into a single scalar rank is scientifically prohibited; tradeoffs must be analyzed via non-dominated Pareto frontiers.
+- **Reproducibility Manifest**:
+  Every synthesized research report must include a cryptographic `ReproducibilityManifest` documenting campaign fingerprints, experiment hashes, seed lists, environment metadata, and metric registry provenance.
+
 ---
 
 ## Data and Artifact Policy

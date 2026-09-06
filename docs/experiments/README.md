@@ -1056,6 +1056,8 @@ print(
 )
 
 # 6. Access Precomputed Uncertainty Benchmarks via API Service
+
+```python
 from prism.api.uncertainty_service import UncertaintyAnalysisService
 
 service = UncertaintyAnalysisService(seed=42)
@@ -1065,7 +1067,56 @@ print(
 )
 ```
 
+---
 
+## Cross-Paradigm Benchmark Orchestration & Research Synthesis (Phase 24)
 
+Phase 24 integrates all prior PRISM paradigms into a unified, controlled benchmark orchestration, evidence synthesis, reporting, and experiment-gap analysis layer.
 
+```python
+from prism.benchmarking import (
+    BenchmarkCampaign,
+    BenchmarkCampaignRunner,
+    BenchmarkResultStore,
+    canonical_metric_registry,
+    build_benchmark_matrix,
+    build_benchmark_table,
+    synthesize_cross_architecture,
+    synthesize_cross_objective,
+    extract_representation_profile,
+    compute_pareto_front,
+    generate_research_findings,
+    compile_prism_research_report,
+)
+from prism.benchmarking.export import export_report_to_markdown
 
+# 1. Define Declarative Benchmark Campaign
+campaign = BenchmarkCampaign(
+    campaign_id="prism_cross_paradigm_synthesis_v1",
+    title="PRISM Full Cross-Paradigm Representation Benchmark",
+    description="Evaluating architectures and objectives across 10 canonical representation axes.",
+    architectures=["resnet", "vit", "cnn", "mlp"],
+    objectives=["supervised", "simclr", "reconstruction", "vision_language"],
+    datasets=["cifar10"],
+    tasks=["classification"],
+    seeds=[42, 100, 2024],
+    budgets=[1.0, 0.1],
+)
+
+# 2. Execute Benchmark Campaign via Runner
+runner = BenchmarkCampaignRunner(campaign=campaign)
+report = runner.run_campaign(dry_run=False)
+
+# 3. Inspect Grounded Research Findings
+for finding in report.findings:
+    print(
+        f"Finding [{finding.finding_id}] ({finding.evidence_strength.value}): {finding.statement}"
+    )
+    if finding.caveats:
+        print(f"  Caveats: {'; '.join(finding.caveats)}")
+
+# 4. Generate Publication-Quality Markdown Report
+markdown_summary = export_report_to_markdown(report)
+print(f"Compiled Report Title: {report.title}")
+print(f"Total Tables: {len(report.tables)} | Total Figures: {len(report.figures)}")
+```
