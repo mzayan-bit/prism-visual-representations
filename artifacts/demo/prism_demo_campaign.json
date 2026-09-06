@@ -1,0 +1,162 @@
+{
+  "campaign_id": "prism_representation_showcase",
+  "title": "PRISM Representation Showcase",
+  "description": "Controlled cross-architecture and cross-paradigm representation demonstration across CNN, ResNet, and ViT architectures under supervised, contrastive SSL, reconstruction, multimodal alignment, spatial, temporal, and uncertainty regimes.",
+  "research_questions": [
+    {
+      "question_id": "rq1_pretraining_transfer",
+      "natural_language_question": "How does self-supervised pretraining (SimCLR vs Reconstruction) compare to Supervised pretraining on downstream linear probe accuracy across data budgets?",
+      "independent_variables": [
+        "pretraining_objective",
+        "data_budget"
+      ],
+      "independent_values": [
+        "supervised",
+        "simclr",
+        "reconstruction",
+        "vision_language",
+        "scratch"
+      ],
+      "dependent_metrics": [
+        "linear_probe_accuracy",
+        "transfer_gain"
+      ],
+      "controlled_factors": {
+        "dataset": "cifar10",
+        "task": "transfer"
+      },
+      "applicable_experiments": [],
+      "comparison_policy": "strictly_controlled",
+      "limitations": [
+        "Linear probe only; non-linear fine-tuning may show different dynamics."
+      ]
+    },
+    {
+      "question_id": "rq2_architecture_inductive_bias",
+      "natural_language_question": "What is the comparative inductive bias and spatial retention of CNNs, ResNets, and ViTs under clean accuracy, corruption robustness, and dense spatial transfer?",
+      "independent_variables": [
+        "architecture"
+      ],
+      "independent_values": [
+        "cnn",
+        "resnet",
+        "vit"
+      ],
+      "dependent_metrics": [
+        "accuracy",
+        "robustness_accuracy_drop",
+        "detection_mean_iou",
+        "segmentation_miou"
+      ],
+      "controlled_factors": {
+        "pretraining_objective": "supervised",
+        "dataset": "cifar10"
+      },
+      "applicable_experiments": [],
+      "comparison_policy": "strictly_controlled",
+      "limitations": [
+        "Evaluated at standardized scale without ImageNet-22k pretraining."
+      ]
+    },
+    {
+      "question_id": "rq3_calibration_ood_tradeoff",
+      "natural_language_question": "Does higher test accuracy correlate with improved uncertainty calibration (ECE) and out-of-distribution detection AUROC across architectures and objectives?",
+      "independent_variables": [
+        "architecture",
+        "pretraining_objective"
+      ],
+      "independent_values": [
+        "cnn",
+        "resnet",
+        "vit"
+      ],
+      "dependent_metrics": [
+        "accuracy",
+        "ece",
+        "ood_auroc"
+      ],
+      "controlled_factors": {
+        "dataset": "cifar10",
+        "task": "classification"
+      },
+      "applicable_experiments": [],
+      "comparison_policy": "strictly_controlled",
+      "limitations": [
+        "Calibration evaluated via standard temperature scaling."
+      ]
+    }
+  ],
+  "architectures": [
+    "cnn",
+    "resnet",
+    "vit"
+  ],
+  "objectives": [
+    "supervised",
+    "simclr",
+    "reconstruction",
+    "vision_language",
+    "scratch"
+  ],
+  "datasets": [
+    "cifar10",
+    "spatial_synth",
+    "temporal_synth",
+    "multimodal_synth"
+  ],
+  "tasks": [
+    "classification",
+    "transfer",
+    "spatial",
+    "temporal",
+    "multimodal",
+    "robustness"
+  ],
+  "transfer_strategies": [],
+  "seeds": [
+    42,
+    100,
+    2024
+  ],
+  "budgets": [
+    0.01,
+    0.05,
+    0.1,
+    0.25,
+    0.5,
+    1.0
+  ],
+  "experiment_definitions": [],
+  "requested_metrics": [
+    "accuracy",
+    "loss",
+    "linear_probe_accuracy",
+    "transfer_gain",
+    "robustness_accuracy_drop",
+    "representation_drift",
+    "ece",
+    "brier",
+    "ood_auroc",
+    "detection_mean_iou",
+    "segmentation_miou",
+    "video_accuracy",
+    "temporal_consistency",
+    "retrieval_r1",
+    "zero_shot_accuracy"
+  ],
+  "requested_reports": [
+    "representation_geometry",
+    "robustness",
+    "transfer",
+    "ssl",
+    "reconstruction",
+    "spatial_transfer",
+    "temporal",
+    "multimodal",
+    "uncertainty"
+  ],
+  "artifact_policy": "metadata_only",
+  "status": "planned",
+  "warnings": [],
+  "fingerprint": "39c0822c676834ccd1fa3f4230966a5d9c7d9bc4e8e48ea485bacacc26697adf"
+}

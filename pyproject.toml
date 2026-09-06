@@ -52,7 +52,7 @@ packages = ["backend/src/prism"]
 [tool.ruff]
 line-length = 88
 target-version = "py310"
-src = ["backend/src", "tests"]
+src = ["backend/src", "tests", "scripts"]
 
 [tool.ruff.lint]
 select = [
@@ -75,7 +75,7 @@ known-first-party = ["prism"]
 [tool.mypy]
 python_version = "3.10"
 mypy_path = "backend/src"
-files = ["backend/src", "tests"]
+files = ["backend/src", "tests", "scripts"]
 strict = true
 warn_unused_configs = true
 warn_redundant_casts = true

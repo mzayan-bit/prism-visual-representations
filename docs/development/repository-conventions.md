@@ -26,5 +26,5 @@
 ---
 
 ### Data and Storage Management
-- Follow the [Research Contract](file:///Users/zayan/Documents/Prism/docs/methodology/research-contract.md) data policy at all times.
+- Follow the [Research Contract](../methodology/research-contract.md) data policy at all times.
 - Never commit binary checkpoints (`*.pt`, `*.pth`, `*.ckpt`) or dataset images to Git.

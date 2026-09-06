@@ -130,6 +130,13 @@ artifacts/figures/*
 !artifacts/figures/README.md
 artifacts/reports/*
 !artifacts/reports/README.md
+artifacts/demo/*
+!artifacts/demo/README.md
+!artifacts/demo/prism_demo_campaign.json
+!artifacts/demo/prism_demo_report.json
+!artifacts/demo/prism_demo_report.md
+!artifacts/demo/benchmark_matrix.csv
+!artifacts/demo/benchmark_table.csv
 
 # --- Logging & Experiment Trackers ---
 *.log

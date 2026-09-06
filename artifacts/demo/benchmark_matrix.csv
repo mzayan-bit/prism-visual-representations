@@ -1,0 +1,6 @@
+pretraining_objective,cnn,resnet,vit
+reconstruction,0.78,0.815,0.83
+scratch,0.695,0.72,0.685
+simclr,0.82,0.862,0.875
+supervised,0.845,0.884,0.892
+vision_language,0.81,0.854,0.88

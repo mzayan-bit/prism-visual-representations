@@ -293,7 +293,7 @@ class BenchmarkService:
             "benchmark_tables": [t.to_dict() for t in report.tables],
             "profiles": [p.to_dict() for p in report.profiles],
             "pareto_analysis": pareto.to_dict(),
-            "tradeoff_analysis": tradeoffs,
+            "tradeoff_analysis": [t.to_dict() for t in tradeoffs],
             "findings": [f.to_dict() for f in report.findings],
             "evidence_gaps": [g.to_dict() for g in report.evidence_gaps],
             "missing_plan": self.get_missing_experiment_plan().to_dict(),
