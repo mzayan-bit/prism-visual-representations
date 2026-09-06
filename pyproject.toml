@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "prism"
-version = "0.1.0"
+version = "1.0.0"
 description = "Probing the Evolution of Visual Representations"
 readme = "README.md"
 license = { text = "MIT" }
@@ -22,7 +22,7 @@ keywords = [
     "reproducibility",
 ]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",

@@ -1,6 +1,72 @@
 # PRISM Architecture Overview
 
-## Controlled architecture experiment layer
+## Research Lifecycle
+
+```mermaid
+flowchart LR
+    A[Dataset Universe & Fixed Manifest] --> B[Experiment Definition & Audit]
+    B --> C[Controlled Model Execution & Training]
+    C --> D[Representation & Diagnostic Extraction]
+    D --> E[Domain Laboratory Analysis & Report]
+    E --> F[Pure Functional Benchmark Adapter]
+    F --> G[Cross-Paradigm Evidence Synthesis]
+    G --> H[Pareto Tradeoffs & Research Report]
+    H --> I[Interactive Observatory & Export]
+```
+
+## System Topology
+
+```mermaid
+flowchart TB
+    subgraph Data [Data Layer]
+        D1[SampleUniverse] --> D2[PartitionManifest]
+        D2 --> D3[Deterministic BatchLoader]
+    end
+
+    subgraph Models [Model Architecture Layer]
+        M1[BaseVisionModel] --> M2[Linear / MLP / CNN / ResNet / ViT]
+        M2 --> M3[Forward Pass & Logits]
+    end
+
+    subgraph Training [Optimization Layer]
+        T1[SGDOptimizer & Schedulers] --> T2[Exact Analytical Backprop]
+        T2 --> T3[Gradient Flow Summaries]
+    end
+
+    subgraph Laboratories [Research Laboratories]
+        L1[Geometry & PCA Observatory]
+        L2[Robustness & Corruption Drift]
+        L3[Explainability & Grad-CAM]
+        L4[Transfer Learning & Probes]
+        L5[SimCLR Self-Supervision]
+        L6[Masked Autoencoding & Decoders]
+        L7[Spatial Detection & Segmentation]
+        L8[Temporal Video Aggregators]
+        L9[Multimodal Vision-Language]
+        L10[Uncertainty & Calibration]
+    end
+
+    subgraph Benchmark [Cross-Paradigm Benchmark Engine]
+        B1[Report Adapters] --> B2[Multi-Seed Statistical Aggregator]
+        B2 --> B3[Control Auditing Engine]
+        B3 --> B4[Synthesis & Pareto Frontier Extractor]
+        B4 --> B5[Research Findings & Report Compiler]
+    end
+
+    subgraph UI [Observatory UI]
+        U1[Next.js Research Platform]
+        U2[Domain-Organized Laboratories]
+        U3[Benchmark Matrix & Tradeoff Explorer]
+    end
+
+    Data --> Models
+    Models --> Training
+    Training --> Laboratories
+    Laboratories --> Benchmark
+    Benchmark --> UI
+```
+
+## Controlled Architecture Experiment Layer
 
 `ArchitectureComparisonSuite` composes existing experiment, data, training,
 evaluation, model, and representation contracts. It records the research
