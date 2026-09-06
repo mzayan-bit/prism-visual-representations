@@ -57,7 +57,7 @@ export const ObservatoryHeader: React.FC<ObservatoryHeaderProps> = ({
                   PRISM OBSERVATORY
                 </h1>
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-cyan-950/80 text-cyan-400 border border-cyan-800/60">
-                  Phase 14 &bull; Representation Geometry
+                  Representation Geometry
                 </span>
               </div>
               <p className="text-xs text-zinc-400">

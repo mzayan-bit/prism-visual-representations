@@ -27,7 +27,7 @@ export function ObjectiveComparisonCard({
             3-Way Paradigm Comparison
           </h3>
           <p className="text-xs text-slate-400 mt-0.5">
-            Supervised (Phase 13) vs SimCLR (Phase 18) vs Masked Reconstruction (Phase 19).
+            Supervised vs SimCLR Contrastive vs Masked Reconstruction.
           </p>
         </div>
 

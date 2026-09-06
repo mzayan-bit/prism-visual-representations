@@ -52,8 +52,8 @@ export default function RobustnessHeader({
               <h1 className="text-xl font-bold tracking-tight text-white">
                 Robustness & Distribution Shift Laboratory
               </h1>
-              <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                Phase 15
+              <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 uppercase">
+                Robustness Analysis
               </span>
             </div>
             <p className="text-xs text-slate-400">

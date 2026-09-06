@@ -35,7 +35,7 @@ export const BenchmarkHeader: React.FC<BenchmarkHeaderProps> = ({
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-cyan-950 text-cyan-400 border border-cyan-800/80 uppercase">
-              Phase 24
+              BENCHMARK SYNTHESIS
             </span>
             <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
               <span>🏛️</span> Cross-Paradigm Benchmark & Evidence Synthesis Observatory

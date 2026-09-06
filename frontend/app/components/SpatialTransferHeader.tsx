@@ -47,8 +47,8 @@ export const SpatialTransferHeader: React.FC<SpatialTransferHeaderProps> = ({
             <h1 className="text-lg font-bold text-slate-100 tracking-tight">
               Spatial Transfer Laboratory
             </h1>
-            <span className="bg-amber-500/10 text-amber-400 border border-amber-500/30 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full">
-              Phase 20
+            <span className="bg-amber-500/10 text-amber-400 border border-amber-500/30 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full uppercase">
+              Spatial Transfer
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1 max-w-2xl">

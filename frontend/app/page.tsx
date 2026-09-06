@@ -18,6 +18,7 @@ import { SpatialTransferLaboratoryView } from "./components/SpatialTransferLabor
 import { TemporalLaboratoryView } from "./components/TemporalLaboratoryView";
 import { TransferLaboratoryView } from "./components/TransferLaboratoryView";
 import { UncertaintyLaboratoryView } from "./components/UncertaintyLaboratoryView";
+import { ResearchPlatformNavigation, AppMode } from "./components/ResearchPlatformNavigation";
 import { BenchmarkObservatoryView } from "./components/benchmark/BenchmarkObservatoryView";
 import {
   getCrossArchitectureComparison,
@@ -32,19 +33,7 @@ import {
 } from "./types";
 
 export default function PRISMDashboardPage() {
-  const [appMode, setAppMode] = useState<
-    | "benchmark"
-    | "uncertainty"
-    | "multimodal"
-    | "temporal"
-    | "spatial"
-    | "reconstruction"
-    | "ssl"
-    | "transfer"
-    | "explainability"
-    | "robustness"
-    | "observatory"
-  >("benchmark");
+  const [appMode, setAppMode] = useState<AppMode>("benchmark");
 
   // Observatory state
   const metadata = useMemo(() => getObservatoryMetadata(), []);
@@ -90,163 +79,34 @@ export default function PRISMDashboardPage() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 selection:bg-cyan-900 selection:text-cyan-100">
-      {/* Top Application Mode Navigation Switcher */}
-      <nav className="bg-slate-900 border-b border-slate-800 px-6 py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-3 z-40 sticky top-0">
-        <div className="flex items-center gap-3">
-          <div className="text-sm font-black tracking-wider text-cyan-400 font-mono">
-            PRISM // RESEARCH SUITE
-          </div>
-          <span className="text-xs text-slate-500">|</span>
-          <span className="text-xs text-slate-400">Visual Representation & Attribution Platform</span>
-        </div>
+      {/* Research Platform Domain & Laboratory Navigation */}
+      <ResearchPlatformNavigation
+        currentMode={appMode}
+        onSelectMode={setAppMode}
+      />
 
-        <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 overflow-x-auto">
-          <button
-            id="nav-mode-benchmark"
-            onClick={() => setAppMode("benchmark")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              appMode === "benchmark"
-                ? "bg-cyan-500 text-slate-950 font-black shadow-md shadow-cyan-500/20"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <span>🏛️</span> Benchmark Observatory (Phase 24)
-          </button>
-          <button
-            id="nav-mode-uncertainty"
-            onClick={() => setAppMode("uncertainty")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              appMode === "uncertainty"
-                ? "bg-amber-600 text-white shadow-md shadow-amber-500/20"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <span>🎲</span> Uncertainty & OOD (Phase 23)
-          </button>
-          <button
-            id="nav-mode-multimodal"
-            onClick={() => setAppMode("multimodal")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              appMode === "multimodal"
-                ? "bg-cyan-600 text-white shadow-md shadow-cyan-500/20"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <span>🌌</span> Vision-Language (Phase 22)
-          </button>
-          <button
-            id="nav-mode-temporal"
-            onClick={() => setAppMode("temporal")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              appMode === "temporal"
-                ? "bg-amber-600 text-white shadow-md shadow-amber-500/20"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <span>🎬</span> Temporal Lab (Phase 21)
-          </button>
-          <button
-            id="nav-mode-spatial"
-            onClick={() => setAppMode("spatial")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              appMode === "spatial"
-                ? "bg-amber-600 text-white shadow-md shadow-amber-500/20"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <span>🎯</span> Spatial Lab (Phase 20)
-          </button>
-          <button
-            id="nav-mode-reconstruction"
-            onClick={() => setAppMode("reconstruction")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              appMode === "reconstruction"
-                ? "bg-violet-600 text-white shadow-md shadow-violet-500/20"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <span>🧩</span> Reconstruction Lab (Phase 19)
-          </button>
-          <button
-            id="nav-mode-ssl"
-            onClick={() => setAppMode("ssl")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              appMode === "ssl"
-                ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <span>🌌</span> SSL Lab (Phase 18)
-          </button>
-          <button
-            id="nav-mode-transfer"
-            onClick={() => setAppMode("transfer")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              appMode === "transfer"
-                ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <span>🔄</span> Transfer Lab (Phase 17)
-          </button>
-          <button
-            id="nav-mode-explainability"
-            onClick={() => setAppMode("explainability")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              appMode === "explainability"
-                ? "bg-cyan-600 text-white shadow-md shadow-cyan-500/20"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <span>🔍</span> Explainability (Phase 16)
-          </button>
-          <button
-            id="nav-mode-robustness"
-            onClick={() => setAppMode("robustness")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              appMode === "robustness"
-                ? "bg-cyan-600 text-white shadow-md shadow-cyan-500/20"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <span>🛡️</span> Robustness (Phase 15)
-          </button>
-          <button
-            id="nav-mode-observatory"
-            onClick={() => setAppMode("observatory")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              appMode === "observatory"
-                ? "bg-cyan-600 text-white shadow-md shadow-cyan-500/20"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <span>🔬</span> Observatory (Phase 14)
-          </button>
-        </div>
-      </nav>
-
-      {/* Phase 24: Cross-Paradigm Benchmark Orchestration & Evidence Synthesis Observatory */}
+      {/* Synthesis: Cross-Paradigm Benchmark & Evidence Observatory */}
       {appMode === "benchmark" && <BenchmarkObservatoryView />}
 
-      {/* Phase 23: Uncertainty, Calibration & Out-of-Distribution Representation Laboratory */}
+      {/* Reliability: Uncertainty, Calibration & OOD Representation Laboratory */}
       {appMode === "uncertainty" && <UncertaintyLaboratoryView />}
 
-      {/* Phase 22: Vision-Language Representation Alignment Laboratory */}
+      {/* Downstream: Vision-Language Representation Alignment Laboratory */}
       {appMode === "multimodal" && <MultimodalLaboratoryView />}
 
-      {/* Phase 21: Video & Temporal Representation Learning Laboratory */}
+      {/* Downstream: Video & Temporal Representation Learning Laboratory */}
       {appMode === "temporal" && <TemporalLaboratoryView />}
 
-      {/* Phase 20: Spatial Representation Transfer Laboratory */}
+      {/* Downstream: Spatial Representation Transfer Laboratory */}
       {appMode === "spatial" && <SpatialTransferLaboratoryView />}
 
-      {/* Phase 19: Reconstruction & Masked Representation Learning Laboratory */}
+      {/* Learning Paradigms: Reconstruction & Masked Representation Learning Laboratory */}
       {appMode === "reconstruction" && <ReconstructionLaboratoryView />}
 
-      {/* Phase 18: Self-Supervised Learning Laboratory */}
+      {/* Learning Paradigms: Self-Supervised Learning (SimCLR) Laboratory */}
       {appMode === "ssl" && <SelfSupervisedLaboratoryView />}
 
-      {/* Phase 17: Transfer Learning & Representation Reuse Laboratory */}
+      {/* Learning Paradigms: Transfer Learning & Representation Reuse Laboratory */}
       {appMode === "transfer" && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <TransferLaboratoryView />
