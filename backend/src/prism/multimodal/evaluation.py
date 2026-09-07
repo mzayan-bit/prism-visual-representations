@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import math
 from typing import Any
 
@@ -241,7 +242,7 @@ def evaluate_prompt_sensitivity(
                     position="center",
                     size="medium",
                 ),
-                prompt_id=f"p_{idx}_{hash(template)}",
+                prompt_id=f"p_{idx}_{hashlib.sha256(template.encode('utf-8')).hexdigest()[:8]}",
             )
             for idx, cname in enumerate(class_names)
         ]

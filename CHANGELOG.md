@@ -4,6 +4,17 @@ All notable changes to the PRISM research platform are documented in this file.
 
 ---
 
+## [1.0.1] — 2026-09-07
+
+### Release Verification & Hardening
+- **Zero-RNG Drift via Cryptographic Hashing**: Replaced internal Python process hash offsets with deterministic SHA-256 digests in benchmark comparison audits, multimodal prompt IDs, and temporal video corruption pipelines.
+- **Showcase & Presentation Guide**: Authored `docs/showcase/README.md` containing 30-second overviews, 2-minute technical architectures, 5 interactive demo walkthroughs, and interview talking points.
+- **Cleaned Internal Reference Vocabulary**: Removed historical development phase identifiers from user-facing services, metric definitions, and UI components in favor of clean research domain taxonomy.
+- **Documentation & Link Hygiene**: Audited and validated all internal Markdown links across the entire repository.
+- **Clean-Clone & Multi-Seed Validation**: Verified 100% test pass rate across 657 tests in isolated clean-clone environments.
+
+---
+
 ## [1.0.0] — 2026-09-06
 
 ### Major Highlights

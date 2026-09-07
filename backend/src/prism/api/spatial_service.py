@@ -395,7 +395,7 @@ class SpatialTransferService:
 
         payload = {
             "meta": {
-                "generated_by": "PRISM Phase 20 Spatial Transfer Service",
+                "generated_by": "PRISM Spatial Transfer Service",
                 "version": "1.0",
                 "architectures": architectures,
                 "objectives": [o.value for o in objectives],

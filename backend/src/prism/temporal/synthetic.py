@@ -95,8 +95,9 @@ class SyntheticVideoGenerator:
         num_samples: int = 24,
         split: SplitName = SplitName.TRAIN,
     ) -> list[VideoSample]:
-        """Generate a deterministic synthetic video dataset with motion ground truth."""
-        rng = random.Random(self.seed + (hash(split.value) % 10000))
+        h_val = hashlib.sha256(split.value.encode("utf-8")).hexdigest()[:8]
+        split_offset = int(h_val, 16) % 10000
+        rng = random.Random(self.seed + split_offset)
         samples: list[VideoSample] = []
 
         palette = [

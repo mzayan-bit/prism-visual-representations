@@ -1,7 +1,7 @@
 {
   "campaign_id": "prism_representation_showcase",
   "title": "PRISM Representation Showcase",
-  "description": "Controlled cross-architecture and cross-paradigm representation demonstration across CNN, ResNet, and ViT architectures under supervised, contrastive SSL, reconstruction, multimodal alignment, spatial, temporal, and uncertainty regimes.",
+  "description": "Controlled cross-architecture and cross-paradigm demonstration across CNN, ResNet, and ViT architectures under supervised, contrastive SSL, reconstruction, multimodal alignment, spatial, temporal, and uncertainty regimes.",
   "research_questions": [
     {
       "question_id": "rq1_pretraining_transfer",

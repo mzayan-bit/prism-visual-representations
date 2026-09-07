@@ -2,7 +2,7 @@
   "campaign": {
     "campaign_id": "prism_representation_showcase",
     "title": "PRISM Representation Showcase",
-    "description": "Controlled cross-architecture and cross-paradigm representation demonstration across CNN, ResNet, and ViT architectures under supervised, contrastive SSL, reconstruction, multimodal alignment, spatial, temporal, and uncertainty regimes.",
+    "description": "Controlled cross-architecture and cross-paradigm demonstration across CNN, ResNet, and ViT architectures under supervised, contrastive SSL, reconstruction, multimodal alignment, spatial, temporal, and uncertainty regimes.",
     "research_questions": [
       {
         "question_id": "rq1_pretraining_transfer",
@@ -943,7 +943,7 @@
         }
       ],
       "footnotes": [
-        "Evaluated under standard Phase 15 perturbations."
+        "Evaluated under standard corruption perturbations."
       ],
       "control_status": "strictly_controlled",
       "warnings": []
@@ -3167,7 +3167,7 @@
         "demo_res_795_cnn_scratch_linear_probe_accuracy_s2024"
       ],
       "comparison_audit": {
-        "comparison_id": "audit_297209",
+        "comparison_id": "audit_baef1d7f",
         "factors_expected_equal": [
           "architecture",
           "dataset",
@@ -3265,7 +3265,7 @@
         "demo_res_796_cnn_scratch_transfer_gain_s2024"
       ],
       "comparison_audit": {
-        "comparison_id": "audit_397363",
+        "comparison_id": "audit_dc554d39",
         "factors_expected_equal": [
           "architecture",
           "dataset",
@@ -3363,7 +3363,7 @@
         "demo_res_793_cnn_scratch_accuracy_s2024"
       ],
       "comparison_audit": {
-        "comparison_id": "audit_861456",
+        "comparison_id": "audit_29212576",
         "factors_expected_equal": [
           "pretraining_objective",
           "dataset",
@@ -3457,7 +3457,7 @@
         "demo_res_797_cnn_scratch_robustness_accuracy_drop_s2024"
       ],
       "comparison_audit": {
-        "comparison_id": "audit_773190",
+        "comparison_id": "audit_de84f161",
         "factors_expected_equal": [
           "pretraining_objective",
           "dataset",
@@ -3495,7 +3495,7 @@
       },
       "caveats": [
         "Grounding restricted to evaluated dataset: cifar10.",
-        "Evaluated under standard Phase 15 perturbations."
+        "Evaluated under standard corruption perturbations."
       ],
       "evidence_strength": "supported_by_repeated_runs"
     },
@@ -3551,7 +3551,7 @@
         "demo_res_802_cnn_scratch_detection_mean_iou_s2024"
       ],
       "comparison_audit": {
-        "comparison_id": "audit_773190",
+        "comparison_id": "audit_de84f161",
         "factors_expected_equal": [
           "pretraining_objective",
           "dataset",
@@ -3645,7 +3645,7 @@
         "demo_res_803_cnn_scratch_segmentation_miou_s2024"
       ],
       "comparison_audit": {
-        "comparison_id": "audit_773190",
+        "comparison_id": "audit_de84f161",
         "factors_expected_equal": [
           "pretraining_objective",
           "dataset",
@@ -3739,7 +3739,7 @@
         "demo_res_793_cnn_scratch_accuracy_s2024"
       ],
       "comparison_audit": {
-        "comparison_id": "audit_861456",
+        "comparison_id": "audit_29212576",
         "factors_expected_equal": [
           "pretraining_objective",
           "dataset",
@@ -3833,7 +3833,7 @@
         "demo_res_799_cnn_scratch_ece_s2024"
       ],
       "comparison_audit": {
-        "comparison_id": "audit_861456",
+        "comparison_id": "audit_29212576",
         "factors_expected_equal": [
           "pretraining_objective",
           "dataset",
@@ -3927,7 +3927,7 @@
         "demo_res_801_cnn_scratch_ood_auroc_s2024"
       ],
       "comparison_audit": {
-        "comparison_id": "audit_861456",
+        "comparison_id": "audit_29212576",
         "factors_expected_equal": [
           "pretraining_objective",
           "dataset",

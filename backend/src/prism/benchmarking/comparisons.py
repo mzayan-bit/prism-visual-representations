@@ -65,8 +65,11 @@ def audit_comparison_control(
     all_keys = set(fa.keys()) | set(fb.keys())
     varied_factors = [k for k in sorted(all_keys) if fa.get(k) != fb.get(k)]
 
+    import hashlib
+
+    hash_key = hashlib.sha256((str(fa) + str(fb)).encode("utf-8")).hexdigest()[:8]
     return ComparisonControlAudit(
-        comparison_id=f"audit_{abs(hash(str(fa) + str(fb))) % 1000000}",
+        comparison_id=f"audit_{hash_key}",
         factors_expected_equal=required,
         factors_actually_equal=equal_factors,
         varied_factors=varied_factors,

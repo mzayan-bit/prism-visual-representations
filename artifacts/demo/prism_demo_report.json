@@ -1,6 +1,6 @@
 {
   "campaign_id": "prism_representation_showcase",
-  "created_at": "2026-09-06T16:05:11.197483+00:00",
+  "created_at": "2026-09-07T15:20:37.145539+00:00",
   "evidence_gaps": [
     {
       "gap_id": "gap_missing_1",
@@ -4100,7 +4100,7 @@
       "figure_id": "fig_robustness_accuracy_drop_heatmap",
       "grouping": "pretraining_objective",
       "methodological_notes": [
-        "Evaluated under standard Phase 15 perturbations."
+        "Evaluated under standard corruption perturbations."
       ],
       "provenance": {
         "matrix_id": "mat_pretraining_objective_architecture_robustness_accuracy_drop"
@@ -4900,7 +4900,7 @@
         "Standard transferability and linear separability metric."
       ],
       "comparison_audit": {
-        "comparison_id": "audit_297209",
+        "comparison_id": "audit_baef1d7f",
         "factors_actually_equal": [
           "architecture",
           "dataset",
@@ -4998,7 +4998,7 @@
         "Positive gain indicates beneficial pretraining transfer."
       ],
       "comparison_audit": {
-        "comparison_id": "audit_397363",
+        "comparison_id": "audit_dc554d39",
         "factors_actually_equal": [
           "architecture",
           "dataset",
@@ -5096,7 +5096,7 @@
         "Primary supervised classification performance."
       ],
       "comparison_audit": {
-        "comparison_id": "audit_861456",
+        "comparison_id": "audit_29212576",
         "factors_actually_equal": [
           "pretraining_objective",
           "dataset",
@@ -5187,10 +5187,10 @@
     {
       "caveats": [
         "Grounding restricted to evaluated dataset: cifar10.",
-        "Evaluated under standard Phase 15 perturbations."
+        "Evaluated under standard corruption perturbations."
       ],
       "comparison_audit": {
-        "comparison_id": "audit_773190",
+        "comparison_id": "audit_de84f161",
         "factors_actually_equal": [
           "pretraining_objective",
           "dataset",
@@ -5284,7 +5284,7 @@
         "Detection mean IoU from lightweight synthetic spatial probe; not COCO mAP."
       ],
       "comparison_audit": {
-        "comparison_id": "audit_773190",
+        "comparison_id": "audit_de84f161",
         "factors_actually_equal": [
           "pretraining_objective",
           "dataset",
@@ -5378,7 +5378,7 @@
         "Segmentation mean IoU on 2D synthetic spatial shapes."
       ],
       "comparison_audit": {
-        "comparison_id": "audit_773190",
+        "comparison_id": "audit_de84f161",
         "factors_actually_equal": [
           "pretraining_objective",
           "dataset",
@@ -5472,7 +5472,7 @@
         "Primary supervised classification performance."
       ],
       "comparison_audit": {
-        "comparison_id": "audit_861456",
+        "comparison_id": "audit_29212576",
         "factors_actually_equal": [
           "pretraining_objective",
           "dataset",
@@ -5566,7 +5566,7 @@
         "Expected Calibration Error from equal-width reliability bins."
       ],
       "comparison_audit": {
-        "comparison_id": "audit_861456",
+        "comparison_id": "audit_29212576",
         "factors_actually_equal": [
           "pretraining_objective",
           "dataset",
@@ -5660,7 +5660,7 @@
         "OOD AUROC from controlled synthetic OOD suite."
       ],
       "comparison_audit": {
-        "comparison_id": "audit_861456",
+        "comparison_id": "audit_29212576",
         "factors_actually_equal": [
           "pretraining_objective",
           "dataset",
@@ -6408,7 +6408,7 @@
       "column_factor": "architecture",
       "control_status": "strictly_controlled",
       "footnotes": [
-        "Evaluated under standard Phase 15 perturbations."
+        "Evaluated under standard corruption perturbations."
       ],
       "metric_direction": "lower_is_better",
       "metric_id": "robustness_accuracy_drop",

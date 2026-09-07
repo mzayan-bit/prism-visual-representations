@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "prism"
-version = "1.0.0"
+version = "1.0.1"
 description = "Probing the Evolution of Visual Representations"
 readme = "README.md"
 license = { text = "MIT" }

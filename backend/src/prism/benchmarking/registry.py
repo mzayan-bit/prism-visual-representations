@@ -258,7 +258,7 @@ class MetricRegistry:
                 bounded_range=[0.0, 1.0],
                 description="Degradation in accuracy from clean to corrupted inputs.",
                 methodological_notes=(
-                    "Evaluated under standard Phase 15 perturbations."
+                    "Evaluated under standard corruption perturbations."
                 ),
             ),
             MetricDefinition(

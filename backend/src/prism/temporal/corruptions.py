@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import hashlib
 import random
 from typing import Any
 
 from prism.core.errors import ValidationError
 from prism.temporal.contracts import MotionTrajectory, VideoSample
 from prism.temporal.enums import TemporalCorruptionType
+
+
+def _deterministic_video_seed_offset(video_id: str) -> int:
+    return int(hashlib.sha256(video_id.encode("utf-8")).hexdigest()[:8], 16) % 10000
 
 
 def apply_frame_drop(
@@ -20,7 +25,7 @@ def apply_frame_drop(
     if t <= 1:
         return sample, []
 
-    rng = random.Random(seed + hash(sample.video_id) % 10000)
+    rng = random.Random(seed + _deterministic_video_seed_offset(sample.video_id))
     num_to_drop = max(1, min(t - 1, round(t * drop_fraction)))
 
     indices_to_drop = set(rng.sample(range(t), num_to_drop))
@@ -148,7 +153,7 @@ def apply_frame_shuffle(
     if t <= 1:
         return sample, list(range(t))
 
-    rng = random.Random(seed + hash(sample.video_id) % 10000)
+    rng = random.Random(seed + _deterministic_video_seed_offset(sample.video_id))
     perm = list(range(t))
     rng.shuffle(perm)
 
@@ -252,7 +257,7 @@ def apply_spatial_composite(
     seed: int = 42,
 ) -> VideoSample:
     """Apply uniform Gaussian-like spatial noise across all sequence frames."""
-    rng = random.Random(seed + hash(sample.video_id) % 10000)
+    rng = random.Random(seed + _deterministic_video_seed_offset(sample.video_id))
     c, h, w = sample.frame_shape
     t = sample.frame_count
 

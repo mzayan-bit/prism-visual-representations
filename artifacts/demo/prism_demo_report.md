@@ -235,7 +235,7 @@ Evaluations enforce strict pairwise factor control. Only designated independent 
 
 **Caveats & Limitations:**
 - Grounding restricted to evaluated dataset: cifar10.
-- Evaluated under standard Phase 15 perturbations.
+- Evaluated under standard corruption perturbations.
 
 ### Finding `find_5`
 **Evidence Strength:** `supported_by_repeated_runs`

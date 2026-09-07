@@ -603,7 +603,7 @@ def generate_explainability_demo_data() -> ExplainabilityDemoPayload:
 
     metadata = ExplainabilityExperimentMeta(
         experiment_id="exp_phase16_explainability_suite",
-        name="Phase 16 — Explainability & Visual Attribution Laboratory",
+        name="Explainability & Visual Attribution Laboratory",
         architectures=["cnn", "resnet", "vit"],
         supported_methods={
             "cnn": [

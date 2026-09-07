@@ -111,7 +111,7 @@ def prepare_denoising_batch(
     epoch: int = 0,
     seed: int = 42,
 ) -> ReconstructionBatch:
-    """Corrupt clean images using Phase 15 operators and prepare a denoising batch.
+    """Corrupt clean images using corruption operators and prepare denoising batch.
 
     Parameters
     ----------

@@ -68,7 +68,9 @@ class AttributionDriftSummary(BaseModel):
     )
     representation_drift_distance: float | None = Field(
         default=None,
-        description="Paired latent representation drift from Phase 15 if available",
+        description=(
+            "Paired latent representation drift from robustness evaluation if available"
+        ),
     )
     warnings: list[str] = Field(
         default_factory=list,

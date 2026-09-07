@@ -113,17 +113,17 @@ export default function PRISMDashboardPage() {
         </div>
       )}
 
-      {/* Phase 16: Explainability & Visual Attribution Laboratory */}
+      {/* Explainability & Visual Attribution Laboratory */}
       {appMode === "explainability" && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <ExplainabilityLaboratoryView />
         </div>
       )}
 
-      {/* Phase 15: Robustness & Distribution Shift Laboratory */}
+      {/* Robustness & Distribution Shift Laboratory */}
       {appMode === "robustness" && <RobustnessLaboratoryView />}
 
-      {/* Phase 14: Representation Geometry Observatory */}
+      {/* Representation Geometry Observatory */}
       {appMode === "observatory" && (
         <div>
           {/* Top Header Controls */}
