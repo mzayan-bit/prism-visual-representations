@@ -7,9 +7,9 @@ import { GeometryWorkspace } from "./components/research/geometry/GeometryWorksp
 import { BenchmarkObservatoryView } from "./components/benchmark/BenchmarkObservatoryView";
 import RobustnessLaboratoryView from "./components/RobustnessLaboratoryView";
 import { ExplainabilityLaboratoryView } from "./components/ExplainabilityLaboratoryView";
-import { TransferLaboratoryView } from "./components/TransferLaboratoryView";
-import { SelfSupervisedLaboratoryView } from "./components/SelfSupervisedLaboratoryView";
-import { ReconstructionLaboratoryView } from "./components/ReconstructionLaboratoryView";
+import { TransferWorkspace } from "./components/research/transfer/TransferWorkspace";
+import { SSLWorkspace } from "./components/research/ssl/SSLWorkspace";
+import { ReconstructionWorkspace } from "./components/research/reconstruction/ReconstructionWorkspace";
 import { SpatialTransferLaboratoryView } from "./components/SpatialTransferLaboratoryView";
 import { TemporalLaboratoryView } from "./components/TemporalLaboratoryView";
 import { MultimodalLaboratoryView } from "./components/MultimodalLaboratoryView";
@@ -153,13 +153,13 @@ export default function PRISMDashboardPage() {
       {appMode === "explainability" && <ExplainabilityLaboratoryView />}
 
       {/* 5. Learning Paradigms: Transfer Dynamics */}
-      {appMode === "transfer" && <TransferLaboratoryView />}
+      {appMode === "transfer" && <TransferWorkspace />}
 
       {/* 6. Learning Paradigms: Self-Supervised Learning (SimCLR) */}
-      {appMode === "ssl" && <SelfSupervisedLaboratoryView />}
+      {appMode === "ssl" && <SSLWorkspace />}
 
       {/* 7. Learning Paradigms: Reconstruction & Latents */}
-      {appMode === "reconstruction" && <ReconstructionLaboratoryView />}
+      {appMode === "reconstruction" && <ReconstructionWorkspace />}
 
       {/* 8. Downstream: Spatial Dense Transfer */}
       {appMode === "spatial" && <SpatialTransferLaboratoryView />}
