@@ -1,39 +1,30 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { ArchitectureComparisonPanel } from "./components/ArchitectureComparisonPanel";
-import { ClassCentroidsTable } from "./components/ClassCentroidsTable";
-import { ExplainabilityLaboratoryView } from "./components/ExplainabilityLaboratoryView";
-import { FailureExplorerPanel } from "./components/FailureExplorerPanel";
-import { LayerEvolutionPanel } from "./components/LayerEvolutionPanel";
-import { MetricOverviewStrip } from "./components/MetricOverviewStrip";
-import { MultimodalLaboratoryView } from "./components/MultimodalLaboratoryView";
-import { NeighborhoodPanel } from "./components/NeighborhoodPanel";
-import { ObservatoryHeader } from "./components/ObservatoryHeader";
-import { PCAScatterPlot } from "./components/PCAScatterPlot";
-import { ReconstructionLaboratoryView } from "./components/ReconstructionLaboratoryView";
+import { AppShell } from "./components/shell/AppShell";
+import { OverviewHub } from "./components/research/overview/OverviewHub";
+import { GeometryWorkspace } from "./components/research/geometry/GeometryWorkspace";
+import { BenchmarkObservatoryView } from "./components/benchmark/BenchmarkObservatoryView";
 import RobustnessLaboratoryView from "./components/RobustnessLaboratoryView";
+import { ExplainabilityLaboratoryView } from "./components/ExplainabilityLaboratoryView";
+import { TransferLaboratoryView } from "./components/TransferLaboratoryView";
 import { SelfSupervisedLaboratoryView } from "./components/SelfSupervisedLaboratoryView";
+import { ReconstructionLaboratoryView } from "./components/ReconstructionLaboratoryView";
 import { SpatialTransferLaboratoryView } from "./components/SpatialTransferLaboratoryView";
 import { TemporalLaboratoryView } from "./components/TemporalLaboratoryView";
-import { TransferLaboratoryView } from "./components/TransferLaboratoryView";
+import { MultimodalLaboratoryView } from "./components/MultimodalLaboratoryView";
 import { UncertaintyLaboratoryView } from "./components/UncertaintyLaboratoryView";
-import { ResearchPlatformNavigation, AppMode } from "./components/ResearchPlatformNavigation";
-import { BenchmarkObservatoryView } from "./components/benchmark/BenchmarkObservatoryView";
+import { AppMode } from "./components/ResearchPlatformNavigation";
 import {
   getCrossArchitectureComparison,
   getLayerGeometryProfile,
   getObservatoryMetadata,
   getRepresentationGeometryReport,
 } from "./observatoryData";
-import {
-  DistanceMetric,
-  NormalizationPolicy,
-  SpatialTransformation,
-} from "./types";
+import { DistanceMetric } from "./types";
 
 export default function PRISMDashboardPage() {
-  const [appMode, setAppMode] = useState<AppMode>("benchmark");
+  const [appMode, setAppMode] = useState<AppMode | "overview">("overview");
 
   // Observatory state
   const metadata = useMemo(() => getObservatoryMetadata(), []);
@@ -42,16 +33,8 @@ export default function PRISMDashboardPage() {
   const [selectedArch, setSelectedArch] = useState<string>("resnet");
   const [selectedLayer, setSelectedLayer] = useState<string>("final_hidden");
   const [selectedBudget, setSelectedBudget] = useState<number>(1.0);
-  const [spatialPolicy, setSpatialPolicy] = useState<SpatialTransformation>(
-    "global_average_pool"
-  );
-  const [normPolicy, setNormPolicy] =
-    useState<NormalizationPolicy>("none");
   const [distanceMetric, setDistanceMetric] =
     useState<DistanceMetric>("euclidean");
-  const [activeTab, setActiveTab] = useState<
-    "geometry" | "evolution" | "comparison"
-  >("geometry");
   const [selectedSampleId, setSelectedSampleId] = useState<string | null>(null);
 
   // Available layers for currently selected architecture
@@ -77,145 +60,118 @@ export default function PRISMDashboardPage() {
     return getRepresentationGeometryReport(selectedArch, selectedLayer);
   }, [selectedArch, selectedLayer]);
 
-  return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 selection:bg-cyan-900 selection:text-cyan-100">
-      {/* Research Platform Domain & Laboratory Navigation */}
-      <ResearchPlatformNavigation
-        currentMode={appMode}
-        onSelectMode={setAppMode}
-      />
+  // Dynamic breadcrumbs based on mode
+  const breadcrumb = useMemo(() => {
+    switch (appMode) {
+      case "overview":
+        return ["PRISM", "Overview"];
+      case "benchmark":
+        return ["PRISM", "Synthesis", "Benchmark Observatory"];
+      case "observatory":
+        return ["PRISM", "Representation", "Geometry Observatory"];
+      case "robustness":
+        return ["PRISM", "Representation", "Robustness & Invariance"];
+      case "explainability":
+        return ["PRISM", "Representation", "Layer Attribution"];
+      case "transfer":
+        return ["PRISM", "Learning", "Transfer Dynamics"];
+      case "ssl":
+        return ["PRISM", "Learning", "Self-Supervised (SimCLR)"];
+      case "reconstruction":
+        return ["PRISM", "Learning", "Reconstruction & Latents"];
+      case "spatial":
+        return ["PRISM", "Downstream", "Spatial Dense Transfer"];
+      case "temporal":
+        return ["PRISM", "Downstream", "Temporal Video Sequences"];
+      case "multimodal":
+        return ["PRISM", "Downstream", "Vision-Language Alignment"];
+      case "uncertainty":
+        return ["PRISM", "Reliability", "Uncertainty & Calibration"];
+      default:
+        return ["PRISM", "Research"];
+    }
+  }, [appMode]);
 
-      {/* Synthesis: Cross-Paradigm Benchmark & Evidence Observatory */}
+  return (
+    <AppShell
+      currentMode={appMode}
+      onSelectMode={setAppMode}
+      breadcrumb={breadcrumb}
+      activeDataset="cifar10"
+      activeSeed={42}
+      isSynthetic={true}
+      inspectorTitle={appMode === "observatory" ? "Geometry Inspector" : "Experiment Details"}
+      inspectorSubtitle={`Architecture: ${selectedArch.toUpperCase()} | Layer: ${selectedLayer}`}
+      inspectorMeta={[
+        { label: "Architecture", value: selectedArch.toUpperCase() },
+        { label: "Active Layer", value: selectedLayer.replace(/_/g, " ") },
+        { label: "Data Budget", value: `${Math.round(selectedBudget * 100)}%` },
+        { label: "Distance Metric", value: distanceMetric },
+      ]}
+      inspectorProvenance={{
+        experimentId: `demo_exp_${selectedArch}_supervised_s42`,
+        runId: `demo_run_${selectedArch}_supervised_42`,
+        seed: 42,
+        hardware: "Apple Silicon / CPU",
+        fingerprint: `fp_${selectedArch}_42_canonical`,
+      }}
+    >
+      {/* 0. Overview / Research Question Hub */}
+      {appMode === "overview" && (
+        <OverviewHub onNavigate={(mode) => setAppMode(mode)} />
+      )}
+
+      {/* 1. Synthesis: Cross-Paradigm Benchmark & Evidence Observatory */}
       {appMode === "benchmark" && <BenchmarkObservatoryView />}
 
-      {/* Reliability: Uncertainty, Calibration & OOD Representation Laboratory */}
-      {appMode === "uncertainty" && <UncertaintyLaboratoryView />}
-
-      {/* Downstream: Vision-Language Representation Alignment Laboratory */}
-      {appMode === "multimodal" && <MultimodalLaboratoryView />}
-
-      {/* Downstream: Video & Temporal Representation Learning Laboratory */}
-      {appMode === "temporal" && <TemporalLaboratoryView />}
-
-      {/* Downstream: Spatial Representation Transfer Laboratory */}
-      {appMode === "spatial" && <SpatialTransferLaboratoryView />}
-
-      {/* Learning Paradigms: Reconstruction & Masked Representation Learning Laboratory */}
-      {appMode === "reconstruction" && <ReconstructionLaboratoryView />}
-
-      {/* Learning Paradigms: Self-Supervised Learning (SimCLR) Laboratory */}
-      {appMode === "ssl" && <SelfSupervisedLaboratoryView />}
-
-      {/* Learning Paradigms: Transfer Learning & Representation Reuse Laboratory */}
-      {appMode === "transfer" && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <TransferLaboratoryView />
-        </div>
+      {/* 2. Representation: Geometry Observatory */}
+      {appMode === "observatory" && (
+        <GeometryWorkspace
+          architectures={metadata.architectures}
+          selectedArch={selectedArch}
+          onSelectArch={handleSelectArch}
+          availableLayers={availableLayers}
+          selectedLayer={selectedLayer}
+          onSelectLayer={setSelectedLayer}
+          dataBudgets={metadata.data_budgets}
+          selectedBudget={selectedBudget}
+          onSelectBudget={setSelectedBudget}
+          distanceMetric={distanceMetric}
+          onSelectDistanceMetric={setDistanceMetric}
+          activeReport={activeReport}
+          activeProfile={activeProfile}
+          comparison={comparison}
+          selectedSampleId={selectedSampleId}
+          onSelectSampleId={setSelectedSampleId}
+        />
       )}
 
-      {/* Explainability & Visual Attribution Laboratory */}
-      {appMode === "explainability" && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <ExplainabilityLaboratoryView />
-        </div>
-      )}
-
-      {/* Robustness & Distribution Shift Laboratory */}
+      {/* 3. Representation: Robustness & Distribution Shift Laboratory */}
       {appMode === "robustness" && <RobustnessLaboratoryView />}
 
-      {/* Representation Geometry Observatory */}
-      {appMode === "observatory" && (
-        <div>
-          {/* Top Header Controls */}
-          <ObservatoryHeader
-            architectures={metadata.architectures}
-            selectedArch={selectedArch}
-            onSelectArch={handleSelectArch}
-            availableLayers={availableLayers}
-            selectedLayer={selectedLayer}
-            onSelectLayer={setSelectedLayer}
-            dataBudgets={metadata.data_budgets}
-            selectedBudget={selectedBudget}
-            onSelectBudget={setSelectedBudget}
-            spatialPolicy={spatialPolicy}
-            onSelectSpatialPolicy={setSpatialPolicy}
-            normPolicy={normPolicy}
-            onSelectNormPolicy={setNormPolicy}
-            distanceMetric={distanceMetric}
-            onSelectDistanceMetric={setDistanceMetric}
-            activeTab={activeTab}
-            onSelectTab={setActiveTab}
-          />
+      {/* 4. Representation: Explainability & Visual Attribution Laboratory */}
+      {appMode === "explainability" && <ExplainabilityLaboratoryView />}
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-            {/* KPI Metric Strip */}
-            <MetricOverviewStrip report={activeReport} />
+      {/* 5. Learning Paradigms: Transfer Dynamics */}
+      {appMode === "transfer" && <TransferLaboratoryView />}
 
-            {/* Tab 1: Geometry & Neighborhood Inspector */}
-            {activeTab === "geometry" && activeReport && (
-              <div className="space-y-6">
-                {/* Top Grid: Scatter Plot + Inspector Panels */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                  {/* Central Left: Interactive 2D PCA Scatter Plot (7 cols) */}
-                  <div className="lg:col-span-7">
-                    <PCAScatterPlot
-                      projection={activeReport.pca_projection}
-                      centroidGeometry={activeReport.centroid_geometry}
-                      sampleNeighborhoods={
-                        activeReport.neighborhood_geometry.sample_neighborhoods
-                      }
-                      selectedSampleId={selectedSampleId}
-                      onSelectSample={setSelectedSampleId}
-                    />
-                  </div>
+      {/* 6. Learning Paradigms: Self-Supervised Learning (SimCLR) */}
+      {appMode === "ssl" && <SelfSupervisedLaboratoryView />}
 
-                  {/* Central Right: Neighborhood & Failure Inspector (5 cols) */}
-                  <div className="lg:col-span-5 space-y-4">
-                    <NeighborhoodPanel
-                      neighborhood={
-                        selectedSampleId
-                          ? activeReport.neighborhood_geometry.sample_neighborhoods[
-                              selectedSampleId
-                            ] || null
-                          : null
-                      }
-                      selectedSampleId={selectedSampleId}
-                      onSelectNeighbor={setSelectedSampleId}
-                    />
+      {/* 7. Learning Paradigms: Reconstruction & Latents */}
+      {appMode === "reconstruction" && <ReconstructionLaboratoryView />}
 
-                    <FailureExplorerPanel
-                      failures={activeReport.candidate_failures}
-                      selectedSampleId={selectedSampleId}
-                      onSelectSample={setSelectedSampleId}
-                    />
-                  </div>
-                </div>
+      {/* 8. Downstream: Spatial Dense Transfer */}
+      {appMode === "spatial" && <SpatialTransferLaboratoryView />}
 
-                {/* Bottom: Class Centroids Table */}
-                <ClassCentroidsTable
-                  centroidGeometry={activeReport.centroid_geometry}
-                />
-              </div>
-            )}
+      {/* 9. Downstream: Video & Temporal Representation Learning */}
+      {appMode === "temporal" && <TemporalLaboratoryView />}
 
-            {/* Tab 2: Layer-Wise Geometry Evolution */}
-            {activeTab === "evolution" && (
-              <LayerEvolutionPanel
-                profile={activeProfile}
-                onSelectLayer={(layer) => {
-                  setSelectedLayer(layer);
-                  setActiveTab("geometry");
-                }}
-              />
-            )}
+      {/* 10. Downstream: Vision-Language Multimodal Alignment */}
+      {appMode === "multimodal" && <MultimodalLaboratoryView />}
 
-            {/* Tab 3: Cross-Architecture Benchmarks */}
-            {activeTab === "comparison" && (
-              <ArchitectureComparisonPanel comparison={comparison} />
-            )}
-          </div>
-        </div>
-      )}
-    </main>
+      {/* 11. Reliability: Uncertainty & Calibration Laboratory */}
+      {appMode === "uncertainty" && <UncertaintyLaboratoryView />}
+    </AppShell>
   );
 }
