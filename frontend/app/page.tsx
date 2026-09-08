@@ -10,10 +10,10 @@ import { ExplainabilityLaboratoryView } from "./components/ExplainabilityLaborat
 import { TransferWorkspace } from "./components/research/transfer/TransferWorkspace";
 import { SSLWorkspace } from "./components/research/ssl/SSLWorkspace";
 import { ReconstructionWorkspace } from "./components/research/reconstruction/ReconstructionWorkspace";
-import { SpatialTransferLaboratoryView } from "./components/SpatialTransferLaboratoryView";
-import { TemporalLaboratoryView } from "./components/TemporalLaboratoryView";
-import { MultimodalLaboratoryView } from "./components/MultimodalLaboratoryView";
-import { UncertaintyLaboratoryView } from "./components/UncertaintyLaboratoryView";
+import { SpatialWorkspace } from "./components/research/spatial/SpatialWorkspace";
+import { TemporalWorkspace } from "./components/research/temporal/TemporalWorkspace";
+import { MultimodalWorkspace } from "./components/research/multimodal/MultimodalWorkspace";
+import { UncertaintyWorkspace } from "./components/research/uncertainty/UncertaintyWorkspace";
 import { AppMode } from "./components/ResearchPlatformNavigation";
 import {
   getCrossArchitectureComparison,
@@ -162,16 +162,16 @@ export default function PRISMDashboardPage() {
       {appMode === "reconstruction" && <ReconstructionWorkspace />}
 
       {/* 8. Downstream: Spatial Dense Transfer */}
-      {appMode === "spatial" && <SpatialTransferLaboratoryView />}
+      {appMode === "spatial" && <SpatialWorkspace />}
 
       {/* 9. Downstream: Video & Temporal Representation Learning */}
-      {appMode === "temporal" && <TemporalLaboratoryView />}
+      {appMode === "temporal" && <TemporalWorkspace />}
 
       {/* 10. Downstream: Vision-Language Multimodal Alignment */}
-      {appMode === "multimodal" && <MultimodalLaboratoryView />}
+      {appMode === "multimodal" && <MultimodalWorkspace />}
 
       {/* 11. Reliability: Uncertainty & Calibration Laboratory */}
-      {appMode === "uncertainty" && <UncertaintyLaboratoryView />}
+      {appMode === "uncertainty" && <UncertaintyWorkspace />}
     </AppShell>
   );
 }
