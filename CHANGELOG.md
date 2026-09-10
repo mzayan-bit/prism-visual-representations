@@ -4,6 +4,18 @@ All notable changes to the PRISM research platform are documented in this file.
 
 ---
 
+## [1.1.0] — 2026-09-08
+
+### Frontend Re-Architecture & Visual Redesign
+- **Design System & Foundation**: Built a bespoke, calm, neutral-first design system (`#0B0F17` dark graphite background, subtle slate surfaces, restrained single-accent tokens) eliminating previous rainbow card clutter and visual noise.
+- **Progressive Disclosure Workspaces**: Redesigned all 11 scientific research domains into focused workspaces that present primary scientific visualizations first and reveal secondary diagnostics and advanced configurations on demand.
+- **Application Shell & Navigation**: Introduced a collapsible left navigation rail with 5-domain taxonomy (Overview, Synthesis, Representation, Learning, Downstream/Reliability), top breadcrumb bar with active dataset/seed chips, and collapsible right-side provenance inspector.
+- **Unified Visualizations & Primitives**: Built shared `StatStrip`, `Tabs`, `Button`, `Badge`, `Select`, `ChartFrame`, `EmptyState`, and large-canvas plot stages for PCA manifolds, reliability diagrams, attribution maps, and reconstruction triptychs.
+- **Research Question Entry Hub**: Implemented `OverviewHub` providing problem-first entry points for immediate comprehension within 20 seconds.
+- **Scientific Integrity**: Preserved 100% of underlying backend contracts, precomputed JSON datasets (810 demo cells), mathematical metrics, and report builders without regression.
+
+---
+
 ## [1.0.1] — 2026-09-07
 
 ### Release Verification & Hardening
